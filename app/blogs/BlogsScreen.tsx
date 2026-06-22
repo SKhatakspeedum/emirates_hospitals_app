@@ -5,12 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-  TouchableOpacity,
-  SafeAreaView,
   Platform,
   StatusBar,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
 import { SiteConfig } from "../config/site_config";
 import { BLOGS_SUB_URL } from "../config/config";
 import { ImageBackground } from "react-native";
@@ -22,7 +20,7 @@ import useResponsiveHorizontalMargin from "../hooks/useResponsiveHorizontalMargi
 const { width } = Dimensions.get("window");
 
 const BlogsScreen = () => {
-  const navigation = useNavigation();
+
   const horizontalMargin = useResponsiveHorizontalMargin();
 
   // Responsive background for web >= 1024

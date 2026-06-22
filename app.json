@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "OnMood9",
+    "slug": "OnMood9",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "OnMood9",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.speedum.onmood9"
+    },
+    "android": {
+      "package": "com.onmood9.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/splash_bg_native.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png",
+      "router": {
+        "type": "hash"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash_bg_native.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "18c4230e-539c-4bcf-84ef-b4ac44521cb4"
+      }
+    }
+  }
+}

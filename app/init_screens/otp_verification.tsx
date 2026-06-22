@@ -44,14 +44,14 @@ export default function OTPVerificationScreen() {
   const inputRefs = useRef([]);
   const [email_id, setEmail_id] = useState("");
   const horizontalMargin = useResponsiveHorizontalMargin();
-    
+
   // Responsive background for web >= 1024
   const [screenWidth, setScreenWidth] = useState(
     Platform.OS === "web"
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -97,30 +97,30 @@ export default function OTPVerificationScreen() {
         {
           p_user_id: user_id,
           p_otp: code,
-        }
+        },
       );
       if (verify_otp_response.returnCode == true) {
-          if(!!verify_otp_response.returnData[0].id){
-              /// now lets take user to Home screen
-              const update_status_response = await callSuggestusAPI(
-                spd_processId_config.spdonmood9_update_md_user_accounts_status,
-                {
-                  p_user_id: user_id,
-                  p_status: "Active",
-                }
-              );
-              Toast.show({
-                type: "success",
-                text1: "Account verified successfully.",
-              });
-              await AsyncStorage.setItem(IS_LOGGED_IN, "true");
-              router.replace("/tab_bar_home/HomeScreen");
-          }else{
-            Toast.show({
-              type: "error",
-              text1: "OTP verification failed. Please try again.",
-            });
-          }
+        if (!!verify_otp_response.returnData[0].id) {
+          /// now lets take user to Home screen
+          const update_status_response = await callSuggestusAPI(
+            spd_processId_config.spdonmood9_update_md_user_accounts_status,
+            {
+              p_user_id: user_id,
+              p_status: "Active",
+            },
+          );
+          Toast.show({
+            type: "success",
+            text1: "Account verified successfully.",
+          });
+          await AsyncStorage.setItem(IS_LOGGED_IN, "true");
+          router.replace("/tab_bar_home/HomeScreen");
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "OTP verification failed. Please try again.",
+          });
+        }
       } else {
         Toast.show({
           type: "error",
@@ -146,7 +146,7 @@ export default function OTPVerificationScreen() {
       {
         p_user_id: user_id,
         p_otp: otp,
-      }
+      },
     );
     if (save_otp_response.returnCode == true) {
       const resend_otp_response = await callSuggestusAPI(
@@ -158,12 +158,12 @@ export default function OTPVerificationScreen() {
             email: email_id,
             subject: subject,
           },
-        }
+        },
       );
       if (resend_otp_response.returnCode == true) {
         let status = resend_otp_response.returnData[0].p_return_result.status;
         if (status == true) {
-          check_otp= otp;
+          check_otp = otp;
           Toast.show({ type: "success", text1: "OTP sent successfully." });
         } else {
           Toast.show({
@@ -186,76 +186,77 @@ export default function OTPVerificationScreen() {
   };
 
   const mainContent = (
-      <View
-                    style={[
-                      styles.containerNew,
-                      { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-                    ]}>
- <View style={[styles.container, isWeb && styles.webContainer]}>
-      <View style={styles.logoContainer}>
-        <Image
-          source={require("@/assets/images/splash_icon.png")}
-          style={styles.logo}
-        />
-        {/* <Text style={styles.title}>OnMood9</Text> */}
-      </View>
-      <Text style={styles.title}>OTP Verification</Text>
-      <Text style={styles.subtitle}>Enter the OTP sent to ({email_id})</Text>
-      <Text style={styles.email}>{email}</Text>
-      <View style={styles.otpRow}>
-        {otp.map((digit, idx) => (
-          <TextInput
-            key={idx}
-            ref={(ref) => (inputRefs.current[idx] = ref)}
-            style={[
-              styles.otpInput,
-              isWeb && styles.inputNoOutline, // Remove outline on web
-              error && !digit ? styles.otpInputError : null,
-            ]}
-            keyboardType="number-pad"
-            maxLength={1}
-            value={digit}
-            onChangeText={(text) => handleChange(text, idx)}
-            returnKeyType="next"
-            autoFocus={idx === 0}
+    <View
+      style={[
+        styles.containerNew,
+        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+      ]}
+    >
+      <View style={[styles.container, isWeb && styles.webContainer]}>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("@/assets/images/splash_icon.png")}
+            style={styles.logo}
           />
-        ))}
-      </View>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      <View style={styles.resendRow}>
-        <Text style={styles.resendText}>Didn't receive the OTP? </Text>
-        <TouchableOpacity onPress={handleResendOtp}>
-          <Text style={styles.resendLink}>RESEND OTP</Text>
+          {/* <Text style={styles.title}>OnMood9</Text> */}
+        </View>
+        <Text style={styles.title}>OTP Verification</Text>
+        <Text style={styles.subtitle}>Enter the OTP sent to ({email_id})</Text>
+        <Text style={styles.email}>{email}</Text>
+        <View style={styles.otpRow}>
+          {otp.map((digit, idx) => (
+            <TextInput
+              key={idx}
+              ref={(ref) => (inputRefs.current[idx] = ref)}
+              style={[
+                styles.otpInput,
+                isWeb && styles.inputNoOutline, // Remove outline on web
+                error && !digit ? styles.otpInputError : null,
+              ]}
+              keyboardType="number-pad"
+              maxLength={1}
+              value={digit}
+              onChangeText={(text) => handleChange(text, idx)}
+              returnKeyType="next"
+              autoFocus={idx === 0}
+            />
+          ))}
+        </View>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <View style={styles.resendRow}>
+          <Text style={styles.resendText}>Didn't receive the OTP? </Text>
+          <TouchableOpacity onPress={handleResendOtp}>
+            <Text style={styles.resendLink}>RESEND OTP</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          // @ts-ignore: cursor and transition are web-only
+          style={[styles.verifyBtn, isWeb && styles.webVerifyBtn]}
+          onPress={handleVerifyOtp}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.verifyBtnText}>VERIFY</Text>
+          )}
         </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        // @ts-ignore: cursor and transition are web-only
-        style={[styles.verifyBtn, isWeb && styles.webVerifyBtn]}
-        onPress={handleVerifyOtp}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.verifyBtnText}>VERIFY</Text>
-        )}
-      </TouchableOpacity>
     </View>
-      </View>
   );
 
-   if (Platform.OS === "web" && screenWidth >= 1024) {
-        return (
-          <ImageBackground
-            source={require("@/assets/images/background_new_web.png")}
-            style={{ flex: 1, width: "100%", height: "100%" }}
-            resizeMode="cover"
-          >
-            {mainContent}
-          </ImageBackground>
-        );
-      }
-      return mainContent;
+  if (Platform.OS === "web" && screenWidth >= 1024) {
+    return (
+      <ImageBackground
+        source={require("@/assets/images/background_new_web.png")}
+        style={{ flex: 1, width: "100%", height: "100%" }}
+        resizeMode="cover"
+      >
+        {mainContent}
+      </ImageBackground>
+    );
+  }
+  return mainContent;
 }
 
 const styles = StyleSheet.create({
@@ -263,13 +264,13 @@ const styles = StyleSheet.create({
   containerNew: { flex: 1 },
   webContainer: {
     maxWidth: 500,
-    width: '100%',
-    alignSelf: 'center',
-    backgroundColor: '#fff',
+    width: "100%",
+    alignSelf: "center",
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 40,
     marginVertical: 32,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+    boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
   },
   container: {
     flex: 1,
@@ -279,7 +280,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 80,
   },
-  title: {   
+  title: {
     fontSize: 24,
     fontFamily: "QuicksandSemiBold",
     color: "#262626",
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
   },
   // @ts-ignore: outlineStyle is web-only
   inputNoOutline: {
-    outlineStyle: 'none',
+    outlineStyle: "none",
     outlineWidth: 0, // Remove browser default black border on focus (web)
   },
   otpInputError: {
@@ -371,8 +372,8 @@ const styles = StyleSheet.create({
   },
   // @ts-ignore: cursor and transition are web-only
   webVerifyBtn: {
-    cursor: Platform.OS === 'web' ? 'pointer' : undefined,
-    transition: Platform.OS === 'web' ? 'opacity 0.2s' : undefined,
+    cursor: Platform.OS === "web" ? "pointer" : undefined,
+    transition: Platform.OS === "web" ? "opacity 0.2s" : undefined,
   },
   verifyBtnText: {
     color: "#fff",

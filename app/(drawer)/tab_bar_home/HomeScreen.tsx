@@ -33,7 +33,9 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } =
     Dimensions.get("window");
-      const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+  const [screenWidth, setScreenWidth] = useState(
+    Dimensions.get("window").width,
+  );
   const BOTTOM_NAV_HEIGHT = 65; // Match your Footer.tsx height
   const SHEET_MARGIN = 16;
   const SHEET_MAX_HEIGHT = SCREEN_HEIGHT * 0.7 - BOTTOM_NAV_HEIGHT;
@@ -42,18 +44,21 @@ export default function HomeScreen() {
   const isScrolling = useRef(false);
 
   // Listen for window resize events to update screen width
-    useEffect(() => {
-      const updateScreenWidth = () => {
-        setScreenWidth(Dimensions.get('window').width);
-      };
-  
-      if (Platform.OS === 'web') {
-        // Add event listener for window resize on web
-        const subscription = Dimensions.addEventListener('change', updateScreenWidth);
-        return () => subscription?.remove();
-      }
-    }, []);
-    
+  useEffect(() => {
+    const updateScreenWidth = () => {
+      setScreenWidth(Dimensions.get("window").width);
+    };
+
+    if (Platform.OS === "web") {
+      // Add event listener for window resize on web
+      const subscription = Dimensions.addEventListener(
+        "change",
+        updateScreenWidth,
+      );
+      return () => subscription?.remove();
+    }
+  }, []);
+
   const openSheet = () => {
     setShowSheet(true);
     Animated.timing(translateY, {
@@ -130,10 +135,10 @@ export default function HomeScreen() {
 
   return (
     <>
-      {Platform.OS === 'web' && screenWidth >= 1024 ? (
+      {Platform.OS === "web" && screenWidth >= 1024 ? (
         <ImageBackground
-          source={require('../../../assets/images/background_new_web.png')}
-          style={{ flex: 1, width: '100%', height: '100%' }}
+          source={require("../../../assets/images/background_new_web.png")}
+          style={{ flex: 1, width: "100%", height: "100%" }}
           resizeMode="cover"
         >
           <View
@@ -145,7 +150,9 @@ export default function HomeScreen() {
             {/* Main content */}
             <AppHeaderWeb handleMenuPress={handleMenuPress} />
             <Tab.Navigator
-              tabBar={(props) => <Footer {...props} toggleSheet={toggleSheet} />}
+              tabBar={(props) => (
+                <Footer {...props} toggleSheet={toggleSheet} />
+              )}
               screenOptions={{ headerShown: false }}
             >
               <Tab.Screen name="HomeTab" component={DashboardScreen} />
@@ -778,5 +785,4 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
-
 });

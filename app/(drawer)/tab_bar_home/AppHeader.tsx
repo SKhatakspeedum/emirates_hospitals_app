@@ -22,7 +22,7 @@ interface AppHeaderProps {
 export default function AppHeader({ handleMenuPress }: AppHeaderProps) {
   const navigation = useNavigation();
   const [screenWidth, setScreenWidth] = useState(
-    Dimensions.get("window").width
+    Dimensions.get("window").width,
   );
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function AppHeader({ handleMenuPress }: AppHeaderProps) {
 
       const subscription = Dimensions.addEventListener(
         "change",
-        updateScreenWidth
+        updateScreenWidth,
       );
       return () => subscription?.remove();
     }

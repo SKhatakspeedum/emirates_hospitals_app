@@ -9,7 +9,12 @@ interface WebTimePickerProps {
 
 const pad = (num: number) => (num < 10 ? `0${num}` : `${num}`);
 
-export default function WebTimePicker({ value, onChange, onClose, title }: WebTimePickerProps) {
+export default function WebTimePicker({
+  value,
+  onChange,
+  onClose,
+  title,
+}: WebTimePickerProps) {
   // Internal state for time selection
   const [time, setTime] = React.useState(() => {
     const h = pad(value.getHours());
@@ -41,12 +46,21 @@ export default function WebTimePicker({ value, onChange, onClose, title }: WebTi
         alignItems: "center",
       }}
     >
-      <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>{title || "Select Bedtime"}</div>
+      <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+        {title || "Select Bedtime"}
+      </div>
       <input
         type="time"
         value={time}
-        onChange={e => setTime(e.target.value)}
-        style={{ fontSize: 18, padding: 8, borderRadius: 6, border: "1px solid #ccc", marginBottom: 24, width: 140 }}
+        onChange={(e) => setTime(e.target.value)}
+        style={{
+          fontSize: 18,
+          padding: 8,
+          borderRadius: 6,
+          border: "1px solid #ccc",
+          marginBottom: 24,
+          width: 140,
+        }}
       />
       <div>
         <button
@@ -58,7 +72,15 @@ export default function WebTimePicker({ value, onChange, onClose, title }: WebTi
             onChange(newDate);
             onClose();
           }}
-          style={{ background: "#7E3AF2", color: "#fff", border: 0, borderRadius: 6, padding: "8px 32px", fontSize: 16, cursor: "pointer" }}
+          style={{
+            background: "#7E3AF2",
+            color: "#fff",
+            border: 0,
+            borderRadius: 6,
+            padding: "8px 32px",
+            fontSize: 16,
+            cursor: "pointer",
+          }}
         >
           Done
         </button>

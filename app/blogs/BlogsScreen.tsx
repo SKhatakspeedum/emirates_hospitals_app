@@ -31,7 +31,7 @@ const BlogsScreen = () => {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {

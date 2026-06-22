@@ -21,10 +21,13 @@ const CARD_HEIGHT = 140;
 
 export default function YoutubePreviewSection() {
   // Responsive modal size for web desktop
-  const [screenWidth, setScreenWidth] = useState(Dimensions.get("window").width);
+  const [screenWidth, setScreenWidth] = useState(
+    Dimensions.get("window").width,
+  );
   useEffect(() => {
     if (Platform.OS === "web") {
-      const updateScreenWidth = () => setScreenWidth(Dimensions.get("window").width);
+      const updateScreenWidth = () =>
+        setScreenWidth(Dimensions.get("window").width);
       window.addEventListener("resize", updateScreenWidth);
       return () => window.removeEventListener("resize", updateScreenWidth);
     }
@@ -47,7 +50,7 @@ export default function YoutubePreviewSection() {
       try {
         const response = await callSuggestusAPI(
           spd_processId_config.spdonmood9_get_md_youtube_videos_widget_data,
-          {}
+          {},
         );
         // Assuming response is an array of plans, each with a 'thumb' property
         if (response?.returnCode === true) {
@@ -144,8 +147,8 @@ export default function YoutubePreviewSection() {
               </View>
             </View>
             {/* Video title */}
-            
-             <View style={styles.imageOverlay}></View>
+
+            <View style={styles.imageOverlay}></View>
             <Text style={styles.videoTitle} numberOfLines={2}>
               {item.title}
             </Text>
@@ -156,9 +159,14 @@ export default function YoutubePreviewSection() {
   };
 
   return (
-    <View style={[styles.sectionWrapper,  Platform.OS === "web"  && {
-                      marginTop: 30,
-                      }]}>
+    <View
+      style={[
+        styles.sectionWrapper,
+        Platform.OS === "web" && {
+          marginTop: 30,
+        },
+      ]}
+    >
       <View style={styles.headerRow}>
         <Text style={styles.sectionTitle}>Youtube</Text>
         {/* <TouchableOpacity onPress={handleGoToChannel} hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
@@ -196,7 +204,12 @@ export default function YoutubePreviewSection() {
             style={[
               styles.modalContent,
               Platform.OS === "web" && screenWidth >= 1024
-                ? { width: 800, height: 500, justifyContent: 'center', alignItems: 'center' }
+                ? {
+                    width: 800,
+                    height: 500,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }
                 : {},
             ]}
           >
@@ -205,8 +218,14 @@ export default function YoutubePreviewSection() {
             </TouchableOpacity>
             {videoId && (
               <YoutubePlayer
-                height={Platform.OS === "web" && screenWidth >= 1024 ? 400 : 200}
-                width={Platform.OS === "web" && screenWidth >= 1024 ? 700 : Dimensions.get("window").width * 0.9}
+                height={
+                  Platform.OS === "web" && screenWidth >= 1024 ? 400 : 200
+                }
+                width={
+                  Platform.OS === "web" && screenWidth >= 1024
+                    ? 700
+                    : Dimensions.get("window").width * 0.9
+                }
                 play={playing}
                 videoId={videoId}
                 onChangeState={onStateChange}

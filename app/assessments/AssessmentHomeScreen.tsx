@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import AssessmentListItem from "../../components/AssessmentListItem";
 import { useRouter } from "expo-router";
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "@react-navigation/native";
 import { spd_processId_config } from "../config/process_id";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,7 +21,7 @@ import { useNavigation } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ASSESSMENT_API_URL, SPD_USER_ID } from "../config/config";
 import { SiteConfig } from "../config/site_config";
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path } from "react-native-svg";
 import CustomTopHeader from "../(drawer)/tab_bar_home/CustomTopHeader";
 import useResponsiveHorizontalMargin from "../hooks/useResponsiveHorizontalMargin";
 
@@ -33,7 +33,6 @@ interface AssessmentItem {
   finishedOn: string;
   description?: string;
 }
-
 
 const AssessmentHomeScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -49,7 +48,7 @@ const AssessmentHomeScreen: React.FC = () => {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -73,12 +72,9 @@ const AssessmentHomeScreen: React.FC = () => {
     try {
       const response = await callSuggestusAPI(
         spd_processId_config.sgconf_integration_getAPICallJWT,
-        API_REQUEST_BODY
+        API_REQUEST_BODY,
       );
-      if (
-        response?.returnCode === true &&
-        Array.isArray(response.returnData)
-      ) {
+      if (response?.returnCode === true && Array.isArray(response.returnData)) {
         let assessmentData = response.returnData;
         if (!!assessmentData) {
           assessmentData = assessmentData[0].p_return_result.data;
@@ -97,11 +93,10 @@ const AssessmentHomeScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       fetchAssessments();
-    }, [fetchAssessments])
+    }, [fetchAssessments]),
   );
 
   useEffect(() => {
-      
     fetchAssessments();
   }, [fetchAssessments]);
 
@@ -116,62 +111,69 @@ const AssessmentHomeScreen: React.FC = () => {
   };
 
   const mainContent = (
-       <View
-               style={[
-                 styles.containerNew,
-                 { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-               ]}>
-  <ImageBackground
-      source={require("@/assets/images/internal_screen_bg.png")}
-      style={styles.background}
-      resizeMode="cover"
+    <View
+      style={[
+        styles.containerNew,
+        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+      ]}
     >
-      <CustomTopHeader title="Back" />
-      <SafeAreaView style={[styles.safeArea,
-                    Platform.OS === "web" && screenWidth >= 1024 ? { paddingHorizontal:116 } : null]}>
-        <View style={styles.container}>
-          {loading ? (
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" color="#8A4FFF" />
-            </View>
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={assessments}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <AssessmentListItem
-                  title={item.title}
-                  lastScore={item.userLastScore}
-                  date={item.finishedOn}
-                  image={item.assessment_image}
-                  onPress={() => handlePress(item)}
-                />
-              )}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-            />
-          )}
-        </View>
-      </SafeAreaView>
-    </ImageBackground>
-       </View>
-  );
-   if (Platform.OS === "web" && screenWidth >= 1024) {
-      return (
-        <ImageBackground
-          source={require("../../assets/images/background_new_web.png")}
-          style={{ flex: 1, width: "100%", height: "100%" }}
-          resizeMode="cover"
+      <ImageBackground
+        source={require("@/assets/images/internal_screen_bg.png")}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        <CustomTopHeader title="Back" />
+        <SafeAreaView
+          style={[
+            styles.safeArea,
+            Platform.OS === "web" && screenWidth >= 1024
+              ? { paddingHorizontal: 116 }
+              : null,
+          ]}
         >
-          {mainContent}
-        </ImageBackground>
-      );
-    }
-    return mainContent;
+          <View style={styles.container}>
+            {loading ? (
+              <View style={styles.loaderContainer}>
+                <ActivityIndicator size="large" color="#8A4FFF" />
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={assessments}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <AssessmentListItem
+                    title={item.title}
+                    lastScore={item.userLastScore}
+                    date={item.finishedOn}
+                    image={item.assessment_image}
+                    onPress={() => handlePress(item)}
+                  />
+                )}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+              />
+            )}
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
+    </View>
+  );
+  if (Platform.OS === "web" && screenWidth >= 1024) {
+    return (
+      <ImageBackground
+        source={require("../../assets/images/background_new_web.png")}
+        style={{ flex: 1, width: "100%", height: "100%" }}
+        resizeMode="cover"
+      >
+        {mainContent}
+      </ImageBackground>
+    );
+  }
+  return mainContent;
 };
 
 const styles = StyleSheet.create({
@@ -182,26 +184,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   containerNew: { flex: 1 },
-  headerRow: {    
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop:24,
-    marginBottom:20,
+    marginTop: 24,
+    marginBottom: 20,
     zIndex: 2,
-    width:'100%',
-    paddingVertical: 16 , borderBottomWidth:1, borderColor:'#ddd'
+    width: "100%",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderColor: "#ddd",
   },
-    backBtn: {
+  backBtn: {
     padding: 0,
     marginRight: 2,
   },
   headerTitle: {
     fontSize: 18,
-    color: '#262626',
+    color: "#262626",
     marginLeft: 8,
-    fontFamily: 'QuicksandSemiBold',
-    width:'100%',
-    textAlign:'center'
+    fontFamily: "QuicksandSemiBold",
+    width: "100%",
+    textAlign: "center",
   },
   safeArea: {
     flex: 1,

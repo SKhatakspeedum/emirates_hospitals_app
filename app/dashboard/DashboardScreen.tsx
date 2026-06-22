@@ -43,7 +43,9 @@ function DashboardScreen() {
   const router = useRouter();
   const [userProfileName, setUserProfileName] = useState<any>(null);
   const [moodPrompt, setMoodPrompt] = useState("");
-  const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+  const [screenWidth, setScreenWidth] = useState(
+    Dimensions.get("window").width,
+  );
 
   // State for sleep widget API
   const [sleepWidget, setSleepWidget] = useState<any>(null);
@@ -93,12 +95,15 @@ function DashboardScreen() {
   // Listen for window resize events to update screen width
   useEffect(() => {
     const updateScreenWidth = () => {
-      setScreenWidth(Dimensions.get('window').width);
+      setScreenWidth(Dimensions.get("window").width);
     };
 
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       // Add event listener for window resize on web
-      const subscription = Dimensions.addEventListener('change', updateScreenWidth);
+      const subscription = Dimensions.addEventListener(
+        "change",
+        updateScreenWidth,
+      );
       return () => subscription?.remove();
     }
   }, []);
@@ -112,7 +117,7 @@ function DashboardScreen() {
       try {
         const response = await callSuggestusAPI(
           spd_processId_config.spdonmood9_md_user_sleep_hygiene_check_out_30_day_sleep_quality_widget,
-          {}
+          {},
         );
         if (response?.returnCode === true && mounted) {
           setSleepWidget(response.returnData[0]);
@@ -145,7 +150,7 @@ function DashboardScreen() {
         scrollEventThrottle={16}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
+          { useNativeDriver: true },
         )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={
@@ -165,7 +170,8 @@ function DashboardScreen() {
             }
             style={[
               styles.topBackground,
-              Platform.OS === "web" && screenWidth >= 1024 && { backgroundColor: "transparent" },
+              Platform.OS === "web" &&
+                screenWidth >= 1024 && { backgroundColor: "transparent" },
             ]}
             resizeMode="cover"
           >
@@ -174,21 +180,29 @@ function DashboardScreen() {
               backgroundColor="transparent"
               translucent
             />
-            <SafeAreaView style={[styles.safeArea,
-              Platform.OS === "web" && screenWidth >= 1024 && {
-                  paddingHorizontal: 0,
-                  marginLeft:0,
-                    marginRight: 0
-                  }
-            ]}>
+            <SafeAreaView
+              style={[
+                styles.safeArea,
+                Platform.OS === "web" &&
+                  screenWidth >= 1024 && {
+                    paddingHorizontal: 0,
+                    marginLeft: 0,
+                    marginRight: 0,
+                  },
+              ]}
+            >
               {/* Header and Sleep Check Section */}
-              <View style={[styles.staticHeader,
-                Platform.OS === "web" && screenWidth >= 1024 && {
-                  paddingHorizontal: 0,
-                  marginLeft:0,
-                    marginRight: 0
-                  }
-              ]}>
+              <View
+                style={[
+                  styles.staticHeader,
+                  Platform.OS === "web" &&
+                    screenWidth >= 1024 && {
+                      paddingHorizontal: 0,
+                      marginLeft: 0,
+                      marginRight: 0,
+                    },
+                ]}
+              >
                 {/* Greeting */}
                 <View style={styles.greetingContainer}>
                   <Text style={styles.greeting}>Hello, {userProfileName}</Text>
@@ -196,36 +210,53 @@ function DashboardScreen() {
                 </View>
 
                 {/* Sleep Quality Card and Check-in/out */}
-                <View style={[
-                  styles.sleepSection,
-                  Platform.OS === "web" && screenWidth >= 1024 && {
-                    flexDirection: "row",
-                    alignItems: "stretch",
-                    gap: 16,
-                    marginBottom: 16,
-                  }
-                ]}>
-                  <View style={[
-                    styles.checkButton, {marginBottom: 16},
-                    Platform.OS === "web" && screenWidth >= 1024 && {
-                      flex: 1.8,
-                      marginBottom: 0,
-                      height: 'auto',
-                      maxWidth: 700,
-                    }
-                   ]}>
-                    <View style={[
-                      styles.sleepCardContainer,
-                      Platform.OS === "web" && screenWidth >= 1024 && {
-                        flex: 1,
-                      }
-                    ]}>
+                <View
+                  style={[
+                    styles.sleepSection,
+                    Platform.OS === "web" &&
+                      screenWidth >= 1024 && {
+                        flexDirection: "row",
+                        alignItems: "stretch",
+                        gap: 16,
+                        marginBottom: 16,
+                      },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.checkButton,
+                      { marginBottom: 16 },
+                      Platform.OS === "web" &&
+                        screenWidth >= 1024 && {
+                          flex: 1.8,
+                          marginBottom: 0,
+                          height: "auto",
+                          maxWidth: 700,
+                        },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.sleepCardContainer,
+                        Platform.OS === "web" &&
+                          screenWidth >= 1024 && {
+                            flex: 1,
+                          },
+                      ]}
+                    >
                       {/* Left: Info Block */}
-                      <View style={[styles.sleepCardInfoBlock,
-                        Platform.OS === "web" && screenWidth >= 1024 && {
-                          display: "flex", flexDirection:'row', justifyContent:'flex-start', gap:30
-                        }
-                      ]}>
+                      <View
+                        style={[
+                          styles.sleepCardInfoBlock,
+                          Platform.OS === "web" &&
+                            screenWidth >= 1024 && {
+                              display: "flex",
+                              flexDirection: "row",
+                              justifyContent: "flex-start",
+                              gap: 30,
+                            },
+                        ]}
+                      >
                         {/* Sleep Duration Row */}
                         <View style={styles.sleepCardRow}>
                           <Image
@@ -241,10 +272,15 @@ function DashboardScreen() {
                             <Text style={styles.sleepCardLabel}>
                               Sleep duration
                             </Text>
-                            <Text style={[styles.sleepCardValue,
-                        Platform.OS === "web" && screenWidth >= 1024 && {
-                          fontSize: 20,
-                        }]}>
+                            <Text
+                              style={[
+                                styles.sleepCardValue,
+                                Platform.OS === "web" &&
+                                  screenWidth >= 1024 && {
+                                    fontSize: 20,
+                                  },
+                              ]}
+                            >
                               {!!sleepWidget?.sleep_duration
                                 ? sleepWidget?.sleep_duration
                                 : "0"}{" "}
@@ -269,10 +305,15 @@ function DashboardScreen() {
                             <Text style={styles.sleepCardLabel}>
                               Sleep Score
                             </Text>
-                            <Text style={[styles.sleepCardValue,
-                        Platform.OS === "web" && screenWidth >= 1024 && {
-                          fontSize: 20,
-                        }]}>
+                            <Text
+                              style={[
+                                styles.sleepCardValue,
+                                Platform.OS === "web" &&
+                                  screenWidth >= 1024 && {
+                                    fontSize: 20,
+                                  },
+                              ]}
+                            >
                               {!!sleepWidget?.sleep_quality_score
                                 ? sleepWidget?.sleep_quality_score
                                 : "0"}
@@ -306,15 +347,19 @@ function DashboardScreen() {
                     </View>
                   </View>
 
-                  <View style={[styles.sleepCheckRow,
-                    
-                  Platform.OS === "web" && screenWidth >= 1024 && {
-                    minWidth:'320px',
-                    marginBottom: 0,
-                    flexGrow: 1,
-                    gap: 16,
-                  }
-                  ]}>
+                  <View
+                    style={[
+                      styles.sleepCheckRow,
+
+                      Platform.OS === "web" &&
+                        screenWidth >= 1024 && {
+                          minWidth: "320px",
+                          marginBottom: 0,
+                          flexGrow: 1,
+                          gap: 16,
+                        },
+                    ]}
+                  >
                     <LinearGradient
                       colors={[
                         "rgba(255, 255, 255, 0.4)",
@@ -324,15 +369,24 @@ function DashboardScreen() {
                       ]} // Your gradient colors
                       // start={{ x: 1, y: 1 }}
                       // end={{ x: 1, y: 1 }}
-                      style={[styles.gradientBorder, { width: "48%" }, Platform.OS === "web" && screenWidth >= 1024 && {
-                    marginBottom: 0, width: 'auto', flexGrow:1
-                  }]}
+                      style={[
+                        styles.gradientBorder,
+                        { width: "48%" },
+                        Platform.OS === "web" &&
+                          screenWidth >= 1024 && {
+                            marginBottom: 0,
+                            width: "auto",
+                            flexGrow: 1,
+                          },
+                      ]}
                     >
                       <TouchableOpacity
                         style={[
-                          styles.checkButton, Platform.OS === "web" && screenWidth >= 1024 && {
-                    marginBottom: 0,
-                  }
+                          styles.checkButton,
+                          Platform.OS === "web" &&
+                            screenWidth >= 1024 && {
+                              marginBottom: 0,
+                            },
                           // { backgroundColor: "#00000033" },
                         ]}
                         onPress={() =>
@@ -371,20 +425,29 @@ function DashboardScreen() {
                       ]} // Your gradient colors
                       // start={{ x: 1, y: 1 }}
                       // end={{ x: 1, y: 1 }}
-                      style={[styles.gradientBorder, { width: "48%" }, Platform.OS === "web" && screenWidth >= 1024 && {
-                    marginBottom: 0, width: 'auto', flexGrow:1
-                  }]}
+                      style={[
+                        styles.gradientBorder,
+                        { width: "48%" },
+                        Platform.OS === "web" &&
+                          screenWidth >= 1024 && {
+                            marginBottom: 0,
+                            width: "auto",
+                            flexGrow: 1,
+                          },
+                      ]}
                     >
                       <TouchableOpacity
                         style={[
-                          styles.checkButton, Platform.OS === "web" && screenWidth >= 1024 && {
-                    marginBottom: 0,
-                  }
+                          styles.checkButton,
+                          Platform.OS === "web" &&
+                            screenWidth >= 1024 && {
+                              marginBottom: 0,
+                            },
                           // { backgroundColor: "#00000033" },
                         ]}
                         onPress={() =>
                           navigation.navigate(
-                            "sleep_check_in_out/SleepCheckOut"
+                            "sleep_check_in_out/SleepCheckOut",
                           )
                         }
                       >
@@ -419,21 +482,37 @@ function DashboardScreen() {
         </Animated.View>
 
         {/* Main Content (White Background) */}
-        <View style={[styles.scrollContent, ,
-                        Platform.OS === "web" && screenWidth >= 1024 && {
-                          marginTop: 0,
-                        }]}>
+        <View
+          style={[
+            styles.scrollContent,
+            ,
+            Platform.OS === "web" &&
+              screenWidth >= 1024 && {
+                marginTop: 0,
+              },
+          ]}
+        >
           {/* Sleep Plans Section */}
           <SleepPlansSection />
 
           {/* Mood Prompt */}
           <View style={styles.moodPromptContainer}>
             <ImageBackground
-              source={require('../../assets/images/card_bg.png')}
-              style={[styles.moodPrompt, { flex: 1, width: '100%', height: '100%' }]}
+              source={require("../../assets/images/card_bg.png")}
+              style={[
+                styles.moodPrompt,
+                { flex: 1, width: "100%", height: "100%" },
+              ]}
               resizeMode="cover"
             >
-              <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                 <View style={{ flex: 1 }}>
                   <Text style={styles.moodPromptText}>
                     Take a minute to add your current mood
@@ -458,9 +537,15 @@ function DashboardScreen() {
                 </View>
                 <Image
                   source={require("@/assets/images/undraw_meditation.png")}
-                  style={[styles.moodIllustration, Platform.OS === "web" && screenWidth >= 1024 && {
-                    marginRight: 30, height: 100, width: 150
-                  }]}
+                  style={[
+                    styles.moodIllustration,
+                    Platform.OS === "web" &&
+                      screenWidth >= 1024 && {
+                        marginRight: 30,
+                        height: 100,
+                        width: 150,
+                      },
+                  ]}
                 />
               </View>
             </ImageBackground>
@@ -499,7 +584,7 @@ function MusicSection() {
       try {
         const response = await callSuggestusAPI(
           spd_processId_config.spdonmood9_get_md_category_group_module_music_widget_data,
-          {}
+          {},
         );
         // Assuming response is an array of plans, each with a 'thumb' property
         if (response?.returnCode === true) {
@@ -525,9 +610,14 @@ function MusicSection() {
     });
   };
   return (
-    <View style={[styles.sleepPlansSection,  Platform.OS === "web"  && {
-                  marginTop: 20,
-                  }]}>
+    <View
+      style={[
+        styles.sleepPlansSection,
+        Platform.OS === "web" && {
+          marginTop: 20,
+        },
+      ]}
+    >
       <View style={styles.sectionHeaderRow}>
         <View style={styles.sleepPlansHeader}>
           <Text style={styles.sleepPlansTitle}>Music</Text>
@@ -588,8 +678,8 @@ function MusicSection() {
                         color="#FFD700"
                       />
                     </View>
-                  )}                  
-                     <View style={styles.imageOverlay}></View>
+                  )}
+                  <View style={styles.imageOverlay}></View>
                   <Text style={styles.sleepPlansCardTitle}>
                     {plan.module_name}
                   </Text>
@@ -619,7 +709,7 @@ function MusicSection() {
                                 sessionData && sessionData.length === 1
                                   ? sessionData[0]
                                   : null,
-                            }
+                            },
                           );
                         }
                       }}
@@ -631,7 +721,7 @@ function MusicSection() {
                       style={styles.sleepPlansCard}
                       onPress={async () => {
                         let subscription_status = await AsyncStorage.getItem(
-                          SPD_USER_SUBSCRIPTION
+                          SPD_USER_SUBSCRIPTION,
                         );
                         if (subscription_status === "true") {
                           let sessionData = plan.session_json_data;
@@ -652,7 +742,7 @@ function MusicSection() {
                                   sessionData && sessionData.length === 1
                                     ? sessionData[0]
                                     : null,
-                              }
+                              },
                             );
                           }
                         } else {
@@ -687,7 +777,7 @@ function SleepPlansSection() {
       try {
         const response = await callSuggestusAPI(
           spd_processId_config.spdonmood9_get_md_category_group_module_sleep_widget_data,
-          {}
+          {},
         );
         // Assuming response is an array of plans, each with a 'thumb' property
         if (response?.returnCode === true) {
@@ -805,7 +895,7 @@ function SleepPlansSection() {
                                 sessionData && sessionData.length === 1
                                   ? sessionData[0]
                                   : null,
-                            }
+                            },
                           );
                         }
                       }}
@@ -817,7 +907,7 @@ function SleepPlansSection() {
                       style={styles.sleepPlansCard}
                       onPress={async () => {
                         let subscription_status = await AsyncStorage.getItem(
-                          SPD_USER_SUBSCRIPTION
+                          SPD_USER_SUBSCRIPTION,
                         );
                         if (subscription_status === "true") {
                           let sessionData = plan.session_json_data;
@@ -838,7 +928,7 @@ function SleepPlansSection() {
                                   sessionData && sessionData.length === 1
                                     ? sessionData[0]
                                     : null,
-                              }
+                              },
                             );
                           }
                         } else {
@@ -874,7 +964,7 @@ function SessionSection() {
       try {
         const response = await callSuggestusAPI(
           spd_processId_config.spdonmood9_get_md_category_group_module_featured_session,
-          {}
+          {},
         );
         // Assuming response is an array of plans, each with a 'thumb' property
         if (response?.returnCode === true) {
@@ -900,10 +990,14 @@ function SessionSection() {
     });
   };
   return (
-    <View style={[styles.sleepPlansSection,
-                Platform.OS === "web"  && {
-                  marginTop: 20,
-                  }]}>
+    <View
+      style={[
+        styles.sleepPlansSection,
+        Platform.OS === "web" && {
+          marginTop: 20,
+        },
+      ]}
+    >
       <View style={styles.sectionHeaderRow}>
         <View style={styles.sleepPlansHeader}>
           <Text style={styles.sleepPlansTitle}>Featured Session</Text>
@@ -967,7 +1061,7 @@ function SessionSection() {
                         />
                       </View>
                     )}
-                     <View style={styles.imageOverlay}></View>
+                    <View style={styles.imageOverlay}></View>
                     <Text style={styles.sleepPlansCardTitle}>
                       {plan.module_name}
                     </Text>
@@ -1007,7 +1101,7 @@ function SessionSection() {
                                   sessionData && sessionData.length === 1
                                     ? sessionData[0]
                                     : null,
-                              }
+                              },
                             );
                           }
                         }}
@@ -1022,7 +1116,7 @@ function SessionSection() {
                         ]}
                         onPress={async () => {
                           let subscription_status = await AsyncStorage.getItem(
-                            SPD_USER_SUBSCRIPTION
+                            SPD_USER_SUBSCRIPTION,
                           );
                           if (subscription_status === "true") {
                             let sessionData = plan.session_json_data;
@@ -1047,7 +1141,7 @@ function SessionSection() {
                                     sessionData && sessionData.length === 1
                                       ? sessionData[0]
                                       : null,
-                                }
+                                },
                               );
                             }
                           } else {

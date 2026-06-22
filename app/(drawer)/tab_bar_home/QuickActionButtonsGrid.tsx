@@ -67,7 +67,7 @@ export default function QuickActionButtonsGrid() {
         "change",
         ({ window }) => {
           setIsLargeScreen(window.width > 800);
-        }
+        },
       );
       return () => subscription?.remove();
     }
@@ -81,7 +81,13 @@ export default function QuickActionButtonsGrid() {
     rows = [ACTIONS];
     buttonStyle = [
       styles.button,
-      { width: "23%", marginBottom: 0, marginRight: 20, marginHorizontal: 0, flex: 1 as const },
+      {
+        width: "23%",
+        marginBottom: 0,
+        marginRight: 20,
+        marginHorizontal: 0,
+        flex: 1 as const,
+      },
     ];
     gridStyle = [
       styles.grid,
@@ -119,7 +125,7 @@ export default function QuickActionButtonsGrid() {
             </View>
             <Text style={styles.label}>{action.label}</Text>
           </TouchableOpacity>
-        ))
+        )),
       )}
     </View>
   );
@@ -133,7 +139,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
     marginBottom: 10,
     marginTop: 30,
-
   },
   button: {
     backgroundColor: "#e8dbfe",

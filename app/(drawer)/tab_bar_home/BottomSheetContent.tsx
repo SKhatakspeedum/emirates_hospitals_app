@@ -104,7 +104,7 @@ const BottomSheetContent: React.FC<BottomSheetContentProps> = ({
             onPress={() => {
               // Pass the menu item back to the parent component
               // If item has a screen property, it will be used for navigation
-              navigation.navigate(item.screen, item.params)
+              navigation.navigate(item.screen, item.params);
               // Otherwise, it will just close the sheet
               closeSheet(item);
             }}

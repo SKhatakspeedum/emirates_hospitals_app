@@ -64,14 +64,14 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const horizontalMargin = useResponsiveHorizontalMargin();
-  
+
   // Responsive background for web >= 1024
   const [screenWidth, setScreenWidth] = useState(
     Platform.OS === "web"
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -112,7 +112,7 @@ export default function LoginScreen() {
         try {
           const response = await callSuggestusAPI(
             spd_processId_config.sgconf_integration_postAPICallJWT,
-            request_body
+            request_body,
           );
 
           if (response.returnCode == true) {
@@ -134,11 +134,11 @@ export default function LoginScreen() {
                     p_user_id: full_data.id?.toString() || "",
                     p_asset_type: "profile_image",
                     p_asset_url: userInfo.photo,
-                  }
+                  },
                 );
                 const profile_response = await callSuggestusAPI(
                   spd_processId_config.spdonmood9_get_md_user_accounts_profile,
-                  { p_user_id: full_data.id?.toString() || "" }
+                  { p_user_id: full_data.id?.toString() || "" },
                 );
 
                 if (
@@ -149,7 +149,7 @@ export default function LoginScreen() {
                   if (!!userData) {
                     await setEncryptedID(
                       USER_FULL_DATA,
-                      JSON.stringify(userData)
+                      JSON.stringify(userData),
                     );
                   }
                 }
@@ -158,15 +158,15 @@ export default function LoginScreen() {
                 // Save specific fields
                 await setEncryptedID(
                   SPD_USER_ID,
-                  full_data.id?.toString() || ""
+                  full_data.id?.toString() || "",
                 );
                 await setEncryptedID(
                   SPD_USER_NAME,
-                  full_data.fname?.toString() || ""
+                  full_data.fname?.toString() || "",
                 );
                 await setEncryptedID(
                   SPD_USER_EMAIL,
-                  full_data.email?.toString() || ""
+                  full_data.email?.toString() || "",
                 );
                 /// lets check subscription status
                 if (!!active_subscription) {
@@ -191,7 +191,7 @@ export default function LoginScreen() {
                 } else {
                   Alert.alert(
                     "Error",
-                    response.returnData[0].p_return_result.message
+                    response.returnData[0].p_return_result.message,
                   );
                 }
               }
@@ -208,7 +208,10 @@ export default function LoginScreen() {
             }
           }
         } catch (error) {
-          console.log("Exception in handleLogin:", error.message);
+          console.log(
+            "Exception in handleLogin:",
+            error instanceof Error ? error.message : String(error),
+          );
         }
       }
 
@@ -220,7 +223,10 @@ export default function LoginScreen() {
       // console.log("Nitin--Firebase sign-in success");
     } catch (err) {
       console.error("Google sign-in error:", err);
-      alert("Google login failed: " + err.message);
+      alert(
+        "Google login failed: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
     } finally {
       setGoogleLoading(false);
     }
@@ -257,7 +263,7 @@ export default function LoginScreen() {
     try {
       const response = await callSuggestusAPI(
         spd_processId_config.sgconf_integration_postAPICallJWT,
-        request_body
+        request_body,
       );
 
       if (response.returnCode == true) {
@@ -280,7 +286,7 @@ export default function LoginScreen() {
               // Save full_data array
               const profile_response = await callSuggestusAPI(
                 spd_processId_config.spdonmood9_get_md_user_accounts_profile,
-                { p_user_id: full_data.id?.toString() || "" }
+                { p_user_id: full_data.id?.toString() || "" },
               );
 
               if (
@@ -291,7 +297,7 @@ export default function LoginScreen() {
                 if (!!userData) {
                   await setEncryptedID(
                     USER_FULL_DATA,
-                    JSON.stringify(userData)
+                    JSON.stringify(userData),
                   );
                 }
               }
@@ -299,11 +305,11 @@ export default function LoginScreen() {
               await setEncryptedID(SPD_USER_ID, full_data.id?.toString() || "");
               await setEncryptedID(
                 SPD_USER_NAME,
-                full_data.fname?.toString() || ""
+                full_data.fname?.toString() || "",
               );
               await setEncryptedID(
                 SPD_USER_EMAIL,
-                full_data.email?.toString() || ""
+                full_data.email?.toString() || "",
               );
               /// lets check subscription status
               if (!!active_subscription) {
@@ -331,7 +337,7 @@ export default function LoginScreen() {
             } else {
               Alert.alert(
                 "Error",
-                response.returnData[0].p_return_result.message
+                response.returnData[0].p_return_result.message,
               );
             }
           }
@@ -368,7 +374,7 @@ export default function LoginScreen() {
               spd_processId_config.spdonmood9_get_md_onmood9_users,
               {
                 p_email: email_user,
-              }
+              },
             );
             if (check_email_response.returnCode == true) {
               let full_data = check_email_response.returnData[0];
@@ -388,13 +394,21 @@ export default function LoginScreen() {
         }
       }
     } catch (error) {
-      console.log("Exception in handleLogin:", error.message);
+      console.log(
+        "Exception in handleLogin:",
+        error instanceof Error ? error.message : String(error),
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLoginWithOtp = async (full_data) => {
+  const handleLoginWithOtp = async (full_data: {
+    id: string | number;
+    fname: string;
+    email: string;
+    [key: string]: unknown;
+  }) => {
     // in this case we will take user to OTP verification screen
     Toast.show({
       type: "error",
@@ -407,7 +421,7 @@ export default function LoginScreen() {
       {
         p_user_id: full_data.id,
         p_otp: otp,
-      }
+      },
     );
     if (step2_response.returnCode == true) {
       // lets call step 3 in which we are sending email to user
@@ -421,7 +435,7 @@ export default function LoginScreen() {
             email: full_data.email,
             subject: subject,
           },
-        }
+        },
       );
       if (step3_response.returnCode == true) {
         let status = step3_response.returnData[0].p_return_result.status;
@@ -429,11 +443,11 @@ export default function LoginScreen() {
           await setEncryptedID(SPD_USER_ID, full_data.id?.toString() || "");
           await setEncryptedID(
             SPD_USER_NAME,
-            full_data.fname?.toString() || ""
+            full_data.fname?.toString() || "",
           );
           await setEncryptedID(
             SPD_USER_EMAIL,
-            full_data.email?.toString() || ""
+            full_data.email?.toString() || "",
           );
           // navigate to otp verification screen
           router.replace({
@@ -446,207 +460,214 @@ export default function LoginScreen() {
   };
 
   const mainContent = (
-      <View
-               style={[
-                 styles.containerNew,
-                //  { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-               ]}>
-  <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    <View
+      style={[
+        styles.containerNew,
+        //  { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+      ]}
     >
-      <ScrollView
-        contentContainerStyle={[
-              { flexGrow: 1 },
-              Platform.OS === "web" && screenWidth >= 1024 && { justifyContent: 'center', flexGrow:1 } 
-            ]}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* @ts-ignore: webContainer includes web-only style keys */}
-        <View style={[styles.container, isWeb && styles.webContainer,
-          Platform.OS === "web" && screenWidth >= 1024 && {
-                    flex:'0 0 auto'
-                  }
-        ]}>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require("@/assets/images/splash_icon.png")}
-              style={styles.logo}
-            />
-          </View>
-          <Text style={styles.welcome}>Welcome back!</Text>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                emailFocused && styles.inputWrapperFocused,
-              ]}
-            >
+        <ScrollView
+          contentContainerStyle={[
+            { flexGrow: 1 },
+            Platform.OS === "web" &&
+              screenWidth >= 1024 && { justifyContent: "center", flexGrow: 1 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* @ts-ignore: webContainer includes web-only style keys */}
+          <View
+            style={[
+              styles.container,
+              isWeb && styles.webContainer,
+              Platform.OS === "web" &&
+                screenWidth >= 1024 && {
+                  flex: "0 0 auto",
+                },
+            ]}
+          >
+            <View style={styles.logoContainer}>
               <Image
-                source={require("@/assets/images/email.png")}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={[styles.input, styles.inputNoOutline]}
-                placeholder={Labels.emailPlaceholder}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (emailError) setEmailError(validateEmail(text));
-                }}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                placeholderTextColor={Colors.text + "99"}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => {
-                  setEmailFocused(false);
-                  setEmailError(validateEmail(email));
-                }}
+                source={require("@/assets/images/splash_icon.png")}
+                style={styles.logo}
               />
             </View>
-            {emailError ? (
-              <Text style={styles.errorText}>{emailError}</Text>
-            ) : null}
-
-            <Text style={styles.label}>Password</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                passwordFocused && styles.inputWrapperFocused,
-              ]}
-            >
-              <Image
-                source={require("@/assets/images/lock.png")}
-                style={styles.inputIcon}
-              />
-              {/* Attach onKeyPress for web to trigger login on Enter key */}
-              <TextInput
-                style={[styles.input, styles.inputNoOutline]}
-                placeholder={Labels.passwordPlaceholder}
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (passwordError) setPasswordError(validatePassword(text));
-                }}
-                secureTextEntry={!showPassword}
-                placeholderTextColor={Colors.text + "99"}
-                onFocus={() => setPasswordFocused(true)}
-                onBlur={() => {
-                  setPasswordFocused(false);
-                  setPasswordError(validatePassword(password));
-                }}
-                onKeyPress={
-                  isWeb
-                    ? (e) => {
-                        if (e.nativeEvent.key === "Enter") {
-                          handleLogin();
-                        }
-                      }
-                    : undefined
-                }
-              />
-              <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() => setShowPassword(!showPassword)}
+            <Text style={styles.welcome}>Welcome back!</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  emailFocused && styles.inputWrapperFocused,
+                ]}
               >
-                <MaterialIcons
-                  name={showPassword ? "visibility" : "visibility-off"}
-                  size={20}
-                  color="#B3B7C6"
+                <Image
+                  source={require("@/assets/images/email.png")}
+                  style={styles.inputIcon}
                 />
+                <TextInput
+                  style={[styles.input, styles.inputNoOutline]}
+                  placeholder={Labels.emailPlaceholder}
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailError) setEmailError(validateEmail(text));
+                  }}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  placeholderTextColor={Colors.text + "99"}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => {
+                    setEmailFocused(false);
+                    setEmailError(validateEmail(email));
+                  }}
+                />
+              </View>
+              {emailError ? (
+                <Text style={styles.errorText}>{emailError}</Text>
+              ) : null}
+
+              <Text style={styles.label}>Password</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  passwordFocused && styles.inputWrapperFocused,
+                ]}
+              >
+                <Image
+                  source={require("@/assets/images/lock.png")}
+                  style={styles.inputIcon}
+                />
+                {/* Attach onKeyPress for web to trigger login on Enter key */}
+                <TextInput
+                  style={[styles.input, styles.inputNoOutline]}
+                  placeholder={Labels.passwordPlaceholder}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) setPasswordError(validatePassword(text));
+                  }}
+                  secureTextEntry={!showPassword}
+                  placeholderTextColor={Colors.text + "99"}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => {
+                    setPasswordFocused(false);
+                    setPasswordError(validatePassword(password));
+                  }}
+                  onKeyPress={
+                    isWeb
+                      ? (e) => {
+                          if (e.nativeEvent.key === "Enter") {
+                            handleLogin();
+                          }
+                        }
+                      : undefined
+                  }
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <MaterialIcons
+                    name={showPassword ? "visibility" : "visibility-off"}
+                    size={20}
+                    color="#B3B7C6"
+                  />
+                </TouchableOpacity>
+              </View>
+              {passwordError ? (
+                <Text style={styles.errorText}>{passwordError}</Text>
+              ) : null}
+
+              <TouchableOpacity
+                style={styles.forgotPassword}
+                onPress={() => router.push("/init_screens/forgot-password")}
+              >
+                <Text style={styles.forgotPasswordText}>
+                  Forgot your password?
+                </Text>
               </TouchableOpacity>
             </View>
-            {passwordError ? (
-              <Text style={styles.errorText}>{passwordError}</Text>
-            ) : null}
 
             <TouchableOpacity
-              style={styles.forgotPassword}
-              onPress={() => router.push("/init_screens/forgot-password")}
+              style={[
+                styles.loginButton,
+                email && password && !emailError && !passwordError && !loading
+                  ? styles.loginButtonEnabled
+                  : styles.loginButtonDisabled,
+              ]}
+              onPress={handleLogin}
+              disabled={
+                !(email && password && !emailError && !passwordError) || loading
+              }
             >
-              <Text style={styles.forgotPasswordText}>
-                Forgot your password?
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.loginButton,
-              email && password && !emailError && !passwordError && !loading
-                ? styles.loginButtonEnabled
-                : styles.loginButtonDisabled,
-            ]}
-            onPress={handleLogin}
-            disabled={
-              !(email && password && !emailError && !passwordError) || loading
-            }
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.loginButtonText}>Log in</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.orRow}>
-            <View style={styles.orLine} />
-            <Text style={styles.orText}>{Labels.or}</Text>
-            <View style={styles.orLine} />
-          </View>
-
-          <View style={styles.socialContainer}>
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={() => onGoogleButtonPress()}
-              disabled={googleLoading}
-            >
-              {googleLoading ? (
-                <ActivityIndicator
-                  color="#8646EF"
-                  style={{ alignSelf: "center" }}
-                />
+              {loading ? (
+                <ActivityIndicator color="#fff" />
               ) : (
-                <Image
-                  source={require("@/assets/images/google.png")}
-                  style={styles.socialIcon}
-                />
+                <Text style={styles.loginButtonText}>Log in</Text>
               )}
             </TouchableOpacity>
-            {/* <TouchableOpacity style={styles.socialButton}>
+
+            <View style={styles.orRow}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>{Labels.or}</Text>
+              <View style={styles.orLine} />
+            </View>
+
+            <View style={styles.socialContainer}>
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={() => onGoogleButtonPress()}
+                disabled={googleLoading}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator
+                    color="#8646EF"
+                    style={{ alignSelf: "center" }}
+                  />
+                ) : (
+                  <Image
+                    source={require("@/assets/images/google.png")}
+                    style={styles.socialIcon}
+                  />
+                )}
+              </TouchableOpacity>
+              {/* <TouchableOpacity style={styles.socialButton}>
               <Image
                 source={require("@/assets/images/fb.png")}
                 style={styles.socialIcon}
               />
             </TouchableOpacity> */}
-          </View>
+            </View>
 
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account yet? </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/init_screens/signup")}
-            >
-              <Text style={styles.signupLink}>Sign up</Text>
-            </TouchableOpacity>
+            <View style={styles.signupContainer}>
+              <Text style={styles.signupText}>Don't have an account yet? </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/init_screens/signup")}
+              >
+                <Text style={styles.signupLink}>Sign up</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
-     if (Platform.OS === "web" && screenWidth >= 1024) {
-       return (
-         <ImageBackground
-           source={require("@/assets/images/background_new_web.png")}
-           style={{ flex: 1, width: "100%", height: "100%" }}
-           resizeMode="cover"
-         >
-           {mainContent}
-         </ImageBackground>
-       );
-     }
-     return mainContent;
+  if (Platform.OS === "web" && screenWidth >= 1024) {
+    return (
+      <ImageBackground
+        source={require("@/assets/images/background_new_web.png")}
+        style={{ flex: 1, width: "100%", height: "100%" }}
+        resizeMode="cover"
+      >
+        {mainContent}
+      </ImageBackground>
+    );
+  }
+  return mainContent;
 }
 
 const styles = StyleSheet.create({

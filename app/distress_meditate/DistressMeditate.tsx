@@ -65,7 +65,7 @@ const DistressMeditate = () => {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -96,7 +96,7 @@ const DistressMeditate = () => {
   };
 
   const [categoryName, setCategoryName] = useState<string>(
-    getCategoryDisplayName(params.category_code)
+    getCategoryDisplayName(params.category_code),
   );
 
   // Fetch data from API on component mount
@@ -112,7 +112,7 @@ const DistressMeditate = () => {
 
       const response = await callSuggestusAPI(
         spd_processId_config.spdonmood9_get_md_category_group_module_category_wise_wrapper,
-        { p_category_code: params.category_code }
+        { p_category_code: params.category_code },
       );
 
       if (response?.returnCode === true && response.returnData) {
@@ -138,7 +138,7 @@ const DistressMeditate = () => {
     } catch (err) {
       console.error("Error fetching category data:", err);
       setError(
-        "Failed to load data. Please check your connection and try again."
+        "Failed to load data. Please check your connection and try again.",
       );
     } finally {
       setIsLoading(false);
@@ -205,7 +205,7 @@ const DistressMeditate = () => {
 
       // Convert map to array and sort by group name
       const sortedGroups = Array.from(uniqueGroups.values()).sort((a, b) =>
-        a.group_name.localeCompare(b.group_name)
+        a.group_name.localeCompare(b.group_name),
       );
       setCategoryGroups(sortedGroups);
     } catch (err) {
@@ -265,14 +265,15 @@ const DistressMeditate = () => {
   if (isLoading) {
     const loadingContent = (
       <View
-      style={[
-        styles.containerNew,
-        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-      ]}>
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#8B4CFC" />
-        <Text style={styles.loaderText}>Loading...</Text>
-      </View>
+        style={[
+          styles.containerNew,
+          { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+        ]}
+      >
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#8B4CFC" />
+          <Text style={styles.loaderText}>Loading...</Text>
+        </View>
       </View>
     );
     if (Platform.OS === "web" && screenWidth >= 1024) {
@@ -292,20 +293,21 @@ const DistressMeditate = () => {
   // Render error state
   if (error) {
     const errorContent = (
-       <View
-               style={[
-                 styles.containerNew,
-                 { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-               ]}>
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={fetchCategoryData}
-              >
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
+      <View
+        style={[
+          styles.containerNew,
+          { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+        ]}
+      >
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchCategoryData}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
 
@@ -350,7 +352,7 @@ const DistressMeditate = () => {
           </View>
         )}
       </View>
-                                       <View style={styles.imageOverlay}></View>
+      <View style={styles.imageOverlay}></View>
       <Text style={styles.moduleName} numberOfLines={2}>
         {item.module_name}
       </Text>

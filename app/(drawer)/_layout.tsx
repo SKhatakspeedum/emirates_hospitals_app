@@ -1,5 +1,5 @@
-import { Drawer } from 'expo-router/drawer';
-import CustomDrawer from './tab_bar_home/CustomDrawer'; // Update path if needed
+import { Drawer } from "expo-router/drawer";
+import CustomDrawer from "./tab_bar_home/CustomDrawer"; // Update path if needed
 
 export default function DrawerLayout() {
   return (

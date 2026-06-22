@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Toast from 'react-native-toast-message';
+import Toast from "react-native-toast-message";
 import {
   View,
   Text,
@@ -18,7 +18,11 @@ import Svg, { Path } from "react-native-svg";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
-import { BLOGS_SUB_URL, COURSES_SUB_URL, SPD_USER_SUBSCRIPTION } from "../config/config";
+import {
+  BLOGS_SUB_URL,
+  COURSES_SUB_URL,
+  SPD_USER_SUBSCRIPTION,
+} from "../config/config";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -48,7 +52,7 @@ const ExploreScreen = () => {
     setBlogsError(null);
     callSuggestusAPI(
       spd_processId_config.spdonmood9_get_md_blogs_category_wise,
-      {}
+      {},
     )
       .then((response) => {
         if (response?.returnCode && Array.isArray(response.returnData)) {
@@ -73,7 +77,7 @@ const ExploreScreen = () => {
     setProgramsError(null);
     callSuggestusAPI(
       spd_processId_config.spdonmood9_get_md_category_group_module_category_wise_wrapper,
-      { p_category_type_code: "MOODS" }
+      { p_category_type_code: "MOODS" },
     )
       .then((response) => {
         if (response?.returnCode && Array.isArray(response.returnData))
@@ -89,7 +93,7 @@ const ExploreScreen = () => {
     setDeStressError(null);
     callSuggestusAPI(
       spd_processId_config.spdonmood9_get_md_category_group_module_category_wise_wrapper,
-      { p_category_code: "DE_STRESS" }
+      { p_category_code: "DE_STRESS" },
     )
       .then((response) => {
         if (response?.returnCode && Array.isArray(response.returnData)) {
@@ -103,7 +107,10 @@ const ExploreScreen = () => {
             }
           });
           // Add premium property based on is_paid
-          all = all.map((item) => ({ ...item, premium: item.is_paid === 'paid' }));
+          all = all.map((item) => ({
+            ...item,
+            premium: item.is_paid === "paid",
+          }));
           setDeStress(all);
         } else setDeStress([]);
       })
@@ -116,7 +123,7 @@ const ExploreScreen = () => {
     setMeditateError(null);
     callSuggestusAPI(
       spd_processId_config.spdonmood9_get_md_category_group_module_category_wise_wrapper,
-      { p_category_code: "MINDFULNESS" }
+      { p_category_code: "MINDFULNESS" },
     )
       .then((response) => {
         if (response?.returnCode && Array.isArray(response.returnData)) {
@@ -130,7 +137,10 @@ const ExploreScreen = () => {
             }
           });
           // Add premium property based on is_paid
-          all = all.map((item) => ({ ...item, premium: item.is_paid === 'paid' }));
+          all = all.map((item) => ({
+            ...item,
+            premium: item.is_paid === "paid",
+          }));
           setMeditate(all);
         } else setMeditate([]);
       })
@@ -139,25 +149,25 @@ const ExploreScreen = () => {
   }, []);
 
   const onSeeAll = (section: string) => {
-  let allPlans = [];
-  let type = section;
-  if (section === "program") {
-    allPlans = programs;
-    type = "program";
-  } else if (section === "learn") {
-    allPlans = blogs;
-    type = "learn";
-    navigation.navigate("learn/LearnScreen", { allPlans, type });
-    return '';
-  } else if (section === "de-stress") {
-    allPlans = deStress;
-    type = "de-stress";
-  } else if (section === "meditate") {
-    allPlans = meditate;
-    type = "MINDFULNESS";
-  }
-  navigation.navigate("seeAll/SeeAllPlansScreen", { allPlans, type });
-};
+    let allPlans = [];
+    let type = section;
+    if (section === "program") {
+      allPlans = programs;
+      type = "program";
+    } else if (section === "learn") {
+      allPlans = blogs;
+      type = "learn";
+      navigation.navigate("learn/LearnScreen", { allPlans, type });
+      return "";
+    } else if (section === "de-stress") {
+      allPlans = deStress;
+      type = "de-stress";
+    } else if (section === "meditate") {
+      allPlans = meditate;
+      type = "MINDFULNESS";
+    }
+    navigation.navigate("seeAll/SeeAllPlansScreen", { allPlans, type });
+  };
   const onCardPress = (item) => {
     navigation.navigate("explore_tab/ExploreDetailScreen", {
       itemData: item,
@@ -179,12 +189,12 @@ const ExploreScreen = () => {
       author: item.author,
     });
 
-    const onMeditatePress = async (item) => {
-      let subscription_status = await AsyncStorage.getItem(SPD_USER_SUBSCRIPTION);
+  const onMeditatePress = async (item) => {
+    let subscription_status = await AsyncStorage.getItem(SPD_USER_SUBSCRIPTION);
     if (item.premium && subscription_status === "false") {
       Toast.show({
-        type: 'info',
-        text1: 'You need to buy paid membership to view the content.'
+        type: "info",
+        text1: "You need to buy paid membership to view the content.",
       });
       return;
     }
@@ -200,30 +210,30 @@ const ExploreScreen = () => {
         itemData: item,
         sessionData: s?.[0] || null,
       });
-    };
+  };
 
   const onDeStressPress = async (item) => {
     let subscription_status = await AsyncStorage.getItem(SPD_USER_SUBSCRIPTION);
-  if (item.premium && subscription_status === "false") {
-    Toast.show({
-      type: 'info',
-      text1: 'You need to buy paid membership to view the content.'
-    });
-    return;
-  }
-  let s = item.session_json_data;
-  if (typeof s === "string") s = JSON.parse(s);
-  if (s?.length > 1)
-    navigation.navigate("all_session/SeeAllSession", {
-      sessions: s,
-      moduleData: item,
-    });
-  else
-    navigation.navigate("music_player/MusicPlayerScreen", {
-      itemData: item,
-      sessionData: s?.[0] || null,
-    });
-};
+    if (item.premium && subscription_status === "false") {
+      Toast.show({
+        type: "info",
+        text1: "You need to buy paid membership to view the content.",
+      });
+      return;
+    }
+    let s = item.session_json_data;
+    if (typeof s === "string") s = JSON.parse(s);
+    if (s?.length > 1)
+      navigation.navigate("all_session/SeeAllSession", {
+        sessions: s,
+        moduleData: item,
+      });
+    else
+      navigation.navigate("music_player/MusicPlayerScreen", {
+        itemData: item,
+        sessionData: s?.[0] || null,
+      });
+  };
 
   const Card = ({ item, onPress }) => (
     <TouchableOpacity style={styles.outerLayer} onPress={onPress}>
@@ -244,8 +254,8 @@ const ExploreScreen = () => {
               colors={["rgba(0,0,0,1)", "rgba(0,0,0,0)"]}
               style={styles.cardOverlay}
             />
-            
-                         <View style={styles.imageOverlay}></View>
+
+            <View style={styles.imageOverlay}></View>
             <Text style={styles.cardText}>{item.name}</Text>
           </ImageBackground>
         </View>
@@ -274,18 +284,18 @@ const ExploreScreen = () => {
           colors={["rgba(0,0,0,1)", "rgba(0,0,0,0)"]}
           style={styles.cardOverlay}
         />
-                         <View style={styles.imageOverlay}></View>
+        <View style={styles.imageOverlay}></View>
         <Text style={styles.cardText}>{item.module_name}</Text>
-          {item.premium && (
-                              <View style={styles.crownOverlay}>
+        {item.premium && (
+          <View style={styles.crownOverlay}>
             {/* <Image
               source={require("@/assets/images/crown.png")}
               style={styles.crownIcon}
             /> */}
-            
-                            <MaterialCommunityIcons name="crown" size={20} color="#FFD700" />
-            </View>
-          )}
+
+            <MaterialCommunityIcons name="crown" size={20} color="#FFD700" />
+          </View>
+        )}
       </ImageBackground>
     </TouchableOpacity>
   );
@@ -301,7 +311,11 @@ const ExploreScreen = () => {
         <View style={styles.divider} /> */}
 
         {/* Programs */}
-        <SectionHeader title="Programs" onSeeAll={onSeeAll} sectionKey="program" />
+        <SectionHeader
+          title="Programs"
+          onSeeAll={onSeeAll}
+          sectionKey="program"
+        />
         {programsLoading ? (
           <View style={styles.sectionContent}>
             <ActivityIndicator size="small" color="#8B4CFC" />
@@ -351,7 +365,11 @@ const ExploreScreen = () => {
         </View>
 
         {/* De-Stress */}
-        <SectionHeader title="De-Stress" onSeeAll={onSeeAll} sectionKey="de-stress" />
+        <SectionHeader
+          title="De-Stress"
+          onSeeAll={onSeeAll}
+          sectionKey="de-stress"
+        />
         {deStressLoading ? (
           <View style={styles.sectionContent}>
             <ActivityIndicator size="small" color="#8B4CFC" />
@@ -374,7 +392,11 @@ const ExploreScreen = () => {
         )}
 
         {/* meditate */}
-        <SectionHeader title="Meditate" onSeeAll={onSeeAll} sectionKey="meditate" />
+        <SectionHeader
+          title="Meditate"
+          onSeeAll={onSeeAll}
+          sectionKey="meditate"
+        />
         {meditateLoading ? (
           <View style={styles.sectionContent}>
             <ActivityIndicator size="small" color="#8B4CFC" />
@@ -416,7 +438,10 @@ const ExploreScreen = () => {
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item, idx) => `${item.blog_id || idx}`}
-            contentContainerStyle={[styles.horizontalList, { marginBottom: 40 }]}
+            contentContainerStyle={[
+              styles.horizontalList,
+              { marginBottom: 40 },
+            ]}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.card}
@@ -438,7 +463,7 @@ const ExploreScreen = () => {
                     colors={["rgba(0,0,0,1)", "rgba(0,0,0,0)"]}
                     style={styles.cardOverlay}
                   />
-                         <View style={styles.imageOverlay}></View>
+                  <View style={styles.imageOverlay}></View>
                   <Text style={styles.cardText}>{item.title}</Text>
                 </ImageBackground>
               </TouchableOpacity>
@@ -473,16 +498,16 @@ const SectionHeader = ({ title, onSeeAll, sectionKey }: any) => (
 );
 
 const styles = StyleSheet.create({
-    crownOverlay: {
-    position: 'absolute',
+  crownOverlay: {
+    position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: "rgba(0,0,0,0.3)",
     borderRadius: 24,
     height: 24,
     width: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 1,
     zIndex: 2,
   },
@@ -620,7 +645,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.3)",
     borderRadius: 10,
   },
-  bannerLink: { fontSize: 16, color: "#7D5FFF", fontFamily: "QuicksandBold", },
+  bannerLink: { fontSize: 16, color: "#7D5FFF", fontFamily: "QuicksandBold" },
   bannerImage: { width: 70, height: 70, marginLeft: 12 },
   sectionContent: {
     height: CARD_HEIGHT + SECTION_MARGIN,

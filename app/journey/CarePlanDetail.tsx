@@ -38,7 +38,7 @@ const CarePlanDetail = () => {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -61,7 +61,13 @@ const CarePlanDetail = () => {
         resizeMode="cover"
       >
         <CustomTopHeader title="Back" />
-        <ScrollView style={[{ flex: 1 }, Platform.OS === "web" ? { marginLeft: 150, marginRight: 150 } : {}]} contentContainerStyle={{ padding: 16 }}>
+        <ScrollView
+          style={[
+            { flex: 1 },
+            Platform.OS === "web" ? { marginLeft: 150, marginRight: 150 } : {},
+          ]}
+          contentContainerStyle={{ padding: 16 }}
+        >
           <View style={styles.card}>
             <Text style={styles.title}>{data.name}</Text>
             <View style={styles.rowWrap}>

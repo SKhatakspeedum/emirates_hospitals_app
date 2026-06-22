@@ -57,7 +57,7 @@ const ExploreDetailScreen = () => {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   if (Platform.OS === "web" && screenWidth >= 1024) {
@@ -122,7 +122,7 @@ const ExploreDetailScreen = () => {
         }
       });
       const sortedGroups = Array.from(uniqueGroups.values()).sort((a, b) =>
-        a.group_name.localeCompare(b.group_name)
+        a.group_name.localeCompare(b.group_name),
       );
       setCategoryGroups(sortedGroups);
       setError(null);
@@ -286,8 +286,15 @@ const ExploreDetailScreen = () => {
           {/* <View style={styles.divider} /> */}
           {/* Video Section */}
           {itemData?.lib_audio_video_file ? (
-            <View style={[styles.videoSection, ,
-                          Platform.OS === "web" && screenWidth >= 1024 ? { paddingHorizontal:116 } : null]}>
+            <View
+              style={[
+                styles.videoSection,
+                ,
+                Platform.OS === "web" && screenWidth >= 1024
+                  ? { paddingHorizontal: 116 }
+                  : null,
+              ]}
+            >
               <TouchableOpacity onPress={() => setVideoVisible(true)}>
                 {(() => {
                   // Debug: log the image URL
@@ -338,8 +345,15 @@ const ExploreDetailScreen = () => {
             <Text style={{ color: "#999", margin: 16 }}>No modules found.</Text>
           ) : (
             categoryGroups.map((group) => (
-              <View key={group.group_id} style={[styles.sectionBlock,
-                            Platform.OS === "web" && screenWidth >= 1024 ? { paddingHorizontal:116 } : null]}>
+              <View
+                key={group.group_id}
+                style={[
+                  styles.sectionBlock,
+                  Platform.OS === "web" && screenWidth >= 1024
+                    ? { paddingHorizontal: 116 }
+                    : null,
+                ]}
+              >
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionTitle}>{group.group_name}</Text>
                 </View>

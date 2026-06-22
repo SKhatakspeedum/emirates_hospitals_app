@@ -49,7 +49,7 @@ export default function ForgotPasswordScreen() {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -105,7 +105,7 @@ export default function ForgotPasswordScreen() {
         {
           p_email: email,
           p_password: generatedPassword,
-        }
+        },
       );
 
       if (res.returnCode === true) {
@@ -122,7 +122,7 @@ export default function ForgotPasswordScreen() {
                 email: email,
                 subject: subject,
               },
-            }
+            },
           );
           if (step3_response.returnCode == true) {
             let status = step3_response.returnData[0].p_return_result.status;
@@ -149,7 +149,7 @@ export default function ForgotPasswordScreen() {
               } else {
                 Alert.alert(
                   "Error",
-                  step3_response.msg || "Failed to send OTP. Please try again."
+                  step3_response.msg || "Failed to send OTP. Please try again.",
                 );
               }
             }
@@ -165,7 +165,7 @@ export default function ForgotPasswordScreen() {
             } else {
               Alert.alert(
                 "Error",
-                step3_response.msg || "Failed to send OTP. Please try again."
+                step3_response.msg || "Failed to send OTP. Please try again.",
               );
             }
           }
@@ -183,7 +183,7 @@ export default function ForgotPasswordScreen() {
         } else {
           Alert.alert(
             "Error",
-            res.msg || "Failed to send OTP. Please try again."
+            res.msg || "Failed to send OTP. Please try again.",
           );
         }
       }
@@ -207,7 +207,8 @@ export default function ForgotPasswordScreen() {
       style={[
         styles.containerNew,
         { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-                          Platform.OS === "web" && screenWidth >= 1024 && { justifyContent: 'center', flexGrow:1 } 
+        Platform.OS === "web" &&
+          screenWidth >= 1024 && { justifyContent: "center", flexGrow: 1 },
       ]}
     >
       <KeyboardAvoidingView
@@ -219,10 +220,16 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* @ts-ignore: webContainer includes web-only style keys */}
-          <View style={[styles.container, isWeb && styles.webContainer,
-                                Platform.OS === "web" && screenWidth >= 1024 && {
-                                          flex:'0 0 auto'
-                                        }]}>
+          <View
+            style={[
+              styles.container,
+              isWeb && styles.webContainer,
+              Platform.OS === "web" &&
+                screenWidth >= 1024 && {
+                  flex: "0 0 auto",
+                },
+            ]}
+          >
             <View style={styles.logoContainer}>
               <Image
                 source={require("@/assets/images/splash_icon.png")}

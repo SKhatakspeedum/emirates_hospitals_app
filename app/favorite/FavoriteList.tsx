@@ -42,7 +42,7 @@ export default function FavoriteList() {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -67,7 +67,7 @@ export default function FavoriteList() {
     try {
       const response = await callSuggestusAPI(
         spd_processId_config.spdonmood9_get_md_user_favourite_modules_list,
-        { p_user_id: id }
+        { p_user_id: id },
       );
       if (response?.returnCode === true && Array.isArray(response.returnData)) {
         setFavorites(response.returnData);
@@ -99,8 +99,8 @@ export default function FavoriteList() {
             (item.short_description &&
               item.short_description.toLowerCase().includes(lowercaseQuery)) ||
             (item.category_name &&
-              item.category_name.toLowerCase().includes(lowercaseQuery))
-        )
+              item.category_name.toLowerCase().includes(lowercaseQuery)),
+        ),
       );
     }
   }, [searchQuery, favorites]);
@@ -111,7 +111,7 @@ export default function FavoriteList() {
     try {
       const response = await callSuggestusAPI(
         spd_processId_config.spdonmood9_delete_md_user_favourite_modules,
-        { p_user_id: userId, p_module_id: moduleId }
+        { p_user_id: userId, p_module_id: moduleId },
       );
       if (response?.returnCode === true) {
         fetchFavorites(userId);
@@ -177,8 +177,14 @@ export default function FavoriteList() {
         ? item.session_json_data.module_id
         : item.id;
     return (
-      <View style={[{ paddingHorizontal: 16 } ,
-                                          Platform.OS === "web" && screenWidth >= 1024 ? { paddingHorizontal:116 } : null]}>
+      <View
+        style={[
+          { paddingHorizontal: 16 },
+          Platform.OS === "web" && screenWidth >= 1024
+            ? { paddingHorizontal: 116 }
+            : null,
+        ]}
+      >
         <View style={styles.card}>
           <TouchableOpacity
             style={[styles.unfavoriteBtn, { width: "85%" }]}
@@ -237,17 +243,17 @@ export default function FavoriteList() {
   if (loading) {
     const loaderContent = (
       <View
-      style={[
-        styles.containerNew,
-        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-      ]}
-    >
-      <View style={styles.container}>
-        {renderHeader()}
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#8B4CFC" />
+        style={[
+          styles.containerNew,
+          { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+        ]}
+      >
+        <View style={styles.container}>
+          {renderHeader()}
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color="#8B4CFC" />
+          </View>
         </View>
-      </View>
       </View>
     );
 
@@ -262,23 +268,23 @@ export default function FavoriteList() {
         </ImageBackground>
       );
     }
-  
+
     return loaderContent;
   }
   if (!filteredFavorites.length) {
     const emptyContent = (
       <View
-      style={[
-        styles.containerNew,
-        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-      ]}
-    >
-      <View style={styles.container}>
-        {renderHeader()}
-        <View style={styles.centered}>
-          <Text style={styles.emptyText}>No favorites found.</Text>
+        style={[
+          styles.containerNew,
+          { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+        ]}
+      >
+        <View style={styles.container}>
+          {renderHeader()}
+          <View style={styles.centered}>
+            <Text style={styles.emptyText}>No favorites found.</Text>
+          </View>
         </View>
-      </View>
       </View>
     );
 
@@ -293,7 +299,7 @@ export default function FavoriteList() {
         </ImageBackground>
       );
     }
-  
+
     return emptyContent;
   }
   const mainContent = (
@@ -311,8 +317,14 @@ export default function FavoriteList() {
         <View style={styles.container}>
           {renderHeader()}
           {/* Search Bar */}
-          <View style={[styles.searchContainer ,
-                                              Platform.OS === "web" && screenWidth >= 1024 ? { marginHorizontal:116 } : null]}>
+          <View
+            style={[
+              styles.searchContainer,
+              Platform.OS === "web" && screenWidth >= 1024
+                ? { marginHorizontal: 116 }
+                : null,
+            ]}
+          >
             <Icon
               name="magnify"
               size={20}
@@ -420,7 +432,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     borderWidth: 1,
-    borderColor:'#e7e7e7',
+    borderColor: "#e7e7e7",
     shadowOffset: { width: 0, height: 2 },
   },
   searchInput: {
@@ -431,7 +443,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     outline: "none",
     height: 44,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none', outlineWidth: 0 } : {}),
+    ...(Platform.OS === "web" ? { outlineStyle: "none", outlineWidth: 0 } : {}),
   },
   clearButton: {
     padding: 4,

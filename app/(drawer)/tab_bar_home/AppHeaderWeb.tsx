@@ -23,7 +23,7 @@ interface AppHeaderProps {
 export default function AppHeaderWeb({ handleMenuPress }: AppHeaderProps) {
   const navigation = useNavigation();
   const [screenWidth, setScreenWidth] = useState(
-    Dimensions.get("window").width
+    Dimensions.get("window").width,
   );
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function AppHeaderWeb({ handleMenuPress }: AppHeaderProps) {
 
       const subscription = Dimensions.addEventListener(
         "change",
-        updateScreenWidth
+        updateScreenWidth,
       );
       return () => subscription?.remove();
     }
@@ -105,7 +105,12 @@ export default function AppHeaderWeb({ handleMenuPress }: AppHeaderProps) {
               style={styles.searchBarContainer}
               onPress={() => navigation.navigate("search/SearchScreen")}
             >
-              <Ionicons name="search" size={20} color="#888" style={{ marginLeft: 10 }} />
+              <Ionicons
+                name="search"
+                size={20}
+                color="#888"
+                style={{ marginLeft: 10 }}
+              />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search..."
@@ -137,7 +142,7 @@ const styles = StyleSheet.create({
     marginRight: 0,
     marginTop: 0,
     marginBottom: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },

@@ -94,7 +94,7 @@ const MoodTrackerScreen: React.FC = () => {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -141,7 +141,7 @@ const MoodTrackerScreen: React.FC = () => {
       };
       const response = await callSuggestusAPI(
         spd_processId_config.spdonmood9_get_md_user_mood_tracker_map_data,
-        payload
+        payload,
       );
       if (
         response &&
@@ -214,7 +214,7 @@ const MoodTrackerScreen: React.FC = () => {
         const thoughtPercentages = THOUGHT_KEYS.map((key) =>
           totalThoughtEntries
             ? Math.round((thoughtCounts[key] / totalThoughtEntries) * 100)
-            : 0
+            : 0,
         );
         // Soft pastel/gradient colors for each bar
         const THOUGHT_BAR_COLORS = [
@@ -271,13 +271,13 @@ const MoodTrackerScreen: React.FC = () => {
                 ? Math.round(
                     (thoughtCountsForMood[key as "T1" | "T2" | "T3"] /
                       totalForMood) *
-                      100
+                      100,
                   )
                 : 0,
               color: THOUGHT_COLORS[idx],
               legendFontColor: "#262626",
               legendFontSize: 12,
-            })
+            }),
           );
           moodToThought[moodLabel] = drilldownPieData;
         });
@@ -310,14 +310,14 @@ const MoodTrackerScreen: React.FC = () => {
                   ? Math.round(
                       ((moodCountsForThought[moodLabel] || 0) /
                         totalForThought) *
-                        100
+                        100,
                     )
                   : 0,
                 color: MOOD_COLORS[moodLabel] || "#ccc",
                 legendFontColor: "#262626",
                 legendFontSize: 12,
               };
-            }
+            },
           );
           thoughtToMood[thoughtLabel] = drilldownPieData;
         });
@@ -838,16 +838,16 @@ const MoodTrackerScreen: React.FC = () => {
       selectedMood === "pleasant"
         ? "F1"
         : selectedMood === "unpleasant"
-        ? "F2"
-        : "";
+          ? "F2"
+          : "";
     // Map emotion
     const selectedEmotionObj = emotionGroups.find(
-      (e) => e.key === selectedEmotion
+      (e) => e.key === selectedEmotion,
     );
     const emotionCode = selectedEmotionObj ? selectedEmotionObj.code : "";
     // Map thought
     const selectedThoughtObj = thoughtGroups.find(
-      (t) => t.key === selectedThought
+      (t) => t.key === selectedThought,
     );
     const thoughtCode = selectedThoughtObj ? selectedThoughtObj.code : "";
 
@@ -880,7 +880,7 @@ const MoodTrackerScreen: React.FC = () => {
       };
       const response = await callSuggestusAPI(
         spd_processId_config.spdonmood9_save_md_user_mood_tracker,
-        payload
+        payload,
       );
       if (response?.returnCode === true) {
         closeModal();
@@ -897,9 +897,7 @@ const MoodTrackerScreen: React.FC = () => {
 
   // Modal step renderers
   const renderStep1 = () => (
-    <View
-      
-    >
+    <View>
       {/* Header Row */}
       <View style={styles.modalHeaderRow}>
         <Text style={styles.modalTitle}>Add feeling</Text>
@@ -1062,7 +1060,7 @@ const MoodTrackerScreen: React.FC = () => {
                           </Text>
                         ))}
                       </View>
-                    )
+                    ),
                   )}
                 </View>
               </View>
@@ -1105,7 +1103,7 @@ const MoodTrackerScreen: React.FC = () => {
           flexDirection: "column",
           overflow: "hidden",
           height: "100%",
-        } 
+        },
       ]}
     >
       <View style={styles.modalHeaderRow}>
@@ -1213,7 +1211,7 @@ const MoodTrackerScreen: React.FC = () => {
 
   const chunkArray = (arr: any[], size: number): any[][] => {
     return Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
-      arr.slice(i * size, i * size + size)
+      arr.slice(i * size, i * size + size),
     );
   };
 
@@ -1240,10 +1238,18 @@ const MoodTrackerScreen: React.FC = () => {
           contentContainerStyle={{ paddingBottom: 32 }}
         >
           <ImageBackground
-                              source={require('../../assets/images/card_bg.png')}
-                              style={[styles.headerContainer, { flex: 1, width: '100%', height: '100%', backgroundPosition:'center right 34%' }]}
-                              resizeMode="cover"
-                            >
+            source={require("../../assets/images/card_bg.png")}
+            style={[
+              styles.headerContainer,
+              {
+                flex: 1,
+                width: "100%",
+                height: "100%",
+                backgroundPosition: "center right 34%",
+              },
+            ]}
+            resizeMode="cover"
+          >
             <View style={styles.headerLeft}>
               <Text style={styles.headerPrompt}>
                 How are you feeling today?
@@ -1259,14 +1265,13 @@ const MoodTrackerScreen: React.FC = () => {
               <Modal
                 animationType="fade"
                 transparent
-                
                 visible={modalVisible}
                 onRequestClose={closeModal}
               >
-                <Pressable style={styles.modalBackdrop} 
-                onPress={closeModal}>
+                <Pressable style={styles.modalBackdrop} onPress={closeModal}>
                   <Pressable
-                    style={[styles.modalContainer,
+                    style={[
+                      styles.modalContainer,
                       Platform.OS === "web" && screenWidth >= 1024
                         ? { width: 600 }
                         : null,
@@ -1406,7 +1411,14 @@ const MoodTrackerScreen: React.FC = () => {
                             { backgroundColor: item.color },
                           ]}
                         />
-                        <Text style={[styles.pieLegendText, {marginRight:0, paddingRight:10}]}>{item.name}</Text>
+                        <Text
+                          style={[
+                            styles.pieLegendText,
+                            { marginRight: 0, paddingRight: 10 },
+                          ]}
+                        >
+                          {item.name}
+                        </Text>
                       </View>
                       <Text style={styles.pieLegendPercent}>
                         {item.population}%
@@ -1612,9 +1624,9 @@ const MoodTrackerScreen: React.FC = () => {
                     moodToThoughtData[selectedMood]
                       ? moodToThoughtData[selectedMood]
                       : selectedThoughtDrilldown &&
-                        thoughtToMoodData[selectedThoughtDrilldown]
-                      ? thoughtToMoodData[selectedThoughtDrilldown]
-                      : []
+                          thoughtToMoodData[selectedThoughtDrilldown]
+                        ? thoughtToMoodData[selectedThoughtDrilldown]
+                        : []
                   }
                   width={200}
                   height={200}
@@ -1655,9 +1667,9 @@ const MoodTrackerScreen: React.FC = () => {
                     moodToThoughtData[selectedMood]
                       ? moodToThoughtData[selectedMood]
                       : selectedThoughtDrilldown &&
-                        thoughtToMoodData[selectedThoughtDrilldown]
-                      ? thoughtToMoodData[selectedThoughtDrilldown]
-                      : [];
+                          thoughtToMoodData[selectedThoughtDrilldown]
+                        ? thoughtToMoodData[selectedThoughtDrilldown]
+                        : [];
                   const labelMap =
                     selectedMood && !selectedThoughtDrilldown
                       ? thoughtLabelMap

@@ -47,7 +47,7 @@ const AssessmentDetailScreen = () => {
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [answers, setAnswers] = useState<{ optionId: string; score: number }[]>(
-    []
+    [],
   );
   const [showResult, setShowResult] = useState(false);
   const [startedOn, setStartedOn] = useState<string | null>(null);
@@ -60,7 +60,7 @@ const AssessmentDetailScreen = () => {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -82,7 +82,7 @@ const AssessmentDetailScreen = () => {
     if (!selectedOption || !currentQuestion) return;
 
     const option = currentQuestion.options.find(
-      (opt) => opt.id === selectedOption
+      (opt) => opt.id === selectedOption,
     );
     const score = option ? parseInt(option.score, 10) : 0;
 
@@ -127,11 +127,11 @@ const AssessmentDetailScreen = () => {
   const matchingRule = rules.find(
     (rule) =>
       totalScore >= parseInt(rule.min_score, 10) &&
-      totalScore <= parseInt(rule.max_score, 10)
+      totalScore <= parseInt(rule.max_score, 10),
   );
 
   const maxPossibleScore = Math.max(
-    ...(rules.map((rule) => parseInt(rule.max_score, 10)) || [0])
+    ...(rules.map((rule) => parseInt(rule.max_score, 10)) || [0]),
   );
 
   const cleanDescriptionText = (input: string | undefined | null): string => {
@@ -172,7 +172,7 @@ const AssessmentDetailScreen = () => {
     };
     const response = await callSuggestusAPI(
       spd_processId_config.sgconf_integration_postAPICallJWT,
-      request
+      request,
     );
     if (!response || response.returnCode !== true) {
       throw new Error(response?.msg || "Submission failed.");
@@ -197,7 +197,7 @@ const AssessmentDetailScreen = () => {
             style={[
               styles.container,
               Platform.OS === "web" && screenWidth >= 1024
-                ? { marginLeft: 'auto', marginRight: 'auto', maxWidth: 620 }
+                ? { marginLeft: "auto", marginRight: "auto", maxWidth: 620 }
                 : {},
             ]}
           >
@@ -224,20 +224,22 @@ const AssessmentDetailScreen = () => {
                   }}
                 />
               </ScrollView>
-              <View 
-               style={[
-                styles.fixedButtonRow,
-                Platform.OS === "web" && screenWidth >= 1024
-                  ? {  alignItems: "center" }
-                  : {},
-              ]}>
+              <View
+                style={[
+                  styles.fixedButtonRow,
+                  Platform.OS === "web" && screenWidth >= 1024
+                    ? { alignItems: "center" }
+                    : {},
+                ]}
+              >
                 <View
                   style={[
                     styles.buttonRow,
                     Platform.OS === "web" && screenWidth >= 1024
-                      ? { width: 520  }
+                      ? { width: 520 }
                       : {},
-                  ]}>
+                  ]}
+                >
                   <TouchableOpacity
                     style={styles.historyBtn}
                     onPress={() =>
@@ -270,7 +272,14 @@ const AssessmentDetailScreen = () => {
         <Modal visible={showSurvey} transparent animationType="fade">
           <View style={styles.modalContainer}>
             {!showResult ? (
-              <View style={[styles.popup, Platform.OS === "web" && screenWidth >= 1024 ? { width: 520 } : {}]}>
+              <View
+                style={[
+                  styles.popup,
+                  Platform.OS === "web" && screenWidth >= 1024
+                    ? { width: 520 }
+                    : {},
+                ]}
+              >
                 <View style={styles.popupHeader}>
                   <Text style={styles.popupTitle}>Question</Text>
                   <TouchableOpacity
@@ -304,7 +313,7 @@ const AssessmentDetailScreen = () => {
 
                 <HTMLView
                   value={`<div>${cleanDescriptionText(
-                    currentQuestion?.title
+                    currentQuestion?.title,
                   )}</div>`}
                   style={styles.questionText}
                 />
@@ -407,7 +416,14 @@ const AssessmentDetailScreen = () => {
                 </View>
               </View>
             ) : (
-              <View style={[styles.popup, Platform.OS === "web" && screenWidth >= 1024 ? { width: 520 } : {}]}>
+              <View
+                style={[
+                  styles.popup,
+                  Platform.OS === "web" && screenWidth >= 1024
+                    ? { width: 520 }
+                    : {},
+                ]}
+              >
                 <Text style={styles.resultTitle}>Anxiety Score</Text>
                 <View style={styles.resultDivider} />
 
@@ -460,7 +476,7 @@ const AssessmentDetailScreen = () => {
                   <ScrollView>
                     <HTMLView
                       value={`<div>${cleanDescriptionText(
-                        matchingRule?.description
+                        matchingRule?.description,
                       )}</div>`}
                       style={styles.resultDesc}
                     />

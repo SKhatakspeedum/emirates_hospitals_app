@@ -3,7 +3,9 @@ import { Platform } from "react-native";
 
 function isMobileWeb() {
   if (typeof navigator === "undefined") return false;
-  return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+  return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(
+    navigator.userAgent,
+  );
 }
 
 function getResponsiveHorizontalMargin() {
@@ -17,11 +19,14 @@ function getResponsiveHorizontalMargin() {
 }
 
 export default function useResponsiveHorizontalMargin() {
-  const [horizontalMargin, setHorizontalMargin] = useState(getResponsiveHorizontalMargin());
+  const [horizontalMargin, setHorizontalMargin] = useState(
+    getResponsiveHorizontalMargin(),
+  );
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
-    const handleResize = () => setHorizontalMargin(getResponsiveHorizontalMargin());
+    const handleResize = () =>
+      setHorizontalMargin(getResponsiveHorizontalMargin());
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);

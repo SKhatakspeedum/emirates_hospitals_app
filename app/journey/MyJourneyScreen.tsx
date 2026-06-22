@@ -939,7 +939,7 @@ const MyJourneyScreen = () => {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -960,7 +960,7 @@ const MyJourneyScreen = () => {
         if (!userId) throw new Error("User not found");
         const res = await callSuggestusAPI(
           spd_processId_config.spdonmood9_md_user_played_sessions_timeline_summary,
-          { p_user_id: userId }
+          { p_user_id: userId },
         );
         if (res?.returnCode && res.returnData) {
           // Map API fields to stat cards
@@ -1017,11 +1017,11 @@ const MyJourneyScreen = () => {
       Promise.all([
         callSuggestusAPI(
           spd_processId_config.spdonmood9_get_md_category_group_module_recent_played_all,
-          {}
+          {},
         ),
         callSuggestusAPI(
           spd_processId_config.spdonmood9_md_user_care_plan_timeline,
-          { p_email: userEmail }
+          { p_email: userEmail },
         ),
       ])
         .then(([leftRes, rightRes]) => {
@@ -1047,7 +1047,7 @@ const MyJourneyScreen = () => {
                 return new Date(item.modified_at).getTime();
               }
               return new Date(
-                item.date_val || item.time || item.created_at || item.createdAt
+                item.date_val || item.time || item.created_at || item.createdAt,
               ).getTime();
             };
             const dateA = getSortDate(a);
@@ -1147,7 +1147,7 @@ const MyJourneyScreen = () => {
                         />
                       ))}
                   </View>
-                )
+                ),
               )
             )}
           </View>

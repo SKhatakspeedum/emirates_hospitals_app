@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import Toast from 'react-native-toast-message';
+import Toast from "react-native-toast-message";
 import { Video } from "expo-av";
 import RenderHtml from "react-native-render-html";
 import { callSuggestusAPI } from "@/app/suggestus_plugin/suggestusClient";
@@ -61,14 +61,14 @@ export default function SeeAllSession() {
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const horizontalMargin = useResponsiveHorizontalMargin();
-  
+
   // Responsive background for web >= 1024
   const [screenWidth, setScreenWidth] = useState(
     Platform.OS === "web"
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -97,7 +97,7 @@ export default function SeeAllSession() {
         spd_processId_config.spdonmood9_get_md_category_group_module_videos_module_wise,
         {
           p_module_id: moduleData.id,
-        }
+        },
       );
 
       if (response?.returnCode === true && response.returnData) {
@@ -113,10 +113,10 @@ export default function SeeAllSession() {
   // Handle session selection
   const handleSessionPress = async (session: any) => {
     let subscription_status = await AsyncStorage.getItem(SPD_USER_SUBSCRIPTION);
-    if (session.is_paid === 'paid' &&  subscription_status === "false") {
+    if (session.is_paid === "paid" && subscription_status === "false") {
       Toast.show({
-        type: 'info',
-        text1: 'You need to buy paid membership to view the content.'
+        type: "info",
+        text1: "You need to buy paid membership to view the content.",
       });
       return;
     }
@@ -150,209 +150,226 @@ export default function SeeAllSession() {
           <Text style={styles.sessionDuration}>{item.duration}</Text>
         )}
       </View>
-        {item.is_paid === 'paid' && (
-          <View style={styles.crownBadge}>
-            <MaterialCommunityIcons name="crown" size={18} color="#FFD700" />
-          </View>
-        )}
+      {item.is_paid === "paid" && (
+        <View style={styles.crownBadge}>
+          <MaterialCommunityIcons name="crown" size={18} color="#FFD700" />
+        </View>
+      )}
       <Ionicons name="chevron-forward" size={20} color="#B3B7C6" />
     </TouchableOpacity>
   );
   const mainContent = (
-     <View
-               style={[
-                 styles.containerNew,
-                 { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-               ]}>
- <ImageBackground
-      source={require("@/assets/images/internal_screen_bg.png")}
-      style={styles.background}
-      resizeMode="cover"
+    <View
+      style={[
+        styles.containerNew,
+        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+      ]}
     >
-      {/* Top Header for screen */}
-      <CustomTopHeader title="Back" />
-      <View style={[styles.container,
-                    Platform.OS === "web" && screenWidth >= 1024 ? { paddingHorizontal:116 } : null]}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 32 }}
-          showsVerticalScrollIndicator={false}
+      <ImageBackground
+        source={require("@/assets/images/internal_screen_bg.png")}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        {/* Top Header for screen */}
+        <CustomTopHeader title="Back" />
+        <View
+          style={[
+            styles.container,
+            Platform.OS === "web" && screenWidth >= 1024
+              ? { paddingHorizontal: 116 }
+              : null,
+          ]}
         >
-          {/* Sessions Title */}
-          <Text style={styles.sectionTitle}>Sessions</Text>
-          {/* Sessions List */}
-          <FlatList
-            data={sessions}
-            keyExtractor={(_, idx) => `session-${idx}`}
-            renderItem={renderSessionItem}
-            contentContainerStyle={styles.listContent}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            scrollEnabled={false}
-          />
+          <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: 32 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Sessions Title */}
+            <Text style={styles.sectionTitle}>Sessions</Text>
+            {/* Sessions List */}
+            <FlatList
+              data={sessions}
+              keyExtractor={(_, idx) => `session-${idx}`}
+              renderItem={renderSessionItem}
+              contentContainerStyle={styles.listContent}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              scrollEnabled={false}
+            />
 
-          {/* Related Videos */}
-          {relatedVideos.length > 0 && (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Related Videos</Text>
-              <FlatList
-                data={relatedVideos}
-                keyExtractor={(item) => `video-${item.id}`}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.videoList}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.videoThumb}
-                    onPress={() => handleVideoPress(item)}
-                  >
-                    <View
-                      style={{
-                        position: "relative",
-                        overflow: "hidden",
-                        borderRadius: 10,
-                      }}
+            {/* Related Videos */}
+            {relatedVideos.length > 0 && (
+              <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>Related Videos</Text>
+                <FlatList
+                  data={relatedVideos}
+                  keyExtractor={(item) => `video-${item.id}`}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.videoList}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.videoThumb}
+                      onPress={() => handleVideoPress(item)}
                     >
-                      <Image
+                      <View
+                        style={{
+                          position: "relative",
+                          overflow: "hidden",
+                          borderRadius: 10,
+                        }}
+                      >
+                        <Image
+                          source={{
+                            uri:
+                              SiteConfig.on_mood9_ASSETS_URL +
+                              RELATED_VIDEO_THUMB_URL +
+                              item.video_thumb_image,
+                          }}
+                          style={styles.videoImage}
+                          resizeMode="cover"
+                        />
+                        <View
+                          style={{
+                            position: "absolute",
+                            width: "100%",
+                            height: "100%",
+                            left: 0,
+                            top: 0,
+                            backgroundColor: "#000",
+                            zIndex: 1,
+                            opacity: 0.2,
+                          }}
+                        ></View>
+                        <View style={styles.playBtnWrapper}>
+                          <Ionicons name="play" size={24} color="#fff" />
+                        </View>
+                      </View>
+                      <Text style={styles.videoTitle} numberOfLines={1}>
+                        {item.file_name}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            )}
+
+            {/* Video Player Modal */}
+            <Modal
+              visible={showVideoPlayer}
+              animationType="slide"
+              transparent={true}
+              onRequestClose={() => setShowVideoPlayer(false)}
+            >
+              <View style={styles.modalBackground}>
+                <View
+                  style={[
+                    styles.videoModalContent,
+                    Platform.OS === "web" && screenWidth >= 1024
+                      ? {
+                          width: 800,
+                          height: 500,
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }
+                      : {},
+                  ]}
+                >
+                  <TouchableOpacity
+                    style={styles.closeModalButton}
+                    onPress={() => setShowVideoPlayer(false)}
+                  >
+                    <Ionicons name="close" size={28} color="#fff" />
+                  </TouchableOpacity>
+                  {selectedVideo?.audio_video_file ? (
+                    Platform.OS === "web" ? (
+                      <video
+                        src={
+                          SiteConfig.on_mood9_ASSETS_URL +
+                          RELATED_VIDEO_URL +
+                          selectedVideo.audio_video_file
+                        }
+                        controls
+                        style={
+                          screenWidth >= 1024
+                            ? {
+                                width: 700,
+                                height: 400,
+                                borderRadius: 10,
+                                background: "#000",
+                              }
+                            : styles.videoPlayer
+                        }
+                      />
+                    ) : (
+                      <Video
                         source={{
                           uri:
                             SiteConfig.on_mood9_ASSETS_URL +
-                            RELATED_VIDEO_THUMB_URL +
-                            item.video_thumb_image,
+                            RELATED_VIDEO_URL +
+                            selectedVideo.audio_video_file,
                         }}
-                        style={styles.videoImage}
-                        resizeMode="cover"
+                        style={styles.videoPlayer}
+                        useNativeControls
+                        resizeMode="contain"
+                        shouldPlay
                       />
-                      <View
-                        style={{
-                          position: "absolute",
-                          width: "100%",
-                          height: "100%",
-                          left: 0,
-                          top: 0,
-                          backgroundColor: "#000",
-                          zIndex: 1,
-                          opacity: 0.2,
-                        }}
-                      ></View>
-                      <View style={styles.playBtnWrapper}>
-                        <Ionicons name="play" size={24} color="#fff" />
-                      </View>
-                    </View>
-                    <Text style={styles.videoTitle} numberOfLines={1}>
-                      {item.file_name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-            </View>
-          )}
-
-          {/* Video Player Modal */}
-          <Modal
-            visible={showVideoPlayer}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={() => setShowVideoPlayer(false)}
-          >
-            <View style={styles.modalBackground}>
-              <View
-                style={[
-                  styles.videoModalContent,
-                  Platform.OS === "web" && screenWidth >= 1024
-                    ? { width: 800, height: 500, justifyContent: 'center', alignItems: 'center' }
-                    : {},
-                ]}
-              >
-                <TouchableOpacity
-                  style={styles.closeModalButton}
-                  onPress={() => setShowVideoPlayer(false)}
-                >
-                  <Ionicons name="close" size={28} color="#fff" />
-                </TouchableOpacity>
-                {selectedVideo?.audio_video_file ? (
-                  Platform.OS === "web" ? (
-                    <video
-                      src={
-                        SiteConfig.on_mood9_ASSETS_URL +
-                        RELATED_VIDEO_URL +
-                        selectedVideo.audio_video_file
-                      }
-                      controls
-                      style={
-                        screenWidth >= 1024
-                          ? { width: 700, height: 400, borderRadius: 10, background: '#000' }
-                          : styles.videoPlayer
-                      }
-                    />
-                  ) : (
-                    <Video
-                      source={{
-                        uri:
-                          SiteConfig.on_mood9_ASSETS_URL +
-                          RELATED_VIDEO_URL +
-                          selectedVideo.audio_video_file,
-                      }}
-                      style={styles.videoPlayer}
-                      useNativeControls
-                      resizeMode="contain"
-                      shouldPlay
-                    />
-                  )
-                ) : null}
+                    )
+                  ) : null}
+                </View>
               </View>
-            </View>
-          </Modal>
+            </Modal>
 
-          {/* Detail Layout (HTML) */}
-          {moduleData.long_description ? (
-            <View style={styles.sectionContainer}>
-              <RenderHtml
-                contentWidth={width - 32}
-                source={{ html: moduleData.long_description }}
-                tagsStyles={{
-                  p: {
-                    fontSize: 14,
-                    color: "#262626",
-                    fontFamily: "QuicksandRegular",
-                  },
-                  h1: {
-                    fontSize: 20,
-                    fontFamily: "QuicksandSemiBold",
-                    color: "#262626",
-                  },
-                  h2: {
-                    fontSize: 18,
-                    fontFamily: "QuicksandSemiBold",
-                    color: "#262626",
-                  },
-                  h3: {
-                    fontSize: 16,
-                    fontFamily: "QuicksandSemiBold",
-                    color: "#262626",
-                  },
-                }}
-              />
-            </View>
-          ) : null}
-        </ScrollView>
-      </View>
-      <Toast />
-    </ImageBackground>
+            {/* Detail Layout (HTML) */}
+            {moduleData.long_description ? (
+              <View style={styles.sectionContainer}>
+                <RenderHtml
+                  contentWidth={width - 32}
+                  source={{ html: moduleData.long_description }}
+                  tagsStyles={{
+                    p: {
+                      fontSize: 14,
+                      color: "#262626",
+                      fontFamily: "QuicksandRegular",
+                    },
+                    h1: {
+                      fontSize: 20,
+                      fontFamily: "QuicksandSemiBold",
+                      color: "#262626",
+                    },
+                    h2: {
+                      fontSize: 18,
+                      fontFamily: "QuicksandSemiBold",
+                      color: "#262626",
+                    },
+                    h3: {
+                      fontSize: 16,
+                      fontFamily: "QuicksandSemiBold",
+                      color: "#262626",
+                    },
+                  }}
+                />
+              </View>
+            ) : null}
+          </ScrollView>
+        </View>
+        <Toast />
+      </ImageBackground>
     </View>
   );
 
-   if (Platform.OS === "web" && screenWidth >= 1024) {
-      return (
-        <ImageBackground
-          source={require("../../assets/images/background_new_web.png")}
-          style={{ flex: 1, width: "100%", height: "100%" }}
-          resizeMode="cover"
-        >
-          {mainContent}
-        </ImageBackground>
-      );
-    }
-    return mainContent;
+  if (Platform.OS === "web" && screenWidth >= 1024) {
+    return (
+      <ImageBackground
+        source={require("../../assets/images/background_new_web.png")}
+        style={{ flex: 1, width: "100%", height: "100%" }}
+        resizeMode="cover"
+      >
+        {mainContent}
+      </ImageBackground>
+    );
+  }
+  return mainContent;
 }
 
 const styles = StyleSheet.create({
@@ -361,12 +378,12 @@ const styles = StyleSheet.create({
     // position: 'absolute',
     // top: -6,
     // right: -6,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: "rgba(0,0,0,0.3)",
     borderRadius: 24,
     height: 24,
     width: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginHorizontal: 8,
     padding: 1,
     zIndex: 2,

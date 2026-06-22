@@ -59,14 +59,14 @@ export default function SignupScreen() {
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const horizontalMargin = useResponsiveHorizontalMargin();
-  
+
   // Responsive background for web >= 1024
   const [screenWidth, setScreenWidth] = useState(
     Platform.OS === "web"
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -106,7 +106,7 @@ export default function SignupScreen() {
         try {
           const response = await callSuggestusAPI(
             spd_processId_config.sgconf_integration_postAPICallJWT,
-            request_body
+            request_body,
           );
 
           if (response.returnCode == true) {
@@ -131,11 +131,11 @@ export default function SignupScreen() {
                     p_user_id: full_data.id?.toString() || "",
                     p_asset_type: "profile_image",
                     p_asset_url: userInfo.photo,
-                  }
+                  },
                 );
                 const profile_response = await callSuggestusAPI(
                   spd_processId_config.spdonmood9_get_md_user_accounts_profile,
-                  { p_user_id: full_data.id?.toString() || "" }
+                  { p_user_id: full_data.id?.toString() || "" },
                 );
 
                 if (
@@ -146,22 +146,22 @@ export default function SignupScreen() {
                   if (!!userData) {
                     await setEncryptedID(
                       USER_FULL_DATA,
-                      JSON.stringify(userData)
+                      JSON.stringify(userData),
                     );
                   }
                 }
                 // Save specific fields
                 await setEncryptedID(
                   SPD_USER_ID,
-                  full_data.id?.toString() || ""
+                  full_data.id?.toString() || "",
                 );
                 await setEncryptedID(
                   SPD_USER_NAME,
-                  full_data.fname?.toString() || ""
+                  full_data.fname?.toString() || "",
                 );
                 await setEncryptedID(
                   SPD_USER_EMAIL,
-                  full_data.email?.toString() || ""
+                  full_data.email?.toString() || "",
                 );
                 /// lets check subscription status
                 if (!!active_subscription) {
@@ -186,7 +186,7 @@ export default function SignupScreen() {
                 } else {
                   Alert.alert(
                     "Error",
-                    response.returnData[0].p_return_result.message
+                    response.returnData[0].p_return_result.message,
                   );
                 }
               }
@@ -271,7 +271,7 @@ export default function SignupScreen() {
             email: email,
             pwd: password,
           },
-        }
+        },
       );
       if (step1_response.returnCode == true) {
         let status = step1_response.returnData[0].p_return_result.status;
@@ -285,7 +285,7 @@ export default function SignupScreen() {
             {
               p_user_id: mood_user_id,
               p_otp: otp,
-            }
+            },
           );
           if (step2_response.returnCode == true) {
             // lets call step 3 in which we are sending email to user
@@ -300,14 +300,14 @@ export default function SignupScreen() {
                   email: email,
                   subject: subject,
                 },
-              }
+              },
             );
             if (step3_response.returnCode == true) {
               let status = step3_response.returnData[0].p_return_result.status;
               if (status == true) {
                 await setEncryptedID(
                   SPD_USER_ID,
-                  mood_user_id?.toString() || ""
+                  mood_user_id?.toString() || "",
                 );
                 await setEncryptedID(SPD_USER_NAME, fullName?.toString() || "");
                 await setEncryptedID(SPD_USER_EMAIL, email?.toString() || "");
@@ -348,7 +348,7 @@ export default function SignupScreen() {
           } else {
             Alert.alert(
               "Error",
-              step1_response.returnData[0].p_return_result.error
+              step1_response.returnData[0].p_return_result.error,
             );
           }
         }
@@ -379,282 +379,295 @@ export default function SignupScreen() {
   };
 
   const mainContent = (
-     <View
-               style={[
-                 styles.containerNew,
-                 { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-                  Platform.OS === "web" && screenWidth >= 1024 && { justifyContent: 'center', flexGrow:1 } 
-               ]}>
-            <View style={[styles.container, isWeb && styles.webContainer,
-                      Platform.OS === "web" && screenWidth >= 1024 && {
-                                flex:'0 0 auto'
-                              }]}>
-                  <View style={styles.logoContainer}>
-                    <Image
-                      source={require("@/assets/images/splash_icon.png")}
-                      style={styles.logo}
-                    />
-                    {/* <Text style={styles.title}>OnMood9</Text> */}
-                  </View>
-                  <Text style={styles.signupTitle}>Create your account</Text>
+    <View
+      style={[
+        styles.containerNew,
+        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+        Platform.OS === "web" &&
+          screenWidth >= 1024 && { justifyContent: "center", flexGrow: 1 },
+      ]}
+    >
+      <View
+        style={[
+          styles.container,
+          isWeb && styles.webContainer,
+          Platform.OS === "web" &&
+            screenWidth >= 1024 && {
+              flex: "0 0 auto",
+            },
+        ]}
+      >
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("@/assets/images/splash_icon.png")}
+            style={styles.logo}
+          />
+          {/* <Text style={styles.title}>OnMood9</Text> */}
+        </View>
+        <Text style={styles.signupTitle}>Create your account</Text>
 
-                  <ScrollView
-                    style={{ flex: 1, width: "100%" }}
-                    contentContainerStyle={{
-                      flexGrow: 1,
-                      paddingHorizontal: 0,
-                    }}
-                    contentInsetAdjustmentBehavior="never"
-                    automaticallyAdjustContentInsets={false}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
-                  >
-                    <View style={[{ paddingBottom: 30, width: "100%" },
-                            Platform.OS === "web" && screenWidth >= 1024 && {
-                                      paddingBottom:'0'
-                                    }]}>
-                      <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Full name</Text>
-                        <View
-                          style={[
-                            styles.inputWrapper,
-                            focusedField === "fullName" && styles.inputWrapperFocused,
-                          ]}
-                        >
-                          <Image
-                            source={require("@/assets/images/user.png")}
-                            style={styles.inputIcon}
-                          />
-                          <TextInput
-                            style={[styles.input, styles.inputNoOutline]}
-                            placeholder="Enter Your Name"
-                            placeholderTextColor="#B3B7C6"
-                            value={fullName}
-                            onChangeText={(text) => {
-                              setFullName(text);
-                              if (fullNameError) setFullNameError(validateFullName(text));
-                            }}
-                            onFocus={() => setFocusedField("fullName")}
-                            onBlur={() => {
-                              setFocusedField("");
-                              setFullNameError(validateFullName(fullName));
-                            }}
-                            autoCapitalize="words"
-                          />
-                        </View>
-                        {fullNameError ? (
-                          <Text style={styles.errorText}>{fullNameError}</Text>
-                        ) : null}
+        <ScrollView
+          style={{ flex: 1, width: "100%" }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingHorizontal: 0,
+          }}
+          contentInsetAdjustmentBehavior="never"
+          automaticallyAdjustContentInsets={false}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View
+            style={[
+              { paddingBottom: 30, width: "100%" },
+              Platform.OS === "web" &&
+                screenWidth >= 1024 && {
+                  paddingBottom: "0",
+                },
+            ]}
+          >
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Full name</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  focusedField === "fullName" && styles.inputWrapperFocused,
+                ]}
+              >
+                <Image
+                  source={require("@/assets/images/user.png")}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={[styles.input, styles.inputNoOutline]}
+                  placeholder="Enter Your Name"
+                  placeholderTextColor="#B3B7C6"
+                  value={fullName}
+                  onChangeText={(text) => {
+                    setFullName(text);
+                    if (fullNameError) setFullNameError(validateFullName(text));
+                  }}
+                  onFocus={() => setFocusedField("fullName")}
+                  onBlur={() => {
+                    setFocusedField("");
+                    setFullNameError(validateFullName(fullName));
+                  }}
+                  autoCapitalize="words"
+                />
+              </View>
+              {fullNameError ? (
+                <Text style={styles.errorText}>{fullNameError}</Text>
+              ) : null}
 
-                        <Text style={styles.inputLabel}>Email</Text>
-                        <View
-                          style={[
-                            styles.inputWrapper,
-                            focusedField === "email" && styles.inputWrapperFocused,
-                          ]}
-                        >
-                          <Image
-                            source={require("@/assets/images/email.png")}
-                            style={styles.inputIcon}
-                          />
-                          <TextInput
-                            style={[styles.input, styles.inputNoOutline]}
-                            placeholder="Enter Your Email"
-                            placeholderTextColor="#B3B7C6"
-                            value={email}
-                            onChangeText={(text) => {
-                              setEmail(text);
-                              if (emailError) setEmailError(validateEmail(text));
-                            }}
-                            onFocus={() => setFocusedField("email")}
-                            onBlur={() => {
-                              setFocusedField("");
-                              setEmailError(validateEmail(email));
-                            }}
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                            textContentType="emailAddress"
-                          />
-                        </View>
-                        {emailError ? (
-                          <Text style={styles.errorText}>{emailError}</Text>
-                        ) : null}
+              <Text style={styles.inputLabel}>Email</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  focusedField === "email" && styles.inputWrapperFocused,
+                ]}
+              >
+                <Image
+                  source={require("@/assets/images/email.png")}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={[styles.input, styles.inputNoOutline]}
+                  placeholder="Enter Your Email"
+                  placeholderTextColor="#B3B7C6"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailError) setEmailError(validateEmail(text));
+                  }}
+                  onFocus={() => setFocusedField("email")}
+                  onBlur={() => {
+                    setFocusedField("");
+                    setEmailError(validateEmail(email));
+                  }}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  textContentType="emailAddress"
+                />
+              </View>
+              {emailError ? (
+                <Text style={styles.errorText}>{emailError}</Text>
+              ) : null}
 
-                        <Text style={styles.inputLabel}>Password</Text>
-                        <View
-                          style={[
-                            styles.inputWrapper,
-                            focusedField === "password" && styles.inputWrapperFocused,
-                          ]}
-                        >
-                          <Image
-                            source={require("@/assets/images/lock.png")}
-                            style={styles.inputIcon}
-                          />
-                          <TextInput
-                            style={[styles.input, styles.inputNoOutline]}
-                            placeholder="Password"
-                            placeholderTextColor="#B3B7C6"
-                            value={password}
-                            onChangeText={(text) => {
-                              setPassword(text);
-                              if (passwordError) setPasswordError(validatePassword(text));
-                            }}
-                            onFocus={() => setFocusedField("password")}
-                            onBlur={() => {
-                              setFocusedField("");
-                              setPasswordError(validatePassword(password));
-                            }}
-                            secureTextEntry={!showPassword}
-                            textContentType="newPassword"
-                          />
-                          <TouchableOpacity
-                            style={styles.eyeIcon}
-                            onPress={() => setShowPassword(!showPassword)}
-                          >
-                            <MaterialIcons
-                              name={showPassword ? "visibility" : "visibility-off"}
-                              size={20}
-                              color="#B3B7C6"
-                            />
-                          </TouchableOpacity>
-                        </View>
-                        {passwordError ? (
-                          <Text style={styles.errorText}>{passwordError}</Text>
-                        ) : null}
+              <Text style={styles.inputLabel}>Password</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  focusedField === "password" && styles.inputWrapperFocused,
+                ]}
+              >
+                <Image
+                  source={require("@/assets/images/lock.png")}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={[styles.input, styles.inputNoOutline]}
+                  placeholder="Password"
+                  placeholderTextColor="#B3B7C6"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) setPasswordError(validatePassword(text));
+                  }}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => {
+                    setFocusedField("");
+                    setPasswordError(validatePassword(password));
+                  }}
+                  secureTextEntry={!showPassword}
+                  textContentType="newPassword"
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <MaterialIcons
+                    name={showPassword ? "visibility" : "visibility-off"}
+                    size={20}
+                    color="#B3B7C6"
+                  />
+                </TouchableOpacity>
+              </View>
+              {passwordError ? (
+                <Text style={styles.errorText}>{passwordError}</Text>
+              ) : null}
 
-                        <Text style={styles.inputLabel}>Confirm password</Text>
-                        <View
-                          style={[
-                            styles.inputWrapper,
-                            focusedField === "confirmPassword" &&
-                              styles.inputWrapperFocused,
-                          ]}
-                        >
-                          <Image
-                            source={require("@/assets/images/lock.png")}
-                            style={styles.inputIcon}
-                          />
-                          <TextInput
-                            style={[styles.input, styles.inputNoOutline]}
-                            placeholder="Confirm password"
-                            placeholderTextColor="#B3B7C6"
-                            value={confirmPassword}
-                            onChangeText={(text) => {
-                              setConfirmPassword(text);
-                              if (confirmPasswordError)
-                                setConfirmPasswordError(validateConfirmPassword(text));
-                            }}
-                            onFocus={() => setFocusedField("confirmPassword")}
-                            onBlur={() => {
-                              setFocusedField("");
-                              setConfirmPasswordError(
-                                validateConfirmPassword(confirmPassword)
-                              );
-                            }}
-                            secureTextEntry={!showConfirmPassword}
-                            textContentType="newPassword"
-                            onKeyPress={
-                              isWeb
-                                ? (e) => {
-                                    if (e.nativeEvent.key === "Enter") {
-                                      handleSignup();
-                                    }
-                                  }
-                                : undefined
-                            }
-                          />
-                          <TouchableOpacity
-                            style={styles.eyeIcon}
-                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                          >
-                            <MaterialIcons
-                              name={showConfirmPassword ? "visibility" : "visibility-off"}
-                              size={20}
-                              color="#B3B7C6"
-                            />
-                          </TouchableOpacity>
-                        </View>
-                        {confirmPasswordError ? (
-                          <Text style={styles.errorText}>{confirmPasswordError}</Text>
-                        ) : null}
-                      </View>
+              <Text style={styles.inputLabel}>Confirm password</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  focusedField === "confirmPassword" &&
+                    styles.inputWrapperFocused,
+                ]}
+              >
+                <Image
+                  source={require("@/assets/images/lock.png")}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={[styles.input, styles.inputNoOutline]}
+                  placeholder="Confirm password"
+                  placeholderTextColor="#B3B7C6"
+                  value={confirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    if (confirmPasswordError)
+                      setConfirmPasswordError(validateConfirmPassword(text));
+                  }}
+                  onFocus={() => setFocusedField("confirmPassword")}
+                  onBlur={() => {
+                    setFocusedField("");
+                    setConfirmPasswordError(
+                      validateConfirmPassword(confirmPassword),
+                    );
+                  }}
+                  secureTextEntry={!showConfirmPassword}
+                  textContentType="newPassword"
+                  onKeyPress={
+                    isWeb
+                      ? (e) => {
+                          if (e.nativeEvent.key === "Enter") {
+                            handleSignup();
+                          }
+                        }
+                      : undefined
+                  }
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <MaterialIcons
+                    name={showConfirmPassword ? "visibility" : "visibility-off"}
+                    size={20}
+                    color="#B3B7C6"
+                  />
+                </TouchableOpacity>
+              </View>
+              {confirmPasswordError ? (
+                <Text style={styles.errorText}>{confirmPasswordError}</Text>
+              ) : null}
+            </View>
 
-                      <TouchableOpacity
-                        style={[
-                          styles.signupButton,
-                          isFormValid && !loading
-                            ? styles.signupButtonActive
-                            : styles.signupButtonInactive,
-                        ]}
-                        disabled={!isFormValid || loading}
-                        activeOpacity={isFormValid && !loading ? 0.7 : 1}
-                        onPress={handleSignup}
-                      >
-                        {loading ? (
-                          <ActivityIndicator color="#fff" />
-                        ) : (
-                          <Text style={styles.signupButtonText}>Create account</Text>
-                        )}
-                      </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.signupButton,
+                isFormValid && !loading
+                  ? styles.signupButtonActive
+                  : styles.signupButtonInactive,
+              ]}
+              disabled={!isFormValid || loading}
+              activeOpacity={isFormValid && !loading ? 0.7 : 1}
+              onPress={handleSignup}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.signupButtonText}>Create account</Text>
+              )}
+            </TouchableOpacity>
 
-                      <View style={styles.orContainer}>
-                        <View style={styles.line} />
-                        <Text style={styles.orText}>Or</Text>
-                        <View style={styles.line} />
-                      </View>
+            <View style={styles.orContainer}>
+              <View style={styles.line} />
+              <Text style={styles.orText}>Or</Text>
+              <View style={styles.line} />
+            </View>
 
-                      <View style={styles.socialContainer}>
-                        <TouchableOpacity
-                          style={styles.socialButton}
-                          onPress={() => onGoogleButtonPress()}
-                          disabled={googleLoading}
-                        >
-                          {googleLoading ? (
-                            <ActivityIndicator
-                              color="#8646EF"
-                              style={{ alignSelf: "center" }}
-                            />
-                          ) : (
-                            <Image
-                              source={require("@/assets/images/google.png")}
-                              style={styles.socialIcon}
-                            />
-                          )}
-                        </TouchableOpacity>
-                        {/* <TouchableOpacity style={styles.socialButton}>
+            <View style={styles.socialContainer}>
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={() => onGoogleButtonPress()}
+                disabled={googleLoading}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator
+                    color="#8646EF"
+                    style={{ alignSelf: "center" }}
+                  />
+                ) : (
+                  <Image
+                    source={require("@/assets/images/google.png")}
+                    style={styles.socialIcon}
+                  />
+                )}
+              </TouchableOpacity>
+              {/* <TouchableOpacity style={styles.socialButton}>
                           <Image
                             source={require("@/assets/images/fb.png")}
                             style={styles.socialIcon}
                           />
                         </TouchableOpacity> */}
-                      </View>
+            </View>
 
-                      <View style={styles.loginContainer}>
-                        <Text style={styles.loginText}>Already have an account? </Text>
-                        <TouchableOpacity
-                          onPress={() => router.replace("/init_screens/login")}
-                        >
-                          <Text style={styles.loginLink}>Sign in</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </ScrollView>
-                </View>
-     </View>
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <TouchableOpacity
+                onPress={() => router.replace("/init_screens/login")}
+              >
+                <Text style={styles.loginLink}>Sign in</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    </View>
   );
-    if (Platform.OS === "web" && screenWidth >= 1024) {
-          return (
-            <ImageBackground
-              source={require("@/assets/images/background_new_web.png")}
-              style={{ flex: 1, width: "100%", height: "100%" }}
-              resizeMode="cover"
-            >
-              {mainContent}
-            </ImageBackground>
-          );
-        }
-        return mainContent;
+  if (Platform.OS === "web" && screenWidth >= 1024) {
+    return (
+      <ImageBackground
+        source={require("@/assets/images/background_new_web.png")}
+        style={{ flex: 1, width: "100%", height: "100%" }}
+        resizeMode="cover"
+      >
+        {mainContent}
+      </ImageBackground>
+    );
+  }
+  return mainContent;
 }
 
 const styles = StyleSheet.create({

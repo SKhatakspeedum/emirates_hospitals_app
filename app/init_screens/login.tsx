@@ -30,7 +30,7 @@ import countries from "../json_dummy_datas/country";
 
 export default function LoginScreen() {
   const router = useRouter();
-  
+
   // Dynamic country picker states
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [showCountryModal, setShowCountryModal] = useState(false);
@@ -72,7 +72,7 @@ export default function LoginScreen() {
       await setEncryptedID(SPD_USER_ID, "guest_user_id");
       await setEncryptedID(SPD_USER_NAME, "Guest User");
       await setEncryptedID(SPD_USER_EMAIL, "guest@emirates.ae");
-      
+
       router.replace({
         pathname: "./otp_verification",
         params: { check_otp: mockOtp, phone_number: fullPhoneNumber },
@@ -135,9 +135,9 @@ export default function LoginScreen() {
                   <MaterialIcons name="keyboard-arrow-down" size={16} color="#7E8494" style={styles.chevron} />
                 </TouchableOpacity>
                 <View style={styles.separator} />
-                
+
                 <Text style={styles.countryCodePrefix}>{selectedCountry.code}</Text>
-                
+
                 <TextInput
                   style={styles.phoneTextInput}
                   keyboardType="phone-pad"
@@ -151,7 +151,7 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            <View style={{ flex: 1 }} />
+            <View style={{ flex: 0.50 }} />
 
             <TouchableOpacity
               style={[
@@ -187,7 +187,7 @@ export default function LoginScreen() {
           <View style={styles.modalContent}>
             {/* Sheet grab handle */}
             <View style={styles.modalHandle} />
-            
+
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Country</Text>
               <TouchableOpacity onPress={() => setShowCountryModal(false)} activeOpacity={0.6}>
@@ -245,7 +245,9 @@ const styles: any = StyleSheet.create({
     width: "100%",
   },
   logoImg: {
-    width: 280,
+    width: '80%',
+    maxWidth: 280,
+    aspectRatio: 4,
     height: 70,
   },
   startTitle: {

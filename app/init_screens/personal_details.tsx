@@ -185,7 +185,7 @@ export default function PersonalDetailsScreen() {
             </View>
 
             {/* Push elements to the top, pinning button at the bottom */}
-            <View style={{ flex: 1 }} />
+            <View style={{ flex: 0.35 }} />
 
             {/* Continue Button */}
             <TouchableOpacity

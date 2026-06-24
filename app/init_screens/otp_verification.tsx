@@ -41,7 +41,7 @@ export default function OTPVerificationScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const inputRefs = useRef<any[]>([]);
-  
+
   const [email_id, setEmail_id] = useState("");
   const [phoneDisplay, setPhoneDisplay] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number | null>(null);
@@ -268,7 +268,7 @@ export default function OTPVerificationScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={{ flex: 1 }} />
+            <View style={{ flex: 0.35 }} />
 
             <TouchableOpacity
               style={[

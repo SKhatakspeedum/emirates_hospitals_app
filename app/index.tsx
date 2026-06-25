@@ -22,7 +22,7 @@ export default function IndexRedirect() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const horizontalMargin = useResponsiveHorizontalMargin();
-  
+
   // Responsive background for web >= 1024
   const [screenWidth, setScreenWidth] = useState(
     Platform.OS === "web"
@@ -39,18 +39,37 @@ export default function IndexRedirect() {
     return () => window.removeEventListener("resize", updateScreenWidth);
   }, []);
 
+  console.log("[IndexRedirect] rendering. loading state:", loading);
+
   /// This use effect will init th suggestus in application
   useEffect(() => {
+    console.log("[IndexRedirect] init effect running");
     const init = async () => {
-      await initializeSuggestus();
+      try {
+        console.log("[IndexRedirect] Calling initializeSuggestus()...");
+        await initializeSuggestus();
+        console.log("[IndexRedirect] initializeSuggestus() completed successfully.");
+      } catch (err) {
+        console.error("[IndexRedirect] Error in initializeSuggestus():", err);
+      }
+
       // Check persistent login
+      console.log("[IndexRedirect] Setting up navigation timeout...");
       setTimeout(async () => {
-        const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
-        setLoading(false);
-        if (isLoggedIn === "true") {
-          router.replace("/tab_bar_home/HomeScreen");
-        } else {
-          router.replace("/init_screens/login");
+        try {
+          console.log("[IndexRedirect] Checking stored isLoggedIn state...");
+          const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
+          console.log("[IndexRedirect] isLoggedIn value fetched:", isLoggedIn);
+          setLoading(false);
+          if (isLoggedIn === "true") {
+            console.log("[IndexRedirect] Redirecting to /tab_bar_home/HomeScreen");
+            router.replace("/tab_bar_home/HomeScreen");
+          } else {
+            console.log("[IndexRedirect] Redirecting to /init_screens/login");
+            router.replace("/init_screens/login");
+          }
+        } catch (err) {
+          console.error("[IndexRedirect] Error fetching stored login state:", err);
         }
       }, 1000);
     };
@@ -115,5 +134,8 @@ const styles = StyleSheet.create({
     color: '#232323',
     marginBottom: 16,
     textAlign: 'center',
+  },
+  loader: {
+    marginTop: 16,
   },
 });

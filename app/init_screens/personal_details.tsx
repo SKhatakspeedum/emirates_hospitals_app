@@ -103,7 +103,7 @@ export default function PersonalDetailsScreen() {
     <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
@@ -184,27 +184,28 @@ export default function PersonalDetailsScreen() {
               </View>
             </View>
 
-            {/* Push elements to the top, pinning button at the bottom */}
-            <View style={{ flex: 0.35 }} />
-
-            {/* Continue Button */}
-            <TouchableOpacity
-              style={[
-                styles.continueBtn,
-                isContinueEnabled ? styles.continueBtnEnabled : styles.continueBtnDisabled,
-              ]}
-              disabled={!isContinueEnabled || loading}
-              onPress={handleContinue}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.continueBtnText}>Continue</Text>
-              )}
-            </TouchableOpacity>
+            {/* Spacer */}
+            <View style={{ height: 40 }} />
           </View>
         </ScrollView>
+
+        <View style={styles.bottomBtnContainer}>
+          <TouchableOpacity
+            style={[
+              styles.continueBtn,
+              isContinueEnabled ? styles.continueBtnEnabled : styles.continueBtnDisabled,
+            ]}
+            disabled={!isContinueEnabled || loading}
+            onPress={handleContinue}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.continueBtnText}>Continue</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -281,12 +282,17 @@ const styles: any = StyleSheet.create({
     outlineStyle: "none",
     outlineWidth: 0,
   } as any,
+  bottomBtnContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
+    paddingTop: 12,
+    backgroundColor: "#fff",
+  },
   continueBtn: {
     width: "100%",
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
-    marginTop: 24,
   },
   continueBtnEnabled: {
     backgroundColor: "#001871",

@@ -148,7 +148,6 @@ export default function HomeScreen() {
             ]}
           >
             {/* Main content */}
-            <AppHeaderWeb handleMenuPress={handleMenuPress} />
             <Tab.Navigator
               tabBar={(props) => (
                 <Footer {...props} toggleSheet={toggleSheet} />
@@ -214,7 +213,6 @@ export default function HomeScreen() {
           ]}
         >
           {/* Main content */}
-          <AppHeader handleMenuPress={handleMenuPress} />
           <Tab.Navigator
             tabBar={(props) => <Footer {...props} toggleSheet={toggleSheet} />}
             screenOptions={{ headerShown: false }}

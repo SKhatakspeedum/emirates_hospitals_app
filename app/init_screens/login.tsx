@@ -105,7 +105,7 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
@@ -150,26 +150,27 @@ export default function LoginScreen() {
                 />
               </View>
             </View>
-
-            <View style={{ flex: 0.50 }} />
-
-            <TouchableOpacity
-              style={[
-                styles.continueBtn,
-                isPhoneValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
-              ]}
-              disabled={!isPhoneValid || phoneLoading}
-              onPress={handlePhoneContinue}
-              activeOpacity={0.8}
-            >
-              {phoneLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.continueBtnText}>Continue</Text>
-              )}
-            </TouchableOpacity>
+            <View style={{ height: 40 }} />
           </View>
         </ScrollView>
+
+        <View style={styles.bottomBtnContainer}>
+          <TouchableOpacity
+            style={[
+              styles.continueBtn,
+              isPhoneValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
+            ]}
+            disabled={!isPhoneValid || phoneLoading}
+            onPress={handlePhoneContinue}
+            activeOpacity={0.8}
+          >
+            {phoneLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.continueBtnText}>Continue</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
 
       {/* Country Selector Bottom-Sheet Modal */}
@@ -322,12 +323,17 @@ const styles: any = StyleSheet.create({
     outlineStyle: "none",
     outlineWidth: 0,
   },
+  bottomBtnContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
+    paddingTop: 12,
+    backgroundColor: "#fff",
+  },
   continueBtn: {
     width: "100%",
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
-    marginTop: 24,
   },
   continueBtnEnabled: {
     backgroundColor: "#001871",

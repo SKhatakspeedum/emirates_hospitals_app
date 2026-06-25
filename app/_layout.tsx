@@ -12,26 +12,26 @@ import { AuthProvider } from "./auth-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IS_LOGGED_IN } from "./config/config";
 import { useRouter } from "expo-router";
-import { View } from "react-native";
+import { View, Platform } from "react-native";
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const [loaded] = useFonts(Fonts);
+  const [loaded, error] = useFonts(Fonts);
   const [isReady, setIsReady] = useState(false);
 
+  console.log("[RootLayout] rendering. loaded:", loaded, "isReady:", isReady, "error:", error);
+
   useEffect(() => {
+    console.log("[RootLayout] loaded changed:", loaded);
     if (loaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(err => console.error("[RootLayout] SplashScreen.hideAsync error:", err));
     }
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
-
   useEffect(() => {
+    if (Platform.OS !== "web") return;
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       sessionStorage.setItem("refreshDetected", "true");
     };
@@ -41,6 +41,7 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS !== "web") return;
     const blockRefresh = async (e: KeyboardEvent) => {
       if (e.key === "F5" || (e.ctrlKey && e.key === "r")) {
         sessionStorage.setItem("refreshDetected", "true");
@@ -52,6 +53,7 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS !== "web") return;
     const checkReload = async () => {
       const wasRefreshed = sessionStorage.getItem("refreshDetected");
       if (wasRefreshed === "true") {
@@ -72,11 +74,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     const handleInitialRedirect = async () => {
-      // const wasRefreshed = sessionStorage.getItem('refreshDetected');
-      // if (wasRefreshed === 'true') {
-      //   sessionStorage.removeItem('refreshDetected');
-      // }
-
+      console.log("[RootLayout] setting isReady to true");
       setIsReady(true); // Show the app now
     };
 
@@ -84,6 +82,7 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS !== "web") return;
     const handleBack = (e: PopStateEvent) => {
       e.preventDefault();
 
@@ -99,21 +98,15 @@ export default function RootLayout() {
     };
   }, []);
 
-  useEffect(() => {
-    const handleBack = (e: PopStateEvent) => {
-      e.preventDefault();
-      // Force user to stay on current route or redirect to home
-      router.replace("/tab_bar_home/HomeScreen"); // or any route
-    };
+  if (!loaded) {
+    console.log("[RootLayout] fonts not loaded yet, returning null");
+    return null;
+  }
 
-    window.addEventListener("popstate", handleBack);
-
-    return () => {
-      window.removeEventListener("popstate", handleBack);
-    };
-  }, []);
-
-  if (!isReady) return <View></View>;
+  if (!isReady) {
+    console.log("[RootLayout] isReady is false, rendering blank View");
+    return <View></View>;
+  }
   return (
     <AuthProvider>
       <ThemeProvider value={DefaultTheme}>

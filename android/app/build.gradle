@@ -87,21 +87,12 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace 'com.onmood9.app'
-    
-    lint {
-        baseline = file("lint-baseline.xml")
-        abortOnError false
-        checkReleaseBuilds false
-        disable 'NotificationPermission'
-    }
-    
     defaultConfig {
         applicationId 'com.onmood9.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
+        versionCode 1
         versionName "1.1.0"
-        manifestPlaceholders = [appAuthRedirectScheme: 'OnMood9']
     }
     signingConfigs {
         debug {
@@ -156,6 +147,9 @@ android {
 }
 
 dependencies {
+    // The version of react-native is set by the React Native Gradle Plugin
+    implementation("com.facebook.react:react-android")
+
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
     def isWebpAnimatedEnabled = (findProperty('expo.webp.animated') ?: "") == "true";

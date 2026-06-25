@@ -215,7 +215,7 @@ export default function OTPVerificationScreen() {
     <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
@@ -268,25 +268,27 @@ export default function OTPVerificationScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={{ flex: 0.35 }} />
-
-            <TouchableOpacity
-              style={[
-                styles.verifyBtn,
-                isOtpComplete ? styles.verifyBtnEnabled : styles.verifyBtnDisabled,
-              ]}
-              onPress={handleVerifyOtp}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.verifyBtnText}>Verify</Text>
-              )}
-            </TouchableOpacity>
+            <View style={{ height: 40 }} />
           </View>
         </ScrollView>
+
+        <View style={styles.bottomBtnContainer}>
+          <TouchableOpacity
+            style={[
+              styles.verifyBtn,
+              isOtpComplete ? styles.verifyBtnEnabled : styles.verifyBtnDisabled,
+            ]}
+            onPress={handleVerifyOtp}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.verifyBtnText}>Verify</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -388,12 +390,17 @@ const styles: any = StyleSheet.create({
     fontFamily: "QuicksandBold",
     fontSize: 14,
   },
+  bottomBtnContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
+    paddingTop: 12,
+    backgroundColor: "#fff",
+  },
   verifyBtn: {
     width: "100%",
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
-    marginTop: 24,
   },
   verifyBtnEnabled: {
     backgroundColor: "#001871",

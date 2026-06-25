@@ -29,32 +29,32 @@ import Toast from "react-native-toast-message";
 const drawerItems = [
   {
     label: "PHR",
-    icon: <Ionicons name="id-card-outline" size={22} color="#0076D6" />,
-    screen: "profile/ProfileScreen",
+    icon: <Ionicons name="id-card-outline" size={22} color="#001871" />,
+    screen: "phr",
   },
   {
     label: "Explore",
-    icon: <MaterialCommunityIcons name="heart-search-outline" size={22} color="#0076D6" />,
-    screen: "explore_tab/ExploreScreen",
+    icon: <MaterialCommunityIcons name="compass-outline" size={22} color="#001871" />,
+    screen: "explore",
   },
   {
     label: "Orders",
-    icon: <Ionicons name="bag-handle-outline" size={22} color="#0076D6" />,
-    screen: "Orders",
+    icon: <Ionicons name="bag-handle-outline" size={22} color="#001871" />,
+    screen: "OrderScreen",
   },
   {
     label: "Medicines",
-    icon: <MaterialCommunityIcons name="file-prescription-outline" size={22} color="#0076D6" />,
-    screen: "Medicines",
+    icon: <MaterialCommunityIcons name="prescription" size={22} color="#001871" />,
+    screen: "MedicinesScreen",
   },
   {
     label: "Health Packages",
-    icon: <MaterialCommunityIcons name="medical-bag" size={22} color="#0076D6" />,
+    icon: <MaterialCommunityIcons name="briefcase-plus-outline" size={22} color="#001871" />,
     screen: "HealthPackages",
   },
   {
     label: "Bills",
-    icon: <Ionicons name="receipt-outline" size={22} color="#0076D6" />,
+    icon: <Ionicons name="receipt-outline" size={22} color="#001871" />,
     screen: "Bills",
   },
 ];
@@ -70,7 +70,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
       }
     };
     loadProfileData();
-    const unsubscribe = props.navigation.addListener("focus", () => {
+    const unsubscribe = (props.navigation as any).addListener("focus", () => {
       loadProfileData();
     });
     return unsubscribe;
@@ -97,9 +97,16 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     }
 
     // Check if the route is defined in the navigator
-    const validRoutes = ["profile/ProfileScreen", "explore_tab/ExploreScreen"];
+    const validRoutes = ["profile/ProfileScreen", "explore_tab/ExploreScreen", "orders/OrdersScreen"];
     if (validRoutes.includes(screen)) {
       props.navigation.navigate(screen);
+      props.navigation.closeDrawer();
+    } else if (screen === "OrderScreen") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", { screen: "OrderScreen" });
+      props.navigation.closeDrawer();
+    }
+    else if (screen === "MedicinesScreen") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", { screen: "MedicinesScreen" });
       props.navigation.closeDrawer();
     } else {
       // Placeholder display for under-development medical screens
@@ -164,7 +171,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             activeOpacity={0.7}
           >
             <View style={styles.linkIconWrapper}>
-              <Ionicons name="log-out-outline" size={22} color="#0076D6" style={styles.logoutIcon} />
+              <Ionicons name="log-out-outline" size={22} color="#001871" style={styles.logoutIcon} />
             </View>
             <Text style={styles.logoutLabel}>Log out</Text>
             <Ionicons name="chevron-forward" size={16} color="#B3B7C6" />
@@ -213,7 +220,7 @@ const styles = StyleSheet.create({
   },
   userLocation: {
     fontSize: 12,
-    color: "#0076D6",
+    color: "#001871",
     fontFamily: "QuicksandMedium",
   },
   headerChevron: {
@@ -242,7 +249,7 @@ const styles = StyleSheet.create({
   },
   linkLabel: {
     fontSize: 15,
-    color: "#1A1D24",
+    color: "#696970ff",
     marginLeft: 14,
     fontFamily: "QuicksandSemiBold",
     flex: 1,
@@ -265,7 +272,7 @@ const styles = StyleSheet.create({
   },
   logoutLabel: {
     fontSize: 15,
-    color: "#1A1D24",
+    color: "#696970ff",
     marginLeft: 14,
     fontFamily: "QuicksandSemiBold",
     flex: 1,

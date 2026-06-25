@@ -58,7 +58,7 @@ export default function Footer({
       {/* Sleep Tab */}
       <TouchableOpacity
         style={state.index === 1 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("SleepTab")}
+        onPress={() => navigation.navigate("OrderScreen")}
       >
         <OrderIcon color={state.index === 1 ? "#001871" : "#B3B7C6"} />
         <Text
@@ -81,7 +81,7 @@ export default function Footer({
       {/* Explore Tab */}
       <TouchableOpacity
         style={state.index === 3 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("ExploreTab")}
+        onPress={() => navigation.navigate("ChatScreen")}
       >
         <ChatIcon color={state.index === 3 ? "#001871" : "#B3B7C6"} />
         <Text
@@ -94,7 +94,7 @@ export default function Footer({
       {/* Profile Tab */}
       <TouchableOpacity
         style={state.index === 4 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("Music")}
+        onPress={() => navigation.navigate("MedicinesScreen")}
       >
         <RxIcon color={state.index === 4 ? "#001871" : "#B3B7C6"} />
         <Text

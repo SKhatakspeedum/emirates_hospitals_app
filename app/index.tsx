@@ -5,9 +5,9 @@ import {
   Text,
   Image,
   StyleSheet,
-  ImageBackground,
   ActivityIndicator,
-  Platform
+  Platform,
+  Dimensions
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -78,53 +78,75 @@ export default function IndexRedirect() {
   // return <Redirect href="/init_screens/splash" />;
   return (
     <View style={styles.container}>
-      <ImageBackground
+      <Image
         source={require("@/assets/images/splash_bg.png")}
-        style={styles.bg}
-        resizeMode="cover"
-      >
-        <View style={styles.centerContent}>
-          <Image
-            source={require("@/assets/images/splash_icon.png")}
-            style={styles.logo}
-          />
-          <Text style={styles.title}>OnMood9</Text>
-          {loading && (
+        style={styles.topBg}
+        resizeMode="contain"
+      />
+      <Image
+        source={require("@/assets/images/splash_bg.png")}
+        style={styles.bottomBg}
+        resizeMode="contain"
+      />
+      <View style={styles.centerContent}>
+        <Image
+          source={require("@/assets/images/logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
+        {loading && (
+          <View style={styles.loaderContainer}>
             <ActivityIndicator
               size="large"
-              color="#000"
-              style={styles.loader}
+              color="#0177C8"
             />
-          )}
-        </View>
-      </ImageBackground>
+
+          </View>
+        )}
+      </View>
       <Toast />
     </View>
   );
 }
 
+const { width: screenWidth } = Dimensions.get("window");
+const bgSize = screenWidth * 0.9;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: '#fff',
+    backgroundColor: '#fff',
   },
-  bg: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#fff",
+  topBg: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: bgSize,
+    height: bgSize,
+    opacity: 0.2,
+  },
+  bottomBg: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: bgSize,
+    height: bgSize,
+    transform: [{ rotate: '180deg' }],
+    opacity: 0.2,
   },
   centerContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 1,
   },
 
   logo: {
-    width: 64,
-    height: 64,
-    marginBottom: 16,
-    borderRadius: 32,
+    width: '80%',
+    maxWidth: 280,
+    aspectRatio: 4,
+    height: 70,
     backgroundColor: "transparent",
   },
   title: {
@@ -135,7 +157,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  loader: {
+  loaderContainer: {
     marginTop: 16,
   },
 });

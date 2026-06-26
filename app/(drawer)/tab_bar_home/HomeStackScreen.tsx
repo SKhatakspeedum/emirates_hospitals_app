@@ -7,6 +7,7 @@ import PatientDetailsScreen from "@/app/appointments/PatientDetailsScreen";
 import AppointmentTypeScreen from "@/app/appointments/AppointmentTypeScreen";
 import ScheduleBookScreen from "@/app/appointments/ScheduleBookScreen";
 import ConfirmScreen from "@/app/appointments/ConfirmScreen";
+import AppointmentDetailsScreen from "@/app/appointments/AppointmentDetailsScreen";
 
 const HomeStack = createNativeStackNavigator();
 
@@ -20,6 +21,7 @@ export default function HomeStackScreen() {
       <HomeStack.Screen name="AppointmentType" component={AppointmentTypeScreen} />
       <HomeStack.Screen name="ScheduleBook" component={ScheduleBookScreen} />
       <HomeStack.Screen name="ConfirmScreen" component={ConfirmScreen} />
+      <HomeStack.Screen name="AppointmentDetails" component={AppointmentDetailsScreen} />
     </HomeStack.Navigator>
   );
 }

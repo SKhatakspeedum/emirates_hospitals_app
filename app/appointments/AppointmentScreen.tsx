@@ -184,32 +184,48 @@ export default function AppointmentScreen() {
 
               return (
                 <View key={item.id} style={styles.appointmentRow}>
-                  {/* Date Badge */}
-                  <View style={styles.dateBadge}>
-                    <View style={styles.dateBadgeHeader}>
-                      <Text style={styles.dateMonthText}>{dateMonth}</Text>
+                  <TouchableOpacity
+                    style={styles.rowClickArea}
+                    activeOpacity={0.7}
+                    onPress={() => navigation.navigate("AppointmentDetails", {
+                      doctorId: item.id,
+                      doctorName: item.doctorName,
+                      specialty: item.specialty,
+                      avatar: item.avatar,
+                      patientName: "John Doe",
+                      type: item.type || "Primary care visit",
+                      date: item.date,
+                      time: startTime,
+                      isHistory: activeTab === "history",
+                    })}
+                  >
+                    {/* Date Badge */}
+                    <View style={styles.dateBadge}>
+                      <View style={styles.dateBadgeHeader}>
+                        <Text style={styles.dateMonthText}>{dateMonth}</Text>
+                      </View>
+                      <View style={styles.dateBadgeBody}>
+                        <Text style={styles.dateNumText}>{dateNum}</Text>
+                      </View>
                     </View>
-                    <View style={styles.dateBadgeBody}>
-                      <Text style={styles.dateNumText}>{dateNum}</Text>
-                    </View>
-                  </View>
 
-                  {/* Details Column */}
-                  <View style={styles.detailsCol}>
-                    <Text style={styles.appointmentTitle}>{specialty}</Text>
+                    {/* Details Column */}
+                    <View style={styles.detailsCol}>
+                      <Text style={styles.appointmentTitle}>{specialty}</Text>
 
-                    <View style={styles.metaRow}>
-                      <Ionicons name="time-outline" size={14} color={styles.iconColor.color} />
-                      <Text style={styles.metaText}>{startTime}</Text>
-                    </View>
+                      <View style={styles.metaRow}>
+                        <Ionicons name="time-outline" size={14} color={styles.iconColor.color} />
+                        <Text style={styles.metaText}>{startTime}</Text>
+                      </View>
 
-                    <View style={styles.metaRow}>
-                      <Ionicons name="location-outline" size={14} color={styles.iconColor.color} />
-                      <Text style={styles.metaText} numberOfLines={1}>
-                        P.O Box 28973, Dubai, Emirates - 28973
-                      </Text>
+                      <View style={styles.metaRow}>
+                        <Ionicons name="location-outline" size={14} color={styles.iconColor.color} />
+                        <Text style={styles.metaText} numberOfLines={1}>
+                          P.O Box 28973, Dubai, Emirates - 28973
+                        </Text>
+                      </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
 
                   {/* Options Ellipsis */}
                   <TouchableOpacity
@@ -406,6 +422,11 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     padding: 8,
+  },
+  rowClickArea: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   fab: {
     position: "absolute",

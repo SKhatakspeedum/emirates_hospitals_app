@@ -26,7 +26,7 @@ import DashboardScreen from "@/app/dashboard/DashboardScreen";
 import OrdersScreen from "@/app/orders/OrdersScreen";
 import MedicinesScreen from "@/app/medicines/MedicinesScreen";
 import ChatScreen from "@/app/chats/ChatScreen";
-
+import HomeStackScreen from "./HomeStackScreen";
 
 const { width, height } = Dimensions.get("window");
 const Tab = createBottomTabNavigator();
@@ -158,7 +158,7 @@ export default function HomeScreen() {
               )}
               screenOptions={{ headerShown: false }}
             >
-              <Tab.Screen name="HomeTab" component={DashboardScreen} />
+              <Tab.Screen name="HomeTab" component={HomeStackScreen} />
               <Tab.Screen name="OrdersScreen" component={OrdersScreen} />
               {/* This is a dummy screen for the center logo button - it won't be navigated to */}
               <Tab.Screen
@@ -221,7 +221,7 @@ export default function HomeScreen() {
             tabBar={(props) => <Footer {...props} toggleSheet={toggleSheet} />}
             screenOptions={{ headerShown: false }}
           >
-            <Tab.Screen name="HomeTab" component={DashboardScreen} />
+            <Tab.Screen name="HomeTab" component={HomeStackScreen} />
             <Tab.Screen name="OrderScreen" component={OrdersScreen} />
             {/* This is a dummy screen for the center logo button - it won't be navigated to */}
             <Tab.Screen

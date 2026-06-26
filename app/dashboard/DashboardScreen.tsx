@@ -85,7 +85,11 @@ export default function DashboardScreen() {
 
         {/* Quick Action Cards (Overlapping) */}
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.actionCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate("Appointment")}
+          >
             <View style={styles.actionIconCircle}>
               <Ionicons name="calendar-outline" size={28} color="#0076D6" />
             </View>

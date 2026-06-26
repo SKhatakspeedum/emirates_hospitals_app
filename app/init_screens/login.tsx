@@ -241,8 +241,9 @@ const styles: any = StyleSheet.create({
     paddingBottom: 24,
   },
   logoContainer: {
+
     alignItems: "center",
-    marginBottom: 40,
+    marginVertical: 50,
     width: "100%",
   },
   logoImg: {

@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "OnMood9",
+    "name": "EmiratesHospital Group",
     "slug": "OnMood9",
     "version": "1.1.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "OnMood9",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,14 +15,14 @@
     "android": {
       "package": "com.onmood9.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/splash_bg_native.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       }
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png",
+      "favicon": "./assets/images/logo.png",
       "router": {
         "type": "hash"
       }
@@ -32,7 +32,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash_bg_native.png",
+          "image": "./assets/images/logo.png",
           "resizeMode": "cover",
           "backgroundColor": "#ffffff"
         }

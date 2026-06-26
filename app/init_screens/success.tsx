@@ -58,7 +58,7 @@ export default function SuccessScreen() {
           </Text>
         </View>
 
-        <View style={{ flex: 0.2 }} />
+        <View style={{ flex: 1 }} />
 
         {/* Pinned Go to Home Button */}
         <TouchableOpacity
@@ -91,7 +91,7 @@ const styles: any = StyleSheet.create({
     position: "relative",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 40,
+    marginVertical: 40,
   },
   checkmarkCircle: {
     width: 100,

@@ -37,7 +37,7 @@ export default function Footer({
       {/* Home Tab */}
       <TouchableOpacity
         style={state.index === 0 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("HomeTab")}
+        onPress={() => navigation.navigate("HomeTab", { screen: "Dashboard" })}
       >
         <Image
           source={require("@/assets/images/home.png")}

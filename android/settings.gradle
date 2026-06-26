@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'OnMood9'
+rootProject.name = 'EmiratesHospital Group'
 
 dependencyResolutionManagement {
   versionCatalogs {

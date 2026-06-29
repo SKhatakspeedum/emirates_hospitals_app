@@ -11,9 +11,11 @@ import {
   Dimensions,
   Alert,
   Platform,
+  Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../config/colors";
 
 export default function ConfirmScreen() {
   const navigation = useNavigation<any>();
@@ -84,12 +86,12 @@ export default function ConfirmScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <SafeAreaView style={{ flex: 1 }}>
         {/* Title Header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="chevron-back" size={22} color="#262626" />
+            <Ionicons name="chevron-back" size={22} color={Colors.text} />
             <Text style={styles.headerTitle}>Confirm</Text>
           </TouchableOpacity>
         </View>
@@ -106,7 +108,7 @@ export default function ConfirmScreen() {
           <View style={styles.listContainer}>
             {/* Finalize Appointment Title */}
             <View style={styles.listItem}>
-              <Ionicons name="calendar-outline" size={22} color="#001871" style={styles.itemIcon} />
+              <Ionicons name="calendar-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
               <Text style={styles.itemTitle}>Finalize your appointment</Text>
             </View>
 
@@ -114,7 +116,7 @@ export default function ConfirmScreen() {
 
             {/* Patient Name */}
             <View style={styles.listItem}>
-              <Ionicons name="person-outline" size={22} color="#001871" style={styles.itemIcon} />
+              <Ionicons name="person-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
               <Text style={styles.itemValue}>{patientName}</Text>
             </View>
 
@@ -123,22 +125,40 @@ export default function ConfirmScreen() {
             {/* Date and Time Slot with Change Button */}
             <View style={[styles.listItem, styles.listItemSpaceBetween]}>
               <View style={styles.listItemLeft}>
-                <Ionicons name="time-outline" size={22} color="#001871" style={styles.itemIcon} />
+                <Ionicons name="time-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
                 <View style={styles.textColumn}>
                   <Text style={styles.itemValue}>{getFormattedDateDisplay(date)}</Text>
                   <Text style={[styles.itemValue, { marginTop: 2 }]}>{time}</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.changeButton} onPress={() => navigation.goBack()}>
-                <Text style={styles.changeButtonText}>Change</Text>
-              </TouchableOpacity>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.changeButton,
+                  {
+                    backgroundColor: pressed ? Colors.primary : "transparent",
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                  }
+                ]}
+                onPress={() => navigation.goBack()}
+              >
+                {({ pressed }) => (
+                  <Text
+                    style={[
+                      styles.changeButtonText,
+                      { color: pressed ? Colors.background : Colors.primary }
+                    ]}
+                  >
+                    Change
+                  </Text>
+                )}
+              </Pressable>
             </View>
 
             <View style={styles.divider} />
 
             {/* Location / Address */}
             <View style={styles.listItem}>
-              <Ionicons name="location-outline" size={22} color="#001871" style={styles.itemIcon} />
+              <Ionicons name="location-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
               <Text style={styles.itemValue}>
                 P.O Box 28973, Dubai,{"\n"}Emirates - 28973
               </Text>
@@ -149,22 +169,39 @@ export default function ConfirmScreen() {
             {/* Payment / Self Pay with Add Button */}
             <View style={[styles.listItem, styles.listItemSpaceBetween]}>
               <View style={styles.listItemLeft}>
-                <Ionicons name="card-outline" size={22} color="#001871" style={styles.itemIcon} />
+                <Ionicons name="card-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
                 <Text style={styles.itemValue}>Self Pay</Text>
               </View>
-              <TouchableOpacity style={styles.addButton}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.addButton,
+                  {
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                    opacity: pressed ? 0.8 : 1,
+                  }
+                ]}
+              >
                 <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </ScrollView>
 
         {/* Footer with Continue Button */}
         <View style={styles.footerContainer}>
-          <TouchableOpacity style={styles.confirmButton} activeOpacity={0.8} onPress={handleDone}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.confirmButton,
+              {
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+                opacity: pressed ? 0.85 : 1,
+              }
+            ]}
+            onPress={handleDone}
+          >
             <Text style={styles.confirmButtonText}>Continue</Text>
-            <Ionicons name="arrow-forward" size={18} color="#fff" />
-          </TouchableOpacity>
+            <Ionicons name="arrow-forward" size={18} color={Colors.background} />
+          </Pressable>
         </View>
       </SafeAreaView>
     </View>
@@ -174,7 +211,7 @@ export default function ConfirmScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: Colors.background,
   },
   headerContainer: {
     flexDirection: "row",
@@ -182,16 +219,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   headerTitle: {
     fontSize: 20,
-    color: "#262626",
+    color: Colors.text,
     marginLeft: 5,
     fontFamily: "Quicksand",
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   bannerImage: {
     width: "100%",
@@ -226,12 +263,12 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#001871",
+    color: Colors.primary,
   },
   itemValue: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#2D3748",
+    color: Colors.text,
     lineHeight: 20,
   },
   textColumn: {
@@ -239,11 +276,11 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: Colors.border,
   },
   changeButton: {
     borderWidth: 1.5,
-    borderColor: "#001871",
+    borderColor: Colors.primary,
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 16,
@@ -251,7 +288,7 @@ const styles = StyleSheet.create({
   changeButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#001871",
+    color: Colors.primary,
   },
   addButton: {
     paddingVertical: 6,
@@ -260,15 +297,19 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#94A3B8",
+    color: Colors.label,
   },
   footerContainer: {
-    padding: 16,
-    backgroundColor: "#ffffff",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    backgroundColor: "transparent",
     alignItems: "flex-end",
   },
   confirmButton: {
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -276,10 +317,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     gap: 8,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   confirmButtonText: {
     fontSize: 16,
-    color: "#fff",
+    color: Colors.background,
     fontWeight: "700",
   },
 });

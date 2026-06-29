@@ -10,9 +10,11 @@ import {
   Dimensions,
   Image,
   Platform,
+  Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../config/colors";
 
 const getDynamicScheduleData = () => {
   const today = new Date();
@@ -137,8 +139,8 @@ export default function ScheduleBookScreen() {
       {/* Title Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="chevron-back" size={22} color="#262626" />
-          <Text style={styles.headerTitle}>Date & time</Text>
+          <Ionicons name="chevron-back" size={22} color={Colors.text} />
+          <Text style={styles.headerTitle}>Date & Time</Text>
         </TouchableOpacity>
       </View>
 
@@ -152,7 +154,7 @@ export default function ScheduleBookScreen() {
 
         {/* Service Type Row */}
         <View style={styles.serviceRow}>
-          <Ionicons name={getServiceIcon(type)} size={24} color="#001871" />
+          <Ionicons name={getServiceIcon(type)} size={24} color={Colors.primary} />
           <Text style={styles.serviceText}>{type || "Virtual urgent care"}</Text>
         </View>
 
@@ -181,16 +183,22 @@ export default function ScheduleBookScreen() {
               {item.slots.map((slot) => {
                 const active = isSlotActive(item.dateId, slot);
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={slot}
-                    style={[styles.slotButton, active && styles.slotButtonActive]}
-                    activeOpacity={0.8}
+                    style={({ pressed }) => [
+                      styles.slotButton,
+                      active && styles.slotButtonActive,
+                      {
+                        transform: [{ scale: pressed ? 0.95 : 1 }],
+                        opacity: pressed ? 0.8 : 1,
+                      }
+                    ]}
                     onPress={() => handleSlotSelect(item, slot)}
                   >
                     <Text style={[styles.slotText, active && styles.slotTextActive]}>
                       {slot}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -200,10 +208,19 @@ export default function ScheduleBookScreen() {
 
       {/* Footer / Confirm CTA */}
       <View style={styles.footerContainer}>
-        <TouchableOpacity style={styles.confirmButton} activeOpacity={0.8} onPress={handleConfirm}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.confirmButton,
+            {
+              transform: [{ scale: pressed ? 0.95 : 1 }],
+              opacity: pressed ? 0.85 : 1,
+            }
+          ]}
+          onPress={handleConfirm}
+        >
           <Text style={styles.confirmButtonText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={18} color="#fff" />
-        </TouchableOpacity>
+          <Ionicons name="arrow-forward" size={18} color={Colors.background} />
+        </Pressable>
       </View>
     </View>
   );
@@ -212,7 +229,7 @@ export default function ScheduleBookScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: Colors.background,
   },
   headerContainer: {
     flexDirection: "row",
@@ -220,16 +237,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   headerTitle: {
     fontSize: 20,
-    color: "#262626",
+    color: Colors.text,
     marginLeft: 5,
     fontFamily: "Quicksand",
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   disclaimerContainer: {
     marginHorizontal: 20,
@@ -238,7 +255,7 @@ const styles = StyleSheet.create({
   },
   disclaimerText: {
     fontSize: 13,
-    color: "#4A5478",
+    color: Colors.label,
     textAlign: "center",
     lineHeight: 18,
   },
@@ -252,7 +269,7 @@ const styles = StyleSheet.create({
   serviceText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#001871",
+    color: Colors.primary,
   },
   dateSection: {
     marginBottom: 28,
@@ -271,19 +288,19 @@ const styles = StyleSheet.create({
   verticalBar: {
     width: 2.5,
     height: 18,
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     marginRight: 8,
     borderRadius: 1,
   },
   dateStrText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#001871",
+    color: Colors.primary,
   },
   dayLabelText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#001871",
+    color: Colors.primary,
     letterSpacing: 0.5,
   },
   doctorRow: {
@@ -300,39 +317,44 @@ const styles = StyleSheet.create({
   doctorNameText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#2D3748",
+    color: Colors.text,
   },
   slotsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    justifyContent: "space-between",
   },
   slotButton: {
-    width: (Dimensions.get("window").width - 52) / 2,
+    width: "48%",
     height: 48,
-    backgroundColor: "#F4F6FB",
+    backgroundColor: Colors.border,
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 12,
   },
   slotButtonActive: {
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
   },
   slotText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#001871",
+    color: Colors.primary,
   },
   slotTextActive: {
-    color: "#ffffff",
+    color: Colors.background,
   },
   footerContainer: {
-    padding: 16,
-    backgroundColor: "#ffffff",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    backgroundColor: "transparent",
     alignItems: "flex-end",
   },
   confirmButton: {
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -340,10 +362,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     gap: 8,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   confirmButtonText: {
     fontSize: 16,
-    color: "#fff",
+    color: Colors.background,
     fontWeight: "700",
   },
 });

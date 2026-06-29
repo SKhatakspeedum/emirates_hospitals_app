@@ -9,6 +9,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import confettiParticles from "../json_dummy_datas/confettiParticles";
+import { Colors } from "../config/colors";
 
 export default function SuccessScreen() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function SuccessScreen() {
 const styles: any = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
@@ -97,12 +98,12 @@ const styles: any = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 55,
-    backgroundColor: "#0076D6",
+    backgroundColor: Colors.secondary,
     justifyContent: "center",
     alignItems: "center",
     ...Platform.select({
       ios: {
-        shadowColor: "#0076D6",
+        shadowColor: Colors.secondary,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
         shadowRadius: 10,
@@ -124,27 +125,27 @@ const styles: any = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     marginBottom: 16,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 15,
     fontFamily: "QuicksandMedium",
-    color: "#8E95A9",
+    color: Colors.label,
     textAlign: "center",
     lineHeight: 22,
   },
   homeBtn: {
     width: "100%",
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 24,
     ...Platform.select({
       ios: {
-        shadowColor: "#001871",
+        shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -155,7 +156,7 @@ const styles: any = StyleSheet.create({
     }),
   },
   homeBtnText: {
-    color: "#fff",
+    color: Colors.lightgray,
     fontSize: 16,
     fontFamily: "QuicksandSemiBold",
   },

@@ -21,6 +21,7 @@ import {
   SPD_USER_NAME,
   SPD_USER_EMAIL,
 } from "../config/config";
+import { Colors } from "../config/colors";
 import {
   setEncryptedID,
   getDecryptedID,
@@ -134,7 +135,7 @@ export default function PersonalDetailsScreen() {
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={focusedField === "fullName" ? "#0177C8" : "#8E95A9"}
+                  color={focusedField === "fullName" ? Colors.secondary : Colors.label}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -165,7 +166,7 @@ export default function PersonalDetailsScreen() {
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={focusedField === "email" ? "#0177C8" : "#8E95A9"}
+                  color={focusedField === "email" ? Colors.secondary : Colors.label}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -200,7 +201,7 @@ export default function PersonalDetailsScreen() {
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={Colors.label} />
             ) : (
               <Text style={styles.continueBtnText}>Continue</Text>
             )}
@@ -214,7 +215,7 @@ export default function PersonalDetailsScreen() {
 const styles: any = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
@@ -234,7 +235,7 @@ const styles: any = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     marginBottom: 32,
     textAlign: "left",
   },
@@ -245,7 +246,7 @@ const styles: any = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontFamily: "QuicksandSemiBold",
-    color: "#8E95A9",
+    color: Colors.label,
     marginBottom: 8,
     textAlign: "left",
   },
@@ -256,16 +257,16 @@ const styles: any = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FAFAFF",
+    backgroundColor: Colors.lightgray,
     borderWidth: 1,
-    borderColor: "#F0F1F9",
+    borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
     width: "100%",
   },
   inputWrapperFocused: {
-    borderColor: "#0177C8",
+    borderColor: Colors.secondary,
   },
   inputIcon: {
     marginRight: 12,
@@ -286,7 +287,7 @@ const styles: any = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === "ios" ? 36 : 24,
     paddingTop: 12,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   continueBtn: {
     width: "100%",
@@ -295,10 +296,10 @@ const styles: any = StyleSheet.create({
     alignItems: "center",
   },
   continueBtnEnabled: {
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: "#001871",
+        shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -309,10 +310,10 @@ const styles: any = StyleSheet.create({
     }),
   },
   continueBtnDisabled: {
-    backgroundColor: "#D0D4DF",
+    backgroundColor: Colors.inactive,
   },
   continueBtnText: {
-    color: "#fff",
+    color: Colors.lightgray,
     fontSize: 16,
     fontFamily: "QuicksandSemiBold",
   },

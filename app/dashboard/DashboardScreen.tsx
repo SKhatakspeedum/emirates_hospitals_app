@@ -10,11 +10,13 @@ import {
   Platform,
   StatusBar,
   SafeAreaView,
+  Pressable,
 } from "react-native";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SPD_USER_NAME } from "@/app/config/config";
+import { Colors } from "../config/colors";
 
 const { width } = Dimensions.get("window");
 
@@ -38,70 +40,185 @@ export default function DashboardScreen() {
     // Navigate to see all specialties
   };
 
+  const Providers = [{
+    uri: "https://randomuser.me/api/portraits/men/32.jpg",
+    name: "Dr. Wael Berro",
+    specialty: "Family Medicine Consul..",
+  },
+  {
+    uri: "https://randomuser.me/api/portraits/women/68.jpg",
+    name: "Dr. Sheena Cherry",
+    specialty: "Family Medicine Consul..",
+  },
+  {
+    uri: "https://randomuser.me/api/portraits/women/34.jpg",
+    name: "Dr. Alice Johnson",
+    specialty: "Family Medicine Consul..",
+  },
+  {
+    uri: "https://randomuser.me/api/portraits/men/46.jpg",
+    name: "Dr. Yanal Salam",
+    specialty: "Consultation Internal",
+  },
+
+
+  ]
+
+  const specialties = [
+    {
+      label: "Neurology",
+      Icon: MaterialCommunityIcons,
+      iconName: "brain",
+      iconSize: 28,
+      iconColor: "#00A3E0",
+      bgColor: "#E6F5FC",
+    },
+    {
+      label: "ENT",
+      Icon: Ionicons,
+      iconName: "body-outline",
+      iconSize: 26,
+      iconColor: "#E87722",
+      bgColor: "#FDF1EB",
+    },
+    {
+      label: "Cardiology",
+      Icon: FontAwesome5,
+      iconName: "heartbeat",
+      iconSize: 24,
+      iconColor: "#E74C3C",
+      bgColor: "#FDEDEC",
+    },
+    {
+      label: "Pediatrics",
+      Icon: MaterialCommunityIcons,
+      iconName: "baby-face-outline",
+      iconSize: 28,
+      iconColor: "#F1C40F",
+      bgColor: "#FEF9E7",
+    },
+    {
+      label: "Gen. Medicine",
+      Icon: FontAwesome5,
+      iconName: "briefcase-medical",
+      iconSize: 22,
+      iconColor: "#2ECC71",
+      bgColor: "#EAF6F0",
+    },
+
+  ];
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#002075" />
+      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Header Section */}
-        <View style={styles.header}>
+      {/* Fixed Sticky Header Top Bar (positioned absolutely to avoid Android ScrollView sticky bugs) */}
+      <View style={styles.stickyHeader}>
+        <SafeAreaView style={styles.headerSafeArea}>
+          <View style={styles.headerTopRow}>
+            {/* Profile image */}
+            <Pressable
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.7 : 1,
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              })}
+              onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+            >
+              <Image
+                source={{ uri: "https://randomuser.me/api/portraits/men/43.jpg" }}
+                style={styles.profileImage}
+              />
+            </Pressable>
+            {/* Search & Notification Icons */}
+            <View style={styles.headerIconsRight}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  {
+                    opacity: pressed ? 0.6 : 1,
+                    backgroundColor: pressed ? "rgba(255, 255, 255, 0.15)" : "transparent",
+                    borderRadius: 20,
+                  }
+                ]}
+              >
+                <Ionicons name="search-outline" size={24} color={Colors.background} />
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  {
+                    opacity: pressed ? 0.6 : 1,
+                    backgroundColor: pressed ? "rgba(255, 255, 255, 0.15)" : "transparent",
+                    borderRadius: 20,
+                  }
+                ]}
+              >
+                <View>
+                  <Ionicons name="notifications-outline" size={24} color={Colors.background} />
+                  <View style={styles.badgeDot} />
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Spacer to push scroll content below the absolute header bar */}
+        <View style={styles.stickyHeaderSpacer} />
+
+        {/* Greeting & Background Section */}
+        <View style={styles.headerGreetingSection}>
           {/* Plus background elements for visual excellence */}
           <View style={styles.bgCircleLarge} />
           <View style={styles.bgPlusVertical} />
           <View style={styles.bgPlusHorizontal} />
 
-          <SafeAreaView style={styles.headerSafeArea}>
-            <View style={styles.headerTopRow}>
-              {/* Profile image */}
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-              >
-                <Image
-                  source={{ uri: "https://randomuser.me/api/portraits/men/43.jpg" }}
-                  style={styles.profileImage}
-                />
-              </TouchableOpacity>
-              {/* Search & Notification Icons */}
-              <View style={styles.headerIconsRight}>
-                <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
-                  <Ionicons name="search-outline" size={24} color="#fff" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
-                  <View>
-                    <Ionicons name="notifications-outline" size={24} color="#fff" />
-                    <View style={styles.badgeDot} />
-                  </View>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.greetingContainer}>
-              <Text style={styles.greetingText}>Morning, {userProfileName}</Text>
-              <Text style={styles.subGreetingText}>You have 4 upcoming appointments.</Text>
-            </View>
-          </SafeAreaView>
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greetingText}>Morning, {userProfileName}</Text>
+            <Text style={styles.subGreetingText}>You have 4 upcoming appointments.</Text>
+          </View>
         </View>
 
         {/* Quick Action Cards (Overlapping) */}
         <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={styles.actionCard}
-            activeOpacity={0.85}
+          <Pressable
+            style={({ pressed }) => [
+              styles.actionCard,
+              {
+                backgroundColor: pressed ? Colors.pressed : Colors.background,
+                opacity: pressed ? 0.8 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+                borderTopLeftRadius: 16,
+                borderBottomLeftRadius: 16,
+              }
+            ]}
             onPress={() => navigation.navigate("Appointment")}
           >
-            <View style={styles.actionIconCircle}>
-              <Ionicons name="calendar-outline" size={28} color="#0076D6" />
-            </View>
+            <Ionicons name="calendar-outline" size={32} color={Colors.secondary} />
             <Text style={styles.actionCardText}>Appointments</Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.85}>
-            <View style={styles.actionIconCircle}>
-              <FontAwesome5 name="briefcase-medical" size={24} color="#0076D6" />
-            </View>
+          <View style={styles.verticalDivider} />
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.actionCard,
+              {
+                backgroundColor: pressed ? Colors.pressed : Colors.background,
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+                borderTopRightRadius: 16,
+                borderBottomRightRadius: 16,
+              }
+            ]}
+          >
+            <Ionicons name="medkit-outline" size={32} color={Colors.secondary} />
             <Text style={styles.actionCardText}>Health Packages</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Content Area */}
@@ -110,7 +227,16 @@ export default function DashboardScreen() {
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Upcoming</Text>
 
-            <TouchableOpacity style={styles.upcomingCard} activeOpacity={0.9}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.upcomingCard,
+                {
+                  backgroundColor: pressed ? Colors.pressed : "#E8F4FD",
+                  opacity: pressed ? 0.9 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                }
+              ]}
+            >
               <Image
                 source={{ uri: "https://randomuser.me/api/portraits/men/1.jpg" }}
                 style={styles.doctorAvatarLarge}
@@ -121,7 +247,7 @@ export default function DashboardScreen() {
                 <Text style={styles.upcomingDocSpecialty}>Dermatologists</Text>
 
                 <View style={styles.upcomingTimeRow}>
-                  <Ionicons name="time-outline" size={16} color="#002075" style={styles.timeIcon} />
+                  <Ionicons name="time-outline" size={16} color={Colors.primary} style={styles.timeIcon} />
                   <Text style={styles.upcomingTimeText}>09:30 AM - 10:00 AM</Text>
                 </View>
               </View>
@@ -131,21 +257,24 @@ export default function DashboardScreen() {
                 <Text style={styles.dateBadgeDay}>02</Text>
                 <Text style={styles.dateBadgeMonth}>Mar</Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {/* Providers Section */}
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="people-outline" size={20} color="#0076D6" style={styles.sectionHeaderIcon} />
-                <Text style={styles.sectionTitle}>Providers</Text>
+                <Ionicons name="people-outline" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Providers</Text>
               </View>
-              <TouchableOpacity onPress={handleSeeAllProviders} activeOpacity={0.6}>
+              <Pressable
+                onPress={handleSeeAllProviders}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
                 <Text style={styles.seeAllText}>
-                  See all <Ionicons name="chevron-forward" size={12} color="#0076D6" />
+                  See all <Ionicons name="chevron-forward" size={12} color={Colors.secondary} />
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <ScrollView
@@ -153,35 +282,32 @@ export default function DashboardScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.providersScrollList}
             >
-              {/* Dr. Wael Berro */}
-              <TouchableOpacity style={styles.providerCard} activeOpacity={0.9}>
-                <Image
-                  source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
-                  style={styles.providerAvatar}
-                />
-                <Text style={styles.providerName} numberOfLines={1}>Dr. Wael Berro</Text>
-                <Text style={styles.providerSpecialty} numberOfLines={2}>Family Medicine Consul...</Text>
-              </TouchableOpacity>
+              {/* Dr Consultant Internal Medicine */}
 
-              {/* Dr. Sheena Cherry */}
-              <TouchableOpacity style={styles.providerCard} activeOpacity={0.9}>
-                <Image
-                  source={{ uri: "https://randomuser.me/api/portraits/women/68.jpg" }}
-                  style={styles.providerAvatar}
-                />
-                <Text style={styles.providerName} numberOfLines={1}>Dr. Sheena Cherry</Text>
-                <Text style={styles.providerSpecialty} numberOfLines={2}>Specialist Internal Medi...</Text>
-              </TouchableOpacity>
 
-              {/* Dr. Yanal Salam */}
-              <TouchableOpacity style={styles.providerCard} activeOpacity={0.9}>
-                <Image
-                  source={{ uri: "https://randomuser.me/api/portraits/men/46.jpg" }}
-                  style={styles.providerAvatar}
-                />
-                <Text style={styles.providerName} numberOfLines={1}>Dr. Yanal Salam</Text>
-                <Text style={styles.providerSpecialty} numberOfLines={2}>Consultant Intern...</Text>
-              </TouchableOpacity>
+              {
+                Providers.map((provider, index) => (
+                  <Pressable
+                    key={index}
+                    style={({ pressed }) => [
+                      styles.providerCard,
+                      {
+                        backgroundColor: pressed ? Colors.pressed : Colors.background,
+                        borderColor: pressed ? Colors.activeBorder : Colors.border,
+                        opacity: pressed ? 0.9 : 1,
+                        transform: [{ scale: pressed ? 0.97 : 1 }],
+                      }
+                    ]}
+                  >
+                    <Image
+                      source={{ uri: provider.uri }}
+                      style={styles.providerAvatar}
+                    />
+                    <Text style={styles.providerName} numberOfLines={1}>{provider.name}</Text>
+                    <Text style={styles.providerSpecialty} numberOfLines={2}>{provider.specialty}</Text>
+                  </Pressable>
+                ))
+              }
             </ScrollView>
           </View>
 
@@ -189,14 +315,17 @@ export default function DashboardScreen() {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="heart-half-outline" size={20} color="#0076D6" style={styles.sectionHeaderIcon} />
-                <Text style={styles.sectionTitle}>Specialties</Text>
+                <Ionicons name="heart-half-outline" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Specialties</Text>
               </View>
-              <TouchableOpacity onPress={handleSeeAllSpecialties} activeOpacity={0.6}>
+              <Pressable
+                onPress={handleSeeAllSpecialties}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
                 <Text style={styles.seeAllText}>
-                  See all <Ionicons name="chevron-forward" size={12} color="#0076D6" />
+                  See all <Ionicons name="chevron-forward" size={12} color={Colors.secondary} />
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <ScrollView
@@ -204,37 +333,37 @@ export default function DashboardScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.specialtiesScrollList}
             >
-              {/* Neurology */}
-              <TouchableOpacity style={styles.specialtyItem} activeOpacity={0.8}>
-                <View style={[styles.specialtyIconCircle, { backgroundColor: "#E6F5FC" }]}>
-                  <MaterialCommunityIcons name="brain" size={28} color="#00A3E0" />
-                </View>
-                <Text style={styles.specialtyLabel}>Neurology</Text>
-              </TouchableOpacity>
+              {specialties.map((item, index) => {
+                const Icon = item.Icon;
 
-              {/* ENT */}
-              <TouchableOpacity style={styles.specialtyItem} activeOpacity={0.8}>
-                <View style={[styles.specialtyIconCircle, { backgroundColor: "#FDF1EB" }]}>
-                  <Ionicons name="body-outline" size={26} color="#E87722" />
-                </View>
-                <Text style={styles.specialtyLabel}>ENT</Text>
-              </TouchableOpacity>
+                return (
+                  <Pressable
+                    key={index}
+                    style={({ pressed }) => [
+                      styles.specialtyItem,
+                      {
+                        opacity: pressed ? 0.7 : 1,
+                        transform: [{ scale: pressed ? 0.95 : 1 }],
+                      }
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.specialtyIconCircle,
+                        { backgroundColor: item.bgColor },
+                      ]}
+                    >
+                      <Icon
+                        name={item.iconName}
+                        size={item.iconSize}
+                        color={item.iconColor}
+                      />
+                    </View>
 
-              {/* Gen. Medicine */}
-              <TouchableOpacity style={styles.specialtyItem} activeOpacity={0.8}>
-                <View style={[styles.specialtyIconCircle, { backgroundColor: "#EAF6F0" }]}>
-                  <FontAwesome5 name="briefcase-medical" size={22} color="#2ECC71" />
-                </View>
-                <Text style={styles.specialtyLabel}>Gen. Medicine</Text>
-              </TouchableOpacity>
-
-              {/* Pediatrics */}
-              <TouchableOpacity style={styles.specialtyItem} activeOpacity={0.8}>
-                <View style={[styles.specialtyIconCircle, { backgroundColor: "#FEF9E7" }]}>
-                  <MaterialCommunityIcons name="baby-face-outline" size={28} color="#F1C40F" />
-                </View>
-                <Text style={styles.specialtyLabel}>Pediatrics</Text>
-              </TouchableOpacity>
+                    <Text style={styles.specialtyLabel}>{item.label}</Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </View>
 
@@ -249,18 +378,25 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FC",
+    backgroundColor: Colors.background,
   },
   scrollContent: {
     flexGrow: 1,
   },
-  header: {
-    backgroundColor: "#002075",
+  stickyHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.primary,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 20 : 50,
-    paddingBottom: 50,
-    position: "relative",
-    overflow: "hidden",
+    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 50,
+    paddingBottom: 12,
+    zIndex: 10,
+  },
+  stickyHeaderSpacer: {
+    height: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 72 : 110,
+    backgroundColor: Colors.primary,
   },
   headerSafeArea: {
     width: "100%",
@@ -269,7 +405,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 28,
   },
   profileImage: {
     width: 48,
@@ -295,8 +430,19 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: "#FF3B30",
   },
+  headerGreetingSection: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 50,
+    position: "relative",
+    overflow: "hidden",
+    borderBottomStartRadius: 20,
+    borderBottomEndRadius: 20,
+
+  },
   greetingContainer: {
-    marginTop: 4,
+    marginTop: 1,
   },
   greetingText: {
     fontSize: 24,
@@ -311,71 +457,72 @@ const styles = StyleSheet.create({
   },
   bgCircleLarge: {
     position: "absolute",
-    right: -50,
-    top: 30,
-    width: 220,
-    height: 220,
+    right: -30,
+    top: -50,
+    width: 170,
+    height: 170,
     borderRadius: 110,
-    borderWidth: 32,
+    borderWidth: 25,
     borderColor: "rgba(255, 255, 255, 0.04)",
   },
   bgPlusVertical: {
     position: "absolute",
     right: 50,
-    top: 110,
+    top: 20,
     width: 14,
-    height: 60,
+    height: 50,
     backgroundColor: "rgba(255, 255, 255, 0.04)",
     borderRadius: 7,
   },
   bgPlusHorizontal: {
     position: "absolute",
-    right: 27,
-    top: 133,
-    width: 60,
+    right: 30,
+    top: 40,
+    width: 50,
     height: 14,
     backgroundColor: "rgba(255, 255, 255, 0.04)",
     borderRadius: 7,
   },
   actionsRow: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    marginTop: -30,
-    justifyContent: "space-between",
-    width: "100%",
+    backgroundColor: Colors.background,
+    borderRadius: 16,
+    marginHorizontal: 20,
+    marginTop: -35,
+    alignItems: "center",
+    // ...Platform.select({
+    //   ios: {
+    //     shadowColor: "#000",
+    //     shadowOffset: { width: 0, height: 10 },
+    //     shadowOpacity: 0.2,
+    //     shadowRadius: 12,
+    //   },
+    //   android: {
+    //     elevation: 4,
+    //   },
+    // }),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
+    elevation: 2,
   },
   actionCard: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    paddingVertical: 18,
     alignItems: "center",
-    marginHorizontal: 6,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  actionIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#F0F7FD",
     justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
+    paddingVertical: 18,
   },
   actionCardText: {
     fontSize: 14,
-    fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    fontFamily: "QuicksandMedium",
+    color: Colors.text,
+    marginTop: 8,
+  },
+  verticalDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: Colors.border,
   },
   bodyContent: {
     paddingHorizontal: 20,
@@ -387,7 +534,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     marginBottom: 14,
   },
   upcomingCard: {
@@ -410,13 +557,13 @@ const styles = StyleSheet.create({
   upcomingDocName: {
     fontSize: 16,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     marginBottom: 3,
   },
   upcomingDocSpecialty: {
     fontSize: 13,
     fontFamily: "QuicksandMedium",
-    color: "#6F768E",
+    color: Colors.label,
     marginBottom: 8,
   },
   upcomingTimeRow: {
@@ -429,13 +576,13 @@ const styles = StyleSheet.create({
   upcomingTimeText: {
     fontSize: 13,
     fontFamily: "QuicksandBold",
-    color: "#002075",
+    color: Colors.primary,
   },
   dateBadgeContainer: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
@@ -444,13 +591,13 @@ const styles = StyleSheet.create({
   dateBadgeDay: {
     fontSize: 16,
     fontFamily: "QuicksandBold",
-    color: "#0076D6",
+    color: Colors.secondary,
     lineHeight: 18,
   },
   dateBadgeMonth: {
     fontSize: 11,
     fontFamily: "QuicksandSemiBold",
-    color: "#0076D6",
+    color: Colors.secondary,
   },
   sectionHeaderRow: {
     flexDirection: "row",
@@ -468,20 +615,20 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontSize: 13,
     fontFamily: "QuicksandBold",
-    color: "#0076D6",
+    color: Colors.secondary,
   },
   providersScrollList: {
     paddingRight: 10,
   },
   providerCard: {
     width: 135,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderRadius: 14,
     padding: 12,
     marginRight: 12,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E2E5ED",
+    borderColor: Colors.border,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -504,14 +651,14 @@ const styles = StyleSheet.create({
   providerName: {
     fontSize: 13,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     textAlign: "center",
     marginBottom: 4,
   },
   providerSpecialty: {
     fontSize: 11,
     fontFamily: "QuicksandMedium",
-    color: "#8E95A9",
+    color: Colors.label,
     textAlign: "center",
     lineHeight: 14,
   },
@@ -534,10 +681,10 @@ const styles = StyleSheet.create({
   specialtyLabel: {
     fontSize: 12,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     textAlign: "center",
   },
   bottomSpacer: {
-    height: 100,
+    height: 35,
   },
 });

@@ -10,9 +10,11 @@ import {
   StatusBar,
   TextInput,
   Platform,
+  Pressable,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../config/colors";
 
 // Static Doctor Mock Data
 const PROVIDERS = [
@@ -150,10 +152,10 @@ export default function NearbyProvidersScreen() {
                   {/* Actions Row */}
                   <View style={styles.actionsRow}>
                     <TouchableOpacity style={styles.actionIconButton} activeOpacity={0.7}>
-                      <Ionicons name="call" size={14} color="#001871" />
+                      <Ionicons name="call" size={14} color={Colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionIconButton} activeOpacity={0.7}>
-                      <Ionicons name="chatbubble" size={14} color="#001871" />
+                      <Ionicons name="chatbubble" size={14} color={Colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionIconButton} activeOpacity={0.7}>
                       <Text style={styles.infoText}>i</Text>
@@ -162,9 +164,14 @@ export default function NearbyProvidersScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.bookButton}
-                activeOpacity={0.8}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.bookButton,
+                  {
+                    backgroundColor: pressed ? Colors.primary : Colors.background,
+                    transform: [{ scale: pressed ? 0.98 : 1 }],
+                  },
+                ]}
                 onPress={() =>
                   navigation.navigate("PatientDetails", {
                     doctorId: provider.id,
@@ -174,9 +181,27 @@ export default function NearbyProvidersScreen() {
                   })
                 }
               >
-                <Text style={styles.bookButtonText}>Book an appointment</Text>
-                <Text style={styles.bookButtonSubtext}>{provider.nextAvailable}</Text>
-              </TouchableOpacity>
+                {({ pressed }) => (
+                  <>
+                    <Text
+                      style={[
+                        styles.bookButtonText,
+                        { color: pressed ? Colors.background : Colors.primary },
+                      ]}
+                    >
+                      Book an appointment
+                    </Text>
+                    <Text
+                      style={[
+                        styles.bookButtonSubtext,
+                        { color: pressed ? "rgba(255, 255, 255, 0.8)" : Colors.label },
+                      ]}
+                    >
+                      {provider.nextAvailable}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
             </View>
           ))
         )}
@@ -188,7 +213,7 @@ export default function NearbyProvidersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   header: {
     paddingBottom: 15,
@@ -199,7 +224,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   headerRow: {
     flexDirection: "row",
@@ -211,7 +236,7 @@ const styles = StyleSheet.create({
 
   headerTitle: {
     fontSize: 20,
-    color: "#262626",
+    color: Colors.text,
     marginLeft: 5,
     fontFamily: "Quicksand",
   },
@@ -227,13 +252,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.border,
   },
   categoryChipActive: {
-    backgroundColor: "#001871",
-    borderColor: "#001871",
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   categoryText: {
     fontSize: 14,
@@ -241,7 +266,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   categoryTextActive: {
-    color: "#fff",
+    color: Colors.background,
     fontWeight: "600",
   },
   listContainer: {
@@ -255,17 +280,17 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: "#B3B7C6",
+    color: Colors.label,
     marginTop: 12,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#f3f3f3ff",
-    shadowColor: "#262626",
+    borderColor: Colors.border,
+    shadowColor: Colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 1,
@@ -302,7 +327,7 @@ const styles = StyleSheet.create({
   },
   qualification: {
     fontSize: 13,
-    color: "#B3B7C6",
+    color: Colors.label,
     marginBottom: 6,
   },
   actionsRow: {
@@ -315,21 +340,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: "#F8F9FC",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.border,
     justifyContent: "center",
     alignItems: "center",
   },
   infoText: {
     fontSize: 14,
-    color: "#001871",
+    color: Colors.primary,
     fontWeight: "bold",
     fontStyle: "italic",
     fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
   },
   bookButton: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderWidth: 1.5,
-    borderColor: "#001871",
+    borderColor: Colors.primary,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: "center",
@@ -338,7 +363,7 @@ const styles = StyleSheet.create({
   },
   bookButtonText: {
     fontSize: 15,
-    color: "#001871",
+    color: Colors.primary,
     fontWeight: "700",
   },
   bookButtonSubtext: {

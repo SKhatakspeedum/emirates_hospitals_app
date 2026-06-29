@@ -1,6 +1,6 @@
 // config/labels.ts
 export const Labels = {
-  appName: "OnMood9",
+  appName: "Emirates Hospital",
   welcome: "Welcome back!",
   email: "Email",
   password: "Password",

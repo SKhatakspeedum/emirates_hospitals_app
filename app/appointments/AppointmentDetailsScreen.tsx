@@ -10,9 +10,11 @@ import {
   ScrollView,
   Dimensions,
   Platform,
+  Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../config/colors";
 
 export default function AppointmentDetailsScreen() {
   const navigation = useNavigation<any>();
@@ -76,12 +78,12 @@ export default function AppointmentDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <SafeAreaView style={{ flex: 1 }}>
         {/* Title Header matching NearbyProviders styling */}
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="chevron-back" size={22} color="#262626" />
+            <Ionicons name="chevron-back" size={22} color={Colors.text} />
             <Text style={styles.headerTitle}>Appointment details</Text>
           </TouchableOpacity>
         </View>
@@ -101,7 +103,7 @@ export default function AppointmentDetailsScreen() {
 
             {/* Patient Name */}
             <View style={styles.listItem}>
-              <Ionicons name="person-outline" size={22} color="#001871" style={styles.itemIcon} />
+              <Ionicons name="person-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
               <Text style={styles.itemValue}>{patientName || "John Doe"}</Text>
             </View>
 
@@ -109,7 +111,7 @@ export default function AppointmentDetailsScreen() {
 
             {/* Date and Time */}
             <View style={styles.listItem}>
-              <Ionicons name="time-outline" size={22} color="#001871" style={styles.itemIcon} />
+              <Ionicons name="time-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
               <View style={styles.textColumn}>
                 <Text style={styles.itemValue}>{getFormattedDateDisplay(date)}</Text>
                 <Text style={[styles.itemValue, { marginTop: 2 }]}>{time}</Text>
@@ -120,7 +122,7 @@ export default function AppointmentDetailsScreen() {
 
             {/* Location / Address */}
             <View style={styles.listItem}>
-              <Ionicons name="location-outline" size={22} color="#001871" style={styles.itemIcon} />
+              <Ionicons name="location-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
               <Text style={styles.itemValue}>
                 P.O Box 28973, Dubai,{"\n"}Emirates - 28973
               </Text>
@@ -132,25 +134,79 @@ export default function AppointmentDetailsScreen() {
         <View style={styles.footerContainer}>
           {isHistory ? (
             <>
-              <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.8} onPress={() => navigation.goBack()}>
-                <Text style={styles.secondaryButtonText}>Back</Text>
-              </TouchableOpacity>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  {
+                    backgroundColor: pressed ? Colors.primary : Colors.background,
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                  }
+                ]}
+                onPress={() => navigation.goBack()}
+              >
+                {({ pressed }) => (
+                  <Text
+                    style={[
+                      styles.secondaryButtonText,
+                      { color: pressed ? Colors.background : Colors.primary }
+                    ]}
+                  >
+                    Back
+                  </Text>
+                )}
+              </Pressable>
 
-              <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8} onPress={handleBookAgain}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  {
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                    opacity: pressed ? 0.85 : 1,
+                  }
+                ]}
+                onPress={handleBookAgain}
+              >
                 <Text style={styles.primaryButtonText}>Book Again</Text>
-                <Ionicons name="arrow-forward" size={18} color="#fff" />
-              </TouchableOpacity>
+                <Ionicons name="arrow-forward" size={18} color={Colors.background} />
+              </Pressable>
             </>
           ) : (
             <>
-              <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.8} onPress={handleReschedule}>
-                <Text style={styles.secondaryButtonText}>Reschedule</Text>
-              </TouchableOpacity>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  {
+                    backgroundColor: pressed ? Colors.primary : Colors.background,
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                  }
+                ]}
+                onPress={handleReschedule}
+              >
+                {({ pressed }) => (
+                  <Text
+                    style={[
+                      styles.secondaryButtonText,
+                      { color: pressed ? Colors.background : Colors.primary }
+                    ]}
+                  >
+                    Reschedule
+                  </Text>
+                )}
+              </Pressable>
 
-              <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8} onPress={handleGoToAppointments}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  {
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                    opacity: pressed ? 0.85 : 1,
+                  }
+                ]}
+                onPress={handleGoToAppointments}
+              >
                 <Text style={styles.primaryButtonText}>Appointments</Text>
-                <Ionicons name="arrow-forward" size={18} color="#fff" />
-              </TouchableOpacity>
+                <Ionicons name="arrow-forward" size={18} color={Colors.background} />
+              </Pressable>
             </>
           )}
         </View>
@@ -162,7 +218,7 @@ export default function AppointmentDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: Colors.background,
   },
   headerContainer: {
     flexDirection: "row",
@@ -170,11 +226,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   headerTitle: {
     fontSize: 20,
-    color: "#262626",
+    color: Colors.text,
     marginLeft: 5,
     fontFamily: "Quicksand",
   },
@@ -191,7 +247,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#001871",
+    color: Colors.primary,
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 12,
@@ -211,7 +267,7 @@ const styles = StyleSheet.create({
   itemValue: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#2D3748",
+    color: Colors.text,
     lineHeight: 20,
   },
   textColumn: {
@@ -219,19 +275,19 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: Colors.border,
   },
   footerContainer: {
     flexDirection: "row",
     padding: 16,
-    backgroundColor: "#ffffff",
+    backgroundColor: Colors.background,
     gap: 16,
   },
   secondaryButton: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: Colors.background,
     borderWidth: 1.5,
-    borderColor: "#001871",
+    borderColor: Colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
@@ -239,12 +295,12 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontSize: 16,
-    color: "#001871",
+    color: Colors.primary,
     fontWeight: "700",
   },
   primaryButton: {
     flex: 1,
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -254,7 +310,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     fontSize: 16,
-    color: "#fff",
+    color: Colors.background,
     fontWeight: "700",
   },
 });

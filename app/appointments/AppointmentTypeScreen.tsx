@@ -9,9 +9,11 @@ import {
   StatusBar,
   TextInput,
   Platform,
+  Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../config/colors";
 
 const SERVICES = [
   {
@@ -84,6 +86,7 @@ export default function AppointmentTypeScreen() {
   };
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSelectServiceAndContinue = (serviceTitle: string) => {
     navigation.navigate("ScheduleBook", {
@@ -109,7 +112,7 @@ export default function AppointmentTypeScreen() {
       {/* Title Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="chevron-back" size={22} color="#262626" />
+          <Ionicons name="chevron-back" size={22} color={Colors.text} />
           <Text style={styles.headerTitle}>Appointment type</Text>
         </TouchableOpacity>
       </View>
@@ -118,14 +121,21 @@ export default function AppointmentTypeScreen() {
         <Text style={styles.mainTitle}>What are you looking for?</Text>
 
         {/* Search Input Bar */}
-        <View style={styles.searchBarContainer}>
-          <Ionicons name="search-outline" size={20} color="#B3B7C6" style={styles.searchIcon} />
+        <View style={[styles.searchBarContainer, isFocused && styles.searchBarContainerFocused]}>
+          <Ionicons
+            name="search-outline"
+            size={20}
+            color={isFocused ? Colors.secondary : Colors.label}
+            style={styles.searchIcon}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by keyword..."
-            placeholderTextColor="#B3B7C6"
+            placeholderTextColor={Colors.label}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
           />
         </View>
 
@@ -137,17 +147,22 @@ export default function AppointmentTypeScreen() {
             </View>
           ) : (
             filteredServices.map((service) => (
-              <TouchableOpacity
+              <Pressable
                 key={service.id}
-                style={styles.gridItem}
-                activeOpacity={0.8}
+                style={({ pressed }) => [
+                  styles.gridItem,
+                  {
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                    opacity: pressed ? 0.7 : 1,
+                  }
+                ]}
                 onPress={() => handleSelectServiceAndContinue(service.title)}
               >
                 <View style={[styles.iconCircle, { backgroundColor: service.bgColor }]}>
                   <Ionicons name={service.icon as any} size={32} color={service.iconColor} />
                 </View>
                 <Text style={styles.serviceLabel}>{service.title}</Text>
-              </TouchableOpacity>
+              </Pressable>
             ))
           )}
         </View>
@@ -159,7 +174,7 @@ export default function AppointmentTypeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   headerContainer: {
     flexDirection: "row",
@@ -167,11 +182,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   headerTitle: {
     fontSize: 20,
-    color: "#262626",
+    color: Colors.text,
     marginLeft: 5,
     fontFamily: "Quicksand",
   },
@@ -181,7 +196,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#001871",
+    color: Colors.primary,
     textAlign: "center",
     marginVertical: 24,
     fontFamily: "Quicksand",
@@ -189,12 +204,17 @@ const styles = StyleSheet.create({
   searchBarContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F4F5F8",
+    backgroundColor: Colors.lightgray,
+    borderWidth: 1,
+    borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
-    height: 48,
+    height: 56,
     marginHorizontal: 20,
     marginBottom: 32,
+  },
+  searchBarContainerFocused: {
+    borderColor: Colors.secondary,
   },
   searchIcon: {
     marginRight: 10,
@@ -202,7 +222,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: "#232323",
+    color: Colors.text,
   },
   gridContainer: {
     flexDirection: "row",
@@ -226,7 +246,7 @@ const styles = StyleSheet.create({
   serviceLabel: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#374151",
+    color: Colors.text,
     textAlign: "center",
     lineHeight: 18,
   },
@@ -238,6 +258,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: "#B3B7C6",
+    color: Colors.label,
   },
 });

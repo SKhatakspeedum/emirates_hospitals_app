@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
@@ -23,6 +22,7 @@ import {
   SPD_USER_NAME,
   SPD_USER_EMAIL,
 } from "../config/config";
+import { Colors } from "../config/colors";
 
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -165,7 +165,7 @@ export default function LoginScreen() {
             activeOpacity={0.8}
           >
             {phoneLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={Colors.label} />
             ) : (
               <Text style={styles.continueBtnText}>Continue</Text>
             )}
@@ -232,7 +232,7 @@ export default function LoginScreen() {
 const styles: any = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
@@ -255,14 +255,14 @@ const styles: any = StyleSheet.create({
   startTitle: {
     fontSize: 24,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     marginBottom: 8,
     textAlign: "left",
   },
   startSubtitle: {
     fontSize: 15,
     fontFamily: "QuicksandMedium",
-    color: "#6F768E",
+    color: Colors.label,
     marginBottom: 40,
     textAlign: "left",
     lineHeight: 22,
@@ -274,22 +274,22 @@ const styles: any = StyleSheet.create({
   phoneLabel: {
     fontSize: 14,
     fontFamily: "QuicksandSemiBold",
-    color: "#8E95A9",
+    color: Colors.label,
     marginBottom: 8,
   },
   phoneInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FAFAFF",
+    backgroundColor: Colors.lightgray,
     borderWidth: 1,
-    borderColor: "#F0F1F9",
+    borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
     width: "100%",
   },
   phoneInputContainerFocused: {
-    borderColor: "#0177C8",
+    borderColor: Colors.secondary,
   },
   countryPicker: {
     flexDirection: "row",
@@ -305,7 +305,7 @@ const styles: any = StyleSheet.create({
   separator: {
     width: 1,
     height: 20,
-    backgroundColor: "#E2E5ED",
+    backgroundColor: Colors.border,
     marginHorizontal: 16,
   },
   countryCodePrefix: {
@@ -328,7 +328,7 @@ const styles: any = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === "ios" ? 36 : 24,
     paddingTop: 12,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   continueBtn: {
     width: "100%",
@@ -337,10 +337,10 @@ const styles: any = StyleSheet.create({
     alignItems: "center",
   },
   continueBtnEnabled: {
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: "#001871",
+        shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -351,10 +351,10 @@ const styles: any = StyleSheet.create({
     }),
   },
   continueBtnDisabled: {
-    backgroundColor: "#D0D4DF",
+    backgroundColor: Colors.inactive,
   },
   continueBtnText: {
-    color: "#fff",
+    color: Colors.lightgray,
     fontSize: 16,
     fontFamily: "QuicksandSemiBold",
   },
@@ -366,7 +366,7 @@ const styles: any = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "80%",

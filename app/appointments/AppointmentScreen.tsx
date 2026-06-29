@@ -11,9 +11,11 @@ import {
   Dimensions,
   Alert,
   Platform,
+  Pressable,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../config/colors";
 
 const { width } = Dimensions.get("window");
 
@@ -100,7 +102,10 @@ export default function AppointmentScreen() {
 
         {/* Title Header */}
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>Appointments</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="chevron-back" size={22} color="#262626" />
+            <Text style={styles.headerTitle}>Appointments</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Tab Segment Controls */}
@@ -184,9 +189,11 @@ export default function AppointmentScreen() {
 
               return (
                 <View key={item.id} style={styles.appointmentRow}>
-                  <TouchableOpacity
-                    style={styles.rowClickArea}
-                    activeOpacity={0.7}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.rowClickArea,
+                      { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+                    ]}
                     onPress={() => navigation.navigate("AppointmentDetails", {
                       doctorId: item.id,
                       doctorName: item.doctorName,
@@ -225,7 +232,7 @@ export default function AppointmentScreen() {
                         </Text>
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </Pressable>
 
                   {/* Options Ellipsis */}
                   <TouchableOpacity
@@ -243,16 +250,21 @@ export default function AppointmentScreen() {
 
         {/* Floating Action Button (Only visible when list is not empty) */}
         {appointments.length > 0 && (
-          <TouchableOpacity
-            style={styles.fab}
-            activeOpacity={0.85}
+          <Pressable
+            style={({ pressed }) => [
+              styles.fab,
+              {
+                opacity: pressed ? 0.7 : 1,
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              }
+            ]}
             onPress={() => navigation.navigate("NearbyProviders")}
           >
-            <Ionicons name="add" size={28} color="#fff" />
-          </TouchableOpacity>
+            <Ionicons name="add" size={28} color={Colors.background} />
+          </Pressable>
         )}
       </SafeAreaView>
-    </View>
+    </View >
   );
 }
 
@@ -279,9 +291,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 22,
-    color: "#262626",
+    fontSize: 20,
+    color: Colors.text,
+    marginLeft: 5,
   },
+
   tabWrapper: {
     paddingHorizontal: 16,
     marginBottom: 10,
@@ -343,7 +357,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 48,
     borderWidth: 1.5,
-    borderColor: "#002075",
+    borderColor: Colors.primary,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
@@ -351,7 +365,7 @@ const styles = StyleSheet.create({
   },
   outlineBookButtonText: {
     fontSize: 15,
-    color: "#002075",
+    color: Colors.primary,
     fontWeight: "700",
   },
   appointmentRow: {
@@ -359,7 +373,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 16,
     borderBottomWidth: 0.5,
-    borderBottomColor: "#EAEAEA",
+    borderBottomColor: Colors.border,
     alignItems: "center",
   },
   dateBadge: {
@@ -367,8 +381,8 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#fff",
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
     overflow: "hidden",
     marginRight: 16,
     shadowColor: "#000",
@@ -378,7 +392,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   dateBadgeHeader: {
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     width: "100%",
     height: 25,
     justifyContent: "center",
@@ -388,15 +402,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   dateMonthText: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 15,
     fontWeight: "700",
   },
   dateNumText: {
-    color: "#232323",
+    color: Colors.text,
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -407,7 +421,7 @@ const styles = StyleSheet.create({
   appointmentTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#232323",
+    color: Colors.text,
     marginBottom: 6,
   },
   metaRow: {
@@ -435,17 +449,17 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 15 },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 6,
+    shadowRadius: 15,
+    elevation: 10,
     zIndex: 100,
   },
   iconColor: {
-    color: '#001871',
+    color: Colors.primary,
   }
 });

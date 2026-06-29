@@ -6,14 +6,15 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  SafeAreaView,
   StatusBar,
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../config/colors";
 
 export default function PatientDetailsScreen() {
   const navigation = useNavigation<any>();
@@ -28,7 +29,7 @@ export default function PatientDetailsScreen() {
   const [patients, setPatients] = useState([
     { id: "1", name: "John Doe", age: "30", gender: "Male", relationship: "Self" }
   ]);
-  
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<"self" | "family">("self");
   const [patientName, setPatientName] = useState("");
@@ -124,8 +125,8 @@ export default function PatientDetailsScreen() {
         {/* Title Header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={handleBack} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="chevron-back" size={22} color="#262626" />
-            <Text style={styles.headerTitle}>Patient details</Text>
+            <Ionicons name="chevron-back" size={22} color={Colors.text} />
+            <Text style={styles.headerTitle}>Patient Details</Text>
           </TouchableOpacity>
         </View>
 
@@ -134,10 +135,17 @@ export default function PatientDetailsScreen() {
             <Text style={styles.mainQuestionText}>Who is the appointment for?</Text>
 
             {patients.map((patient) => (
-              <TouchableOpacity
+              <Pressable
                 key={patient.id}
-                style={styles.patientCard}
-                activeOpacity={0.8}
+                style={({ pressed }) => [
+                  styles.patientCard,
+                  {
+                    backgroundColor: pressed ? Colors.pressed : Colors.border,
+                    borderWidth: pressed ? 1 : 0,
+                    borderColor: pressed ? Colors.activeBorder : Colors.border,
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                  }
+                ]}
                 onPress={() => handleSelectPatientAndContinue(patient)}
               >
                 <View style={styles.initialsCircle}>
@@ -149,21 +157,28 @@ export default function PatientDetailsScreen() {
                     {patient.age} year old {patient.gender.toLowerCase()}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#374151" style={{ marginLeft: "auto" }} />
-              </TouchableOpacity>
+                <Ionicons name="chevron-forward" size={20} color={Colors.text} style={{ marginLeft: "auto" }} />
+              </Pressable>
             ))}
 
-            <TouchableOpacity
-              style={styles.addPatientButton}
-              activeOpacity={0.7}
+            <Pressable
+              style={({ pressed }) => [
+                styles.addPatientButton,
+                {
+
+
+                  transform: [{ scale: pressed ? 0.95 : 1 }],
+                  opacity: pressed ? 0.5 : 1,
+                }
+              ]}
+
               onPress={() => {
-                handleSelectPatientType("family");
-                setShowAddForm(true);
+
               }}
             >
-              <Ionicons name="person-add-outline" size={20} color="#0076D6" />
+              <Ionicons name="person-add-outline" size={20} color={Colors.secondary} />
               <Text style={styles.addPatientText}>Add patient</Text>
-            </TouchableOpacity>
+            </Pressable>
           </ScrollView>
         ) : (
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -190,7 +205,7 @@ export default function PatientDetailsScreen() {
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={selectedPatient === "self" ? "#fff" : "#4B5563"}
+                  color={selectedPatient === "self" ? Colors.background : Colors.text}
                 />
                 <Text
                   style={[
@@ -212,7 +227,7 @@ export default function PatientDetailsScreen() {
                 <Ionicons
                   name="people-outline"
                   size={20}
-                  color={selectedPatient === "family" ? "#fff" : "#4B5563"}
+                  color={selectedPatient === "family" ? Colors.background : Colors.text}
                 />
                 <Text
                   style={[
@@ -233,7 +248,7 @@ export default function PatientDetailsScreen() {
                 value={patientName}
                 onChangeText={setPatientName}
                 placeholder="Enter full name"
-                placeholderTextColor="#B3B7C6"
+                placeholderTextColor={Colors.label}
                 editable={selectedPatient === "family"}
               />
 
@@ -245,7 +260,7 @@ export default function PatientDetailsScreen() {
                     value={patientAge}
                     onChangeText={setPatientAge}
                     placeholder="e.g. 28"
-                    placeholderTextColor="#B3B7C6"
+                    placeholderTextColor={Colors.label}
                     keyboardType="numeric"
                     editable={selectedPatient === "family"}
                   />
@@ -316,7 +331,7 @@ export default function PatientDetailsScreen() {
                 value={symptoms}
                 onChangeText={setSymptoms}
                 placeholder="Describe what you or the patient are feeling (e.g. fever, headache, skin rash...)"
-                placeholderTextColor="#B3B7C6"
+                placeholderTextColor={Colors.label}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -325,14 +340,6 @@ export default function PatientDetailsScreen() {
           </ScrollView>
         )}
 
-        {/* Continue Button (Only shown when adding a patient) */}
-        {showAddForm && (
-          <View style={styles.footerContainer}>
-            <TouchableOpacity style={styles.continueButton} activeOpacity={0.8} onPress={handleContinue}>
-              <Text style={styles.continueButtonText}>Continue</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -341,7 +348,7 @@ export default function PatientDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   headerContainer: {
     flexDirection: "row",
@@ -349,11 +356,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   headerTitle: {
     fontSize: 20,
-    color: "#262626",
+    color: Colors.text,
     marginLeft: 5,
     fontFamily: "Quicksand",
   },
@@ -363,7 +370,7 @@ const styles = StyleSheet.create({
   mainQuestionText: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#001871",
+    color: Colors.primary,
     textAlign: "center",
     marginVertical: 28,
     fontFamily: "Quicksand",
@@ -371,7 +378,7 @@ const styles = StyleSheet.create({
   patientCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F4F5F8",
+    backgroundColor: Colors.border,
     borderRadius: 32,
     paddingHorizontal: 20,
     paddingVertical: 14,
@@ -382,13 +389,13 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
   },
   initialsText: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -399,23 +406,23 @@ const styles = StyleSheet.create({
   patientCardName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#232323",
+    color: Colors.text,
   },
   patientMeta: {
     fontSize: 13,
-    color: "#757575",
+    color: Colors.label,
     marginTop: 2,
   },
   addPatientButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    marginVertical: 24,
+    gap: 10,
+    marginVertical: 30,
   },
   addPatientText: {
     fontSize: 16,
-    color: "#0076D6",
+    color: Colors.secondary,
     fontWeight: "600",
   },
   scrollContent: {
@@ -424,11 +431,11 @@ const styles = StyleSheet.create({
   },
   doctorCard: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.border,
     alignItems: "center",
     marginBottom: 20,
   },
@@ -444,17 +451,17 @@ const styles = StyleSheet.create({
   doctorName: {
     fontSize: 15,
     fontWeight: "bold",
-    color: "#232323",
+    color: Colors.text,
   },
   doctorSpecialty: {
     fontSize: 13,
-    color: "#0076D6",
+    color: Colors.secondary,
     marginTop: 2,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#232323",
+    color: Colors.text,
     marginBottom: 12,
   },
   patientTabs: {
@@ -468,52 +475,52 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.border,
     borderRadius: 10,
     paddingVertical: 12,
   },
   patientTabBtnActive: {
-    backgroundColor: "#0076D6",
-    borderColor: "#0076D6",
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
   },
   patientTabText: {
     fontSize: 14,
-    color: "#4B5563",
+    color: Colors.text,
     fontWeight: "600",
   },
   patientTabTextActive: {
-    color: "#fff",
+    color: Colors.background,
     fontWeight: "700",
   },
   form: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.border,
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: Colors.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: Colors.lightgray,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 48,
     fontSize: 15,
-    color: "#232323",
+    color: Colors.text,
     marginBottom: 16,
   },
   disabledInput: {
-    color: "#757575",
-    backgroundColor: "#F3F4F6",
+    color: Colors.label,
+    backgroundColor: Colors.border,
   },
   formRow: {
     flexDirection: "row",
@@ -533,21 +540,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.border,
     borderRadius: 8,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: Colors.lightgray,
   },
   genderChipActive: {
-    backgroundColor: "#E6F0FA",
-    borderColor: "#0076D6",
+    backgroundColor: Colors.pressed,
+    borderColor: Colors.activeBorder,
   },
   genderChipText: {
     fontSize: 14,
-    color: "#4B5563",
+    color: Colors.text,
     fontWeight: "600",
   },
   genderChipTextActive: {
-    color: "#0076D6",
+    color: Colors.secondary,
     fontWeight: "700",
   },
   relationRow: {
@@ -560,20 +567,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: Colors.lightgray,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.border,
   },
   relationChipActive: {
-    backgroundColor: "#E6F0FA",
-    borderColor: "#0076D6",
+    backgroundColor: Colors.pressed,
+    borderColor: Colors.activeBorder,
   },
   relationText: {
     fontSize: 13,
-    color: "#4B5563",
+    color: Colors.text,
   },
   relationTextActive: {
-    color: "#0076D6",
+    color: Colors.secondary,
     fontWeight: "600",
   },
   textArea: {
@@ -582,19 +589,19 @@ const styles = StyleSheet.create({
   },
   footerContainer: {
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: Colors.border,
   },
   continueButton: {
-    backgroundColor: "#002075",
+    backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
   },
   continueButtonText: {
     fontSize: 16,
-    color: "#fff",
-    fontWeight: "700",
-  },
+    color: Colors.background,
+    fontWeight: "700"
+  }
 });

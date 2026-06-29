@@ -215,6 +215,7 @@ export default function DashboardScreen() {
                 borderBottomRightRadius: 16,
               }
             ]}
+            onPress={() => navigation.navigate("HealthPackages")}
           >
             <Ionicons name="medkit-outline" size={32} color={Colors.secondary} />
             <Text style={styles.actionCardText}>Health Packages</Text>

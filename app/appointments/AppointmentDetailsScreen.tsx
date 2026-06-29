@@ -20,6 +20,7 @@ export default function AppointmentDetailsScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const params = route.params || {};
+  const isPackage = params.isPackage === true || params.isPackage === "true";
   const doctorId = params.doctorId || "1";
   const doctorName = params.doctorName || "Dr. Harry Dewson";
   const specialty = params.specialty || "Dermatologist";
@@ -37,7 +38,7 @@ export default function AppointmentDetailsScreen() {
         const day = parseInt(parts[0], 10);
         const monthStr = parts[1];
         const year = parseInt(parts[2], 10);
-        
+
         const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(monthStr);
         if (monthIndex !== -1) {
           const d = new Date(year, monthIndex, day);
@@ -53,27 +54,39 @@ export default function AppointmentDetailsScreen() {
   };
 
   const handleReschedule = () => {
-    navigation.navigate("ScheduleBook", {
-      doctorId,
-      doctorName,
-      specialty,
-      avatar,
-      patientName,
-      type,
-    });
+    if (isPackage) {
+      navigation.navigate("HealthPackageSchedule", { pkg: params.pkg });
+    } else {
+      navigation.navigate("ScheduleBook", {
+        doctorId,
+        doctorName,
+        specialty,
+        avatar,
+        patientName,
+        type,
+      });
+    }
   };
 
   const handleBookAgain = () => {
-    navigation.navigate("PatientDetails", {
-      doctorId,
-      doctorName,
-      specialty,
-      avatar,
-    });
+    if (isPackage) {
+      navigation.navigate("HealthPackages");
+    } else {
+      navigation.navigate("PatientDetails", {
+        doctorId,
+        doctorName,
+        specialty,
+        avatar,
+      });
+    }
   };
 
   const handleGoToAppointments = () => {
-    navigation.navigate("Appointment");
+    if (isPackage) {
+      navigation.navigate("Dashboard");
+    } else {
+      navigation.navigate("Appointment");
+    }
   };
 
   return (
@@ -204,7 +217,7 @@ export default function AppointmentDetailsScreen() {
                 ]}
                 onPress={handleGoToAppointments}
               >
-                <Text style={styles.primaryButtonText}>Appointments</Text>
+                <Text style={styles.primaryButtonText}>{isPackage ? "Home" : "Appointments"}</Text>
                 <Ionicons name="arrow-forward" size={18} color={Colors.background} />
               </Pressable>
             </>

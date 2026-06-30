@@ -27,7 +27,7 @@ import ExploreScreen from "../../explore_tab/ExploreScreen";
 import DashboardScreen from "@/app/dashboard/DashboardScreen";
 // import AppHeaderWeb from "./AppHeaderWeb";
 import OrdersScreen from "@/app/orders/OrdersScreen";
-import MedicinesScreen from "@/app/medicines/MedicinesScreen";
+import MedicinesStackScreen from "@/app/medicines/MedicinesStackScreen";
 import ChatScreen from "@/app/chats/ChatScreen";
 import HomeStackScreen from "./HomeStackScreen";
 
@@ -189,7 +189,7 @@ export default function HomeScreen() {
                 }}
               />
               <Tab.Screen name="ExploreTab" component={ExploreScreen} />
-              <Tab.Screen name="MedicinesScreen" component={MedicinesScreen} />
+              <Tab.Screen name="MedicinesScreen" component={MedicinesStackScreen} />
             </Tab.Navigator>
 
             {/* Custom Bottom Sheet */}
@@ -255,7 +255,7 @@ export default function HomeScreen() {
               }}
             />
             <Tab.Screen name="ChatScreen" component={ChatScreen} />
-            <Tab.Screen name="MedicinesScreen" component={MedicinesScreen} />
+            <Tab.Screen name="MedicinesScreen" component={MedicinesStackScreen} />
           </Tab.Navigator>
 
           {/* Custom Bottom Sheet */}

@@ -11,6 +11,8 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Alert,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +23,7 @@ import {
   SPD_USER_NAME,
   SPD_USER_EMAIL,
 } from "../config/config";
+import { Colors } from "../config/colors";
 import {
   setEncryptedID,
   getDecryptedID,
@@ -40,6 +43,7 @@ export default function PersonalDetailsScreen() {
         text1: "Required Field",
         text2: "Please enter your full name to continue.",
       });
+      Alert.alert("Required Field", "Please enter your full name to continue.");
       return;
     }
 
@@ -97,30 +101,31 @@ export default function PersonalDetailsScreen() {
     }
   };
 
-  const isContinueEnabled = fullName.trim().length > 0;
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 680;
 
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
+          <View style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}>
             {/* Centered Brand Logo */}
-            <View style={styles.logoContainer}>
+            <View style={[styles.logoContainer, { marginVertical: isSmallScreen ? 15 : 40 }]}>
               <Image
                 source={require("@/assets/images/logo.png")}
-                style={styles.logoImg}
+                style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
                 resizeMode="contain"
               />
             </View>
 
             {/* Header Title */}
-            <Text style={styles.title}>Enter your personal details</Text>
+            <Text style={[styles.title, { marginBottom: isSmallScreen ? 15 : 32 }]}>Enter your personal details</Text>
 
             {/* Full Name Input Field */}
             <View style={styles.inputContainer}>
@@ -134,7 +139,7 @@ export default function PersonalDetailsScreen() {
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={focusedField === "fullName" ? "#0177C8" : "#8E95A9"}
+                  color={focusedField === "fullName" ? Colors.secondary : Colors.label}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -165,7 +170,7 @@ export default function PersonalDetailsScreen() {
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={focusedField === "email" ? "#0177C8" : "#8E95A9"}
+                  color={focusedField === "email" ? Colors.secondary : Colors.label}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -184,28 +189,30 @@ export default function PersonalDetailsScreen() {
               </View>
             </View>
 
-            {/* Push elements to the top, pinning button at the bottom */}
-            <View style={{ flex: 0.35 }} />
-
-            {/* Continue Button */}
-            <TouchableOpacity
-              style={[
-                styles.continueBtn,
-                isContinueEnabled ? styles.continueBtnEnabled : styles.continueBtnDisabled,
-              ]}
-              disabled={!isContinueEnabled || loading}
-              onPress={handleContinue}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.continueBtnText}>Continue</Text>
-              )}
-            </TouchableOpacity>
+            {/* Spacer */}
+            <View style={{ height: 40 }} />
           </View>
         </ScrollView>
+
+        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
+          <TouchableOpacity
+            style={[
+              styles.continueBtn,
+              styles.continueBtnEnabled,
+            ]}
+            disabled={loading}
+            onPress={handleContinue}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color={Colors.label} />
+            ) : (
+              <Text style={styles.continueBtnText}>Continue</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
+      <Toast />
     </View>
   );
 }
@@ -213,7 +220,7 @@ export default function PersonalDetailsScreen() {
 const styles: any = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
@@ -223,7 +230,7 @@ const styles: any = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 40,
+    marginVertical: 40,
     width: "100%",
   },
   logoImg: {
@@ -233,7 +240,7 @@ const styles: any = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     marginBottom: 32,
     textAlign: "left",
   },
@@ -244,7 +251,7 @@ const styles: any = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontFamily: "QuicksandSemiBold",
-    color: "#8E95A9",
+    color: Colors.label,
     marginBottom: 8,
     textAlign: "left",
   },
@@ -255,16 +262,16 @@ const styles: any = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FAFAFF",
+    backgroundColor: Colors.lightgray,
     borderWidth: 1,
-    borderColor: "#F0F1F9",
+    borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
     width: "100%",
   },
   inputWrapperFocused: {
-    borderColor: "#0177C8",
+    borderColor: Colors.secondary,
   },
   inputIcon: {
     marginRight: 12,
@@ -281,18 +288,23 @@ const styles: any = StyleSheet.create({
     outlineStyle: "none",
     outlineWidth: 0,
   } as any,
+  bottomBtnContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
+    paddingTop: 12,
+    backgroundColor: Colors.background,
+  },
   continueBtn: {
     width: "100%",
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
-    marginTop: 24,
   },
   continueBtnEnabled: {
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: "#001871",
+        shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -303,10 +315,10 @@ const styles: any = StyleSheet.create({
     }),
   },
   continueBtnDisabled: {
-    backgroundColor: "#D0D4DF",
+    backgroundColor: Colors.inactive,
   },
   continueBtnText: {
-    color: "#fff",
+    color: Colors.lightgray,
     fontSize: 16,
     fontFamily: "QuicksandSemiBold",
   },

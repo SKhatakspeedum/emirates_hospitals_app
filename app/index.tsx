@@ -5,9 +5,9 @@ import {
   Text,
   Image,
   StyleSheet,
-  ImageBackground,
   ActivityIndicator,
-  Platform
+  Platform,
+  Dimensions
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,7 +22,7 @@ export default function IndexRedirect() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const horizontalMargin = useResponsiveHorizontalMargin();
-  
+
   // Responsive background for web >= 1024
   const [screenWidth, setScreenWidth] = useState(
     Platform.OS === "web"
@@ -39,18 +39,37 @@ export default function IndexRedirect() {
     return () => window.removeEventListener("resize", updateScreenWidth);
   }, []);
 
+  console.log("[IndexRedirect] rendering. loading state:", loading);
+
   /// This use effect will init th suggestus in application
   useEffect(() => {
+    console.log("[IndexRedirect] init effect running");
     const init = async () => {
-      await initializeSuggestus();
+      try {
+        console.log("[IndexRedirect] Calling initializeSuggestus()...");
+        await initializeSuggestus();
+        console.log("[IndexRedirect] initializeSuggestus() completed successfully.");
+      } catch (err) {
+        console.error("[IndexRedirect] Error in initializeSuggestus():", err);
+      }
+
       // Check persistent login
+      console.log("[IndexRedirect] Setting up navigation timeout...");
       setTimeout(async () => {
-        const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
-        setLoading(false);
-        if (isLoggedIn === "true") {
-          router.replace("/tab_bar_home/HomeScreen");
-        } else {
-          router.replace("/init_screens/login");
+        try {
+          console.log("[IndexRedirect] Checking stored isLoggedIn state...");
+          const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
+          console.log("[IndexRedirect] isLoggedIn value fetched:", isLoggedIn);
+          setLoading(false);
+          if (isLoggedIn === "true") {
+            console.log("[IndexRedirect] Redirecting to /tab_bar_home/HomeScreen");
+            router.replace("/tab_bar_home/HomeScreen");
+          } else {
+            console.log("[IndexRedirect] Redirecting to /init_screens/login");
+            router.replace("/init_screens/login");
+          }
+        } catch (err) {
+          console.error("[IndexRedirect] Error fetching stored login state:", err);
         }
       }, 1000);
     };
@@ -59,53 +78,75 @@ export default function IndexRedirect() {
   // return <Redirect href="/init_screens/splash" />;
   return (
     <View style={styles.container}>
-      <ImageBackground
+      <Image
         source={require("@/assets/images/splash_bg.png")}
-        style={styles.bg}
-        resizeMode="cover"
-      >
-        <View style={styles.centerContent}>
-          <Image
-            source={require("@/assets/images/splash_icon.png")}
-            style={styles.logo}
-          />
-          <Text style={styles.title}>OnMood9</Text>
-          {loading && (
+        style={styles.topBg}
+        resizeMode="contain"
+      />
+      <Image
+        source={require("@/assets/images/splash_bg.png")}
+        style={styles.bottomBg}
+        resizeMode="contain"
+      />
+      <View style={styles.centerContent}>
+        <Image
+          source={require("@/assets/images/logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
+        {loading && (
+          <View style={styles.loaderContainer}>
             <ActivityIndicator
               size="large"
-              color="#000"
-              style={styles.loader}
+              color="#0177C8"
             />
-          )}
-        </View>
-      </ImageBackground>
+
+          </View>
+        )}
+      </View>
       <Toast />
     </View>
   );
 }
 
+const { width: screenWidth } = Dimensions.get("window");
+const bgSize = screenWidth * 0.9;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: '#fff',
+    backgroundColor: '#fff',
   },
-  bg: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#fff",
+  topBg: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: bgSize,
+    height: bgSize,
+    opacity: 0.2,
+  },
+  bottomBg: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: bgSize,
+    height: bgSize,
+    transform: [{ rotate: '180deg' }],
+    opacity: 0.2,
   },
   centerContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 1,
   },
 
   logo: {
-    width: 64,
-    height: 64,
-    marginBottom: 16,
-    borderRadius: 32,
+    width: '80%',
+    maxWidth: 280,
+    aspectRatio: 4,
+    height: 70,
     backgroundColor: "transparent",
   },
   title: {
@@ -115,5 +156,8 @@ const styles = StyleSheet.create({
     color: '#232323',
     marginBottom: 16,
     textAlign: 'center',
+  },
+  loaderContainer: {
+    marginTop: 16,
   },
 });

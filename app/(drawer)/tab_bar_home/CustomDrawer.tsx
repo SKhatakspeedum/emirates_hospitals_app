@@ -8,15 +8,12 @@ import {
   SafeAreaView,
   ScrollView,
   Dimensions,
+  Platform,
 } from "react-native";
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
-import { LinearGradient } from "expo-linear-gradient";
 import {
   Ionicons,
-  MaterialIcons,
-  FontAwesome5,
   MaterialCommunityIcons,
-  FontAwesome,
 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -31,78 +28,49 @@ import Toast from "react-native-toast-message";
 
 const drawerItems = [
   {
-    label: "Profile",
-    icon: <Ionicons name="person-circle" size={22} color="#FFC107" />, // yellow
-    screen: "profile/ProfileScreen",
+    label: "PHR",
+    icon: <Ionicons name="id-card-outline" size={22} color="#001871" />,
+    screen: "phr",
   },
   {
-    label: "My journey",
-    icon: (
-      <MaterialCommunityIcons name="link-variant" size={22} color="#4CAF50" />
-    ), // green
-    screen: "journey/MyJourneyScreen",
+    label: "Explore",
+    icon: <MaterialCommunityIcons name="compass-outline" size={22} color="#001871" />,
+    screen: "explore",
   },
   {
-    label: "Mood tracker",
-    icon: (
-      <MaterialCommunityIcons name="headphones" size={22} color="#7B61FF" />
-    ), // purple
-    screen: "mood_tracker/MoodTrackerScreen",
+    label: "Orders",
+    icon: <Ionicons name="bag-handle-outline" size={22} color="#001871" />,
+    screen: "OrderScreen",
   },
-  // {
-  //   label: 'Therapists',
-  //   icon: <FontAwesome5 name="user-friends" size={20} color="#FF9800" />, // orange
-  //   screen: 'Therapists',
-  // },
-  // {
-  //   label: 'Plans',
-  //   icon: <MaterialCommunityIcons name="crown-outline" size={22} color="#2196F3" />, // blue
-  //   screen: 'plans/PlansScreen',
-  // },
   {
-    label: "Sign out",
-    icon: <MaterialCommunityIcons name="logout" size={22} color="#FF6F91" />, // pink
-    screen: "SignOut",
+    label: "Medicines",
+    icon: <MaterialCommunityIcons name="prescription" size={22} color="#001871" />,
+    screen: "MedicinesScreen",
+  },
+  {
+    label: "Health Packages",
+    icon: <MaterialCommunityIcons name="briefcase-plus-outline" size={22} color="#001871" />,
+    screen: "HealthPackages",
+  },
+  {
+    label: "Bills",
+    icon: <Ionicons name="receipt-outline" size={22} color="#001871" />,
+    screen: "Bills",
   },
 ];
 
-const helpItem = {
-  label: "Help & support",
-  icon: (
-    <MaterialCommunityIcons name="chat-question" size={22} color="#7B61FF" />
-  ), // purple
-  screen: "Help",
-};
-
 export default function CustomDrawer(props: DrawerContentComponentProps) {
-  const [userProfileName, setUserProfileName] = useState("");
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [userProfileName, setUserProfileName] = useState("John Doe");
 
   useEffect(() => {
-    // Function to load user profile name and image
     const loadProfileData = async () => {
       const name = await AsyncStorage.getItem(SPD_USER_NAME);
-      setUserProfileName(name || "");
-      const full_data_str = await AsyncStorage.getItem(USER_FULL_DATA);
-      if (full_data_str) {
-        try {
-          const full_data = JSON.parse(full_data_str);
-          if (full_data.profile_image_url) {
-            setProfileImageUrl(full_data.profile_image_url);
-          } else {
-            setProfileImageUrl(null);
-          }
-        } catch (e) {
-          setProfileImageUrl(null);
-        }
-      } else {
-        setProfileImageUrl(null);
+      if (name) {
+        setUserProfileName(name);
       }
     };
-    // Load on mount
     loadProfileData();
-    // Listen for drawer open/focus
-    const unsubscribe = props.navigation.addListener("focus", () => {
+    const unsubscribe = (props.navigation as any).addListener("focus", () => {
       loadProfileData();
     });
     return unsubscribe;
@@ -111,8 +79,6 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const handleNav = async (screen: string) => {
     console.log(screen);
     if (screen === "SignOut") {
-      // Implement your sign out logic here
-      // e.g., clear tokens, AsyncStorage, etc.
       await AsyncStorage.setItem(IS_LOGGED_IN, "false");
       await AsyncStorage.setItem(SPD_USER_EMAIL, "");
       await AsyncStorage.setItem(SPD_USER_ID, "");
@@ -123,46 +89,58 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         type: "success",
         text1: "You have been signed out.",
       });
-      // Then navigate to login
       props.navigation.reset({
         index: 0,
         routes: [{ name: "init_screens/login" }],
       });
       return;
     }
-    props.navigation.navigate(screen);
-    props.navigation.closeDrawer();
+
+    // Check if the route is defined in the navigator
+    const validRoutes = ["profile/ProfileScreen", "explore_tab/ExploreScreen", "orders/OrdersScreen"];
+    if (validRoutes.includes(screen)) {
+      props.navigation.navigate(screen);
+      props.navigation.closeDrawer();
+    } else if (screen === "OrderScreen") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", { screen: "OrderScreen" });
+      props.navigation.closeDrawer();
+    }
+    else if (screen === "MedicinesScreen") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", { screen: "MedicinesScreen" });
+      props.navigation.closeDrawer();
+    } else {
+      // Placeholder display for under-development medical screens
+      Toast.show({
+        type: "info",
+        text1: "Feature coming soon",
+        text2: `${screen} screen is under development.`,
+      });
+      props.navigation.closeDrawer();
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.drawerContainer}>
-        {/* Gradient Header */}
-
-        {/* <LinearGradient
-          colors={["#F7D9E3", "#E7EAF9", "#D9F7F7"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.headerBg}
+        {/* Profile Header Row */}
+        <TouchableOpacity
+          style={styles.headerRow}
+          onPress={() => handleNav("profile/ProfileScreen")}
+          activeOpacity={0.7}
         >
-        </LinearGradient> */}
-        <View style={{ borderRadius: 10, overflow: "hidden", width: "100%" }}>
           <Image
-            source={require("@/assets/images/profile_bg.svg")}
-            style={styles.profileBg}
-          />
-        </View>
-        <View style={styles.headerContent}>
-          <Image
-            source={
-              profileImageUrl
-                ? { uri: profileImageUrl }
-                : require("@/assets/images/icon.png")
-            }
+            source={{ uri: "https://randomuser.me/api/portraits/men/43.jpg" }}
             style={styles.avatar}
           />
-          <Text style={styles.userName}>{userProfileName}</Text>
-        </View>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.userName} numberOfLines={1}>{userProfileName}</Text>
+            <Text style={styles.userLocation}>Dubai</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#002075" style={styles.headerChevron} />
+        </TouchableOpacity>
+
+        {/* Separator */}
+        <View style={styles.headerSeparator} />
 
         {/* Drawer Menu Items */}
         <ScrollView
@@ -176,113 +154,126 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
               onPress={() => handleNav(item.screen)}
               activeOpacity={0.7}
             >
-              {item.icon}
+              <View style={styles.linkIconWrapper}>
+                {item.icon}
+              </View>
               <Text style={styles.linkLabel}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={16} color="#B3B7C6" />
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Help & Support at Bottom */}
-        {/* <TouchableOpacity
-          style={styles.helpRow}
-          onPress={() => handleNav(helpItem.screen)}
-          activeOpacity={0.7}
-        >
-          {helpItem.icon}
-          <Text style={styles.helpLabel}>{helpItem.label}</Text>
-        </TouchableOpacity> */}
+        {/* Logout at bottom */}
+        <View style={styles.logoutContainer}>
+          <TouchableOpacity
+            style={styles.logoutRow}
+            onPress={() => handleNav("SignOut")}
+            activeOpacity={0.7}
+          >
+            <View style={styles.linkIconWrapper}>
+              <Ionicons name="log-out-outline" size={22} color="#001871" style={styles.logoutIcon} />
+            </View>
+            <Text style={styles.logoutLabel}>Log out</Text>
+            <Ionicons name="chevron-forward" size={16} color="#B3B7C6" />
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
 }
 
-const { width } = Dimensions.get("window");
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#fff" },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
   drawerContainer: {
     flex: 1,
     backgroundColor: "#fff",
     borderTopRightRadius: 24,
     borderBottomRightRadius: 24,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 2, height: 0 },
-    shadowRadius: 16,
     padding: 16,
-    elevation: 8,
+    paddingTop: Platform.OS === "android" ? 30 : 16,
   },
-  profileBg: {
-    width: "100%",
-  },
-  headerBg: {
-    // paddingTop: 38,
-    // paddingBottom: 28,
-    // paddingHorizontal: 24,
-    // borderBottomLeftRadius: 32,
-    // borderBottomRightRadius: 32,
-  },
-  headerContent: {
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: -24,
-    paddingHorizontal: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 90,
-    borderWidth: 3,
-    borderColor: "#fff",
-    marginRight: 10,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: "#f3f3f3",
+  },
+  headerTextContainer: {
+    flex: 1,
+    marginLeft: 16,
   },
   userName: {
     fontSize: 18,
-    color: "#262626",
-    fontFamily: "QuicksandSemiBold",
-    flexShrink: 1,
+    color: "#1A1D24",
+    fontFamily: "QuicksandBold",
+    marginBottom: 2,
+  },
+  userLocation: {
+    fontSize: 12,
+    color: "#001871",
+    fontFamily: "QuicksandMedium",
+  },
+  headerChevron: {
+    marginLeft: 8,
+  },
+  headerSeparator: {
+    height: 1,
+    backgroundColor: "#F2F3F7",
+    marginVertical: 12,
+    marginHorizontal: 8,
   },
   linksScroll: {
     flex: 1,
-    marginTop: 18,
+    marginTop: 8,
   },
   linkRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
-    paddingHorizontal: 0,
-    borderRadius: 0,
-    marginHorizontal: 0,
-    marginBottom: 0,
+    paddingHorizontal: 8,
     backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e4e4e4",
+  },
+  linkIconWrapper: {
+    width: 28,
+    alignItems: "center",
   },
   linkLabel: {
-    fontSize: 16,
-    color: "#262626",
-    marginLeft: 15,
+    fontSize: 15,
+    color: "#696970ff",
+    marginLeft: 14,
     fontFamily: "QuicksandSemiBold",
     flex: 1,
   },
-  helpRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-    marginHorizontal: 0,
-    marginBottom: 10,
-    borderRadius: 0,
-    paddingTop: 15,
-    backgroundColor: "#fff",
+  logoutContainer: {
     borderTopWidth: 1,
     borderTopColor: "#F2F3F7",
+    paddingTop: 12,
+    marginBottom: Platform.OS === "ios" ? 10 : 0,
   },
-  helpLabel: {
-    fontSize: 16,
-    color: "#262626",
-    marginLeft: 15,
+  logoutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    backgroundColor: "#fff",
+  },
+  logoutIcon: {
+    // Arrow icon points to the right
+  },
+  logoutLabel: {
+    fontSize: 15,
+    color: "#696970ff",
+    marginLeft: 14,
     fontFamily: "QuicksandSemiBold",
     flex: 1,
   },

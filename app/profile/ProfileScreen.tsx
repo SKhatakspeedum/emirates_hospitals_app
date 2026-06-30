@@ -390,7 +390,7 @@ export default function ProfileScreen() {
         Alert.alert(
           "Error",
           response?.returnMessage ||
-            "Failed to change password. Please try again."
+          "Failed to change password. Please try again."
         );
       }
     } catch (error) {
@@ -437,7 +437,7 @@ export default function ProfileScreen() {
         <CustomTopHeader title="Back" />
         <ScrollView style={[styles.scrollView]}>
           <View style={[styles.container,
-                Platform.OS === "web" && screenWidth >= 1024 ? { width: '100%', maxWidth:620, marginLeft:'auto', marginRight:'auto' } : {},]}>
+          Platform.OS === "web" && screenWidth >= 1024 ? { width: '100%', maxWidth: 620, marginLeft: 'auto', marginRight: 'auto' } : {},]}>
             {/* Profile header image */}
             <Image
               source={HEADER_IMAGE}
@@ -458,8 +458,8 @@ export default function ProfileScreen() {
                   profileImageUrl
                     ? { uri: profileImageUrl }
                     : avatarUrl
-                    ? { uri: avatarUrl }
-                    : AVATAR_PLACEHOLDER
+                      ? { uri: avatarUrl }
+                      : AVATAR_PLACEHOLDER
                 }
                 style={styles.avatar}
               />
@@ -489,38 +489,38 @@ export default function ProfileScreen() {
 
             {/* Tabs */}
             <View style={[styles.tabRow]}>
-            <View style={[styles.tabRow,
-              Platform.OS === "web" && screenWidth >= 1024 ? { width: "100%", alignItems: "center", justifyContent: "center", margin:0 } : {},
-            ]}>
-              <TouchableOpacity
-                onPress={() => {
-                  setTab("Personal");
-                  setErrors({});
-                }}
-                style={styles.tabBtn}
-              >
-                <Text
-                  style={[styles.tab, tab === "Personal" && styles.tabActive]}
+              <View style={[styles.tabRow,
+              Platform.OS === "web" && screenWidth >= 1024 ? { width: "100%", alignItems: "center", justifyContent: "center", margin: 0 } : {},
+              ]}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setTab("Personal");
+                    setErrors({});
+                  }}
+                  style={styles.tabBtn}
                 >
-                  Personal
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setTab("ChangePassword");
-                  setErrors({});
-                }}
-                style={styles.tabBtn}
-              >
-                <Text
-                  style={[
-                    styles.tab,
-                    tab === "ChangePassword" && styles.tabActive,
-                  ]}
+                  <Text
+                    style={[styles.tab, tab === "Personal" && styles.tabActive]}
+                  >
+                    Personal
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setTab("ChangePassword");
+                    setErrors({});
+                  }}
+                  style={styles.tabBtn}
                 >
-                  Change Password
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.tab,
+                      tab === "ChangePassword" && styles.tabActive,
+                    ]}
+                  >
+                    Change Password
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -536,10 +536,10 @@ export default function ProfileScreen() {
             {!loading && tab === "Personal" && (
               <View style={[styles.infoBox]}>
                 <View
-                  style={[{width: "100%" }, 
-                    Platform.OS === "web" && screenWidth >= 1024
-                      ? { width: "90%" }
-                      : {},
+                  style={[{ width: "100%" },
+                  Platform.OS === "web" && screenWidth >= 1024
+                    ? { width: "90%" }
+                    : {},
                   ]}
                 >
                   <Text style={styles.label}>Full name</Text>
@@ -625,10 +625,10 @@ export default function ProfileScreen() {
             {!loading && tab === "ChangePassword" && (
               <View style={styles.infoBox}>
                 <View
-                  style={[{width: "100%" },
-                    Platform.OS === "web" && screenWidth >= 1024
-                      ? { width: "90%" }
-                      : {},
+                  style={[{ width: "100%" },
+                  Platform.OS === "web" && screenWidth >= 1024
+                    ? { width: "90%" }
+                    : {},
                   ]}
                 >
                   <Text style={styles.label}>New Password</Text>
@@ -847,9 +847,9 @@ const styles = StyleSheet.create({
     marginBottom: -6,
   },
   tabActive: { color: "#8B4CFC", borderBottomColor: "#8B4CFC" },
-  infoBox: { 
-    paddingHorizontal: 0, 
-    paddingTop: 16 ,
+  infoBox: {
+    paddingHorizontal: 0,
+    paddingTop: 16,
     justifyContent: "center",
     alignItems: "center",
   },

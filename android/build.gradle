@@ -13,14 +13,11 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-        maven { url 'https://www.jitpack.io' }
-        maven { url "https://maven.pkg.github.com/expo/expo" }
-        maven { url "$rootDir/../node_modules/expo/maven" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.0'
-        classpath 'com.facebook.react:react-native-gradle-plugin'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.25'
+        classpath('com.android.tools.build:gradle')
+        classpath('com.facebook.react:react-native-gradle-plugin')
+        classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
     }
 }
 
@@ -40,7 +37,5 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://www.jitpack.io' }
-        maven { url "https://maven.pkg.github.com/expo/expo" }
-        maven { url "$rootDir/../node_modules/expo/maven" }
     }
 }

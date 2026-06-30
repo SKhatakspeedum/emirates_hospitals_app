@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
@@ -13,6 +12,8 @@ import {
   Modal,
   FlatList,
   Platform,
+  Alert,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { setEncryptedID } from "../suggestus_plugin/util/util_functions";
@@ -23,6 +24,7 @@ import {
   SPD_USER_NAME,
   SPD_USER_EMAIL,
 } from "../config/config";
+import { Colors } from "../config/colors";
 
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -30,6 +32,8 @@ import countries from "../json_dummy_datas/country";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 680;
 
   // Dynamic country picker states
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
@@ -51,9 +55,17 @@ export default function LoginScreen() {
     setPhoneDigits(digits);
   };
 
-  const isPhoneValid = phoneDigits.length >= 7 && phoneDigits.length <= 12;
-
   const handlePhoneContinue = async () => {
+    if (phoneDigits.length < 6) {
+      Toast.show({
+        type: "error",
+        text1: "Invalid Number",
+        text2: "Phone number is invalid.",
+      });
+
+      Alert.alert("Invalid Number", "Phone number is invalid.");
+      return;
+    }
     setPhoneLoading(true);
     const fullPhoneNumber = `${selectedCountry.code} ${phoneDigits}`;
     const mockOtp = "123456";
@@ -105,23 +117,23 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
-            <View style={styles.logoContainer}>
+          <View style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}>
+            <View style={[styles.logoContainer, { marginVertical: isSmallScreen ? 15 : 50 }]}>
               <Image
                 source={require("@/assets/images/logo.png")}
-                style={styles.logoImg}
+                style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
                 resizeMode="contain"
               />
             </View>
 
             <Text style={styles.startTitle}>Let's get started</Text>
-            <Text style={styles.startSubtitle}>To start, what is your mobile phone number?</Text>
+            <Text style={[styles.startSubtitle, { marginBottom: isSmallScreen ? 20 : 40 }]}>To start, what is your mobile phone number?</Text>
 
             <View style={styles.inputContainer}>
               <Text style={styles.phoneLabel}>Phone No.</Text>
@@ -150,26 +162,27 @@ export default function LoginScreen() {
                 />
               </View>
             </View>
-
-            <View style={{ flex: 0.50 }} />
-
-            <TouchableOpacity
-              style={[
-                styles.continueBtn,
-                isPhoneValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
-              ]}
-              disabled={!isPhoneValid || phoneLoading}
-              onPress={handlePhoneContinue}
-              activeOpacity={0.8}
-            >
-              {phoneLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.continueBtnText}>Continue</Text>
-              )}
-            </TouchableOpacity>
+            <View style={{ height: 40 }} />
           </View>
         </ScrollView>
+
+        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
+          <TouchableOpacity
+            style={[
+              styles.continueBtn,
+              styles.continueBtnEnabled,
+            ]}
+            disabled={phoneLoading}
+            onPress={handlePhoneContinue}
+            activeOpacity={0.8}
+          >
+            {phoneLoading ? (
+              <ActivityIndicator color={Colors.label} />
+            ) : (
+              <Text style={styles.continueBtnText}>Continue</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
 
       {/* Country Selector Bottom-Sheet Modal */}
@@ -224,6 +237,7 @@ export default function LoginScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+      <Toast />
     </View>
   );
 }
@@ -231,7 +245,7 @@ export default function LoginScreen() {
 const styles: any = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
@@ -240,8 +254,9 @@ const styles: any = StyleSheet.create({
     paddingBottom: 24,
   },
   logoContainer: {
+
     alignItems: "center",
-    marginBottom: 40,
+    marginVertical: 50,
     width: "100%",
   },
   logoImg: {
@@ -253,14 +268,14 @@ const styles: any = StyleSheet.create({
   startTitle: {
     fontSize: 24,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     marginBottom: 8,
     textAlign: "left",
   },
   startSubtitle: {
     fontSize: 15,
     fontFamily: "QuicksandMedium",
-    color: "#6F768E",
+    color: Colors.label,
     marginBottom: 40,
     textAlign: "left",
     lineHeight: 22,
@@ -272,22 +287,22 @@ const styles: any = StyleSheet.create({
   phoneLabel: {
     fontSize: 14,
     fontFamily: "QuicksandSemiBold",
-    color: "#8E95A9",
+    color: Colors.label,
     marginBottom: 8,
   },
   phoneInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FAFAFF",
+    backgroundColor: Colors.lightgray,
     borderWidth: 1,
-    borderColor: "#F0F1F9",
+    borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
     width: "100%",
   },
   phoneInputContainerFocused: {
-    borderColor: "#0177C8",
+    borderColor: Colors.secondary,
   },
   countryPicker: {
     flexDirection: "row",
@@ -303,7 +318,7 @@ const styles: any = StyleSheet.create({
   separator: {
     width: 1,
     height: 20,
-    backgroundColor: "#E2E5ED",
+    backgroundColor: Colors.border,
     marginHorizontal: 16,
   },
   countryCodePrefix: {
@@ -322,18 +337,23 @@ const styles: any = StyleSheet.create({
     outlineStyle: "none",
     outlineWidth: 0,
   },
+  bottomBtnContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
+    paddingTop: 12,
+    backgroundColor: Colors.background,
+  },
   continueBtn: {
     width: "100%",
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
-    marginTop: 24,
   },
   continueBtnEnabled: {
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: "#001871",
+        shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -344,10 +364,10 @@ const styles: any = StyleSheet.create({
     }),
   },
   continueBtnDisabled: {
-    backgroundColor: "#D0D4DF",
+    backgroundColor: Colors.inactive,
   },
   continueBtnText: {
-    color: "#fff",
+    color: Colors.lightgray,
     fontSize: 16,
     fontFamily: "QuicksandSemiBold",
   },
@@ -359,7 +379,7 @@ const styles: any = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "80%",

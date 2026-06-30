@@ -17,12 +17,16 @@ import { DrawerActions } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Footer from "./Footer";
 import BottomSheetContent from "./BottomSheetContent";
-import SleepScreen from "../../sleep_tab/SleepScreen";
+// import SleepScreen from "../../sleep_tab/SleepScreen";
 import ExploreScreen from "../../explore_tab/ExploreScreen";
-import MusicScreen from "../../music_tab/MusicScreen";
-import AppHeader from "./AppHeader";
+// import MusicScreen from "../../music_tab/MusicScreen";
+// import AppHeader from "./AppHeader";
 import DashboardScreen from "@/app/dashboard/DashboardScreen";
-import AppHeaderWeb from "./AppHeaderWeb";
+// import AppHeaderWeb from "./AppHeaderWeb";
+import OrdersScreen from "@/app/orders/OrdersScreen";
+import MedicinesScreen from "@/app/medicines/MedicinesScreen";
+import ChatScreen from "@/app/chats/ChatScreen";
+import HomeStackScreen from "./HomeStackScreen";
 
 const { width, height } = Dimensions.get("window");
 const Tab = createBottomTabNavigator();
@@ -148,15 +152,14 @@ export default function HomeScreen() {
             ]}
           >
             {/* Main content */}
-            <AppHeaderWeb handleMenuPress={handleMenuPress} />
             <Tab.Navigator
               tabBar={(props) => (
                 <Footer {...props} toggleSheet={toggleSheet} />
               )}
               screenOptions={{ headerShown: false }}
             >
-              <Tab.Screen name="HomeTab" component={DashboardScreen} />
-              <Tab.Screen name="SleepTab" component={SleepScreen} />
+              <Tab.Screen name="HomeTab" component={HomeStackScreen} />
+              <Tab.Screen name="OrdersScreen" component={OrdersScreen} />
               {/* This is a dummy screen for the center logo button - it won't be navigated to */}
               <Tab.Screen
                 name="DrawerTab"
@@ -166,7 +169,7 @@ export default function HomeScreen() {
                 }}
               />
               <Tab.Screen name="ExploreTab" component={ExploreScreen} />
-              <Tab.Screen name="Music" component={MusicScreen} />
+              <Tab.Screen name="MedicinesScreen" component={MedicinesScreen} />
             </Tab.Navigator>
 
             {/* Custom Bottom Sheet */}
@@ -214,13 +217,12 @@ export default function HomeScreen() {
           ]}
         >
           {/* Main content */}
-          <AppHeader handleMenuPress={handleMenuPress} />
           <Tab.Navigator
             tabBar={(props) => <Footer {...props} toggleSheet={toggleSheet} />}
             screenOptions={{ headerShown: false }}
           >
-            <Tab.Screen name="HomeTab" component={DashboardScreen} />
-            <Tab.Screen name="SleepTab" component={SleepScreen} />
+            <Tab.Screen name="HomeTab" component={HomeStackScreen} />
+            <Tab.Screen name="OrderScreen" component={OrdersScreen} />
             {/* This is a dummy screen for the center logo button - it won't be navigated to */}
             <Tab.Screen
               name="DrawerTab"
@@ -229,8 +231,8 @@ export default function HomeScreen() {
                 tabBarButton: () => null,
               }}
             />
-            <Tab.Screen name="ExploreTab" component={ExploreScreen} />
-            <Tab.Screen name="Music" component={MusicScreen} />
+            <Tab.Screen name="ChatScreen" component={ChatScreen} />
+            <Tab.Screen name="MedicinesScreen" component={MedicinesScreen} />
           </Tab.Navigator>
 
           {/* Custom Bottom Sheet */}

@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
+import { OrderIcon, PinIcon, ChatIcon, RxIcon } from "./TabIcons";
 
 const { width } = Dimensions.get("window");
 
@@ -36,14 +37,14 @@ export default function Footer({
       {/* Home Tab */}
       <TouchableOpacity
         style={state.index === 0 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("HomeTab")}
+        onPress={() => navigation.navigate("HomeTab", { screen: "Dashboard" })}
       >
         <Image
           source={require("@/assets/images/home.png")}
           style={{
             width: 24,
             height: 24,
-            tintColor: state.index === 0 ? "#7B61FF" : "#B3B7C6",
+            tintColor: state.index === 0 ? "#001871" : "#B3B7C6",
           }}
           resizeMode="contain"
         />
@@ -57,77 +58,49 @@ export default function Footer({
       {/* Sleep Tab */}
       <TouchableOpacity
         style={state.index === 1 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("SleepTab")}
+        onPress={() => navigation.navigate("OrderScreen")}
       >
-        <Image
-          source={require("@/assets/images/sleep.png")}
-          style={{
-            width: 24,
-            height: 24,
-            tintColor: state.index === 1 ? "#7B61FF" : "#B3B7C6",
-          }}
-          resizeMode="contain"
-        />
+        <OrderIcon color={state.index === 1 ? "#001871" : "#B3B7C6"} />
         <Text
           style={state.index === 1 ? styles.tabLabelActive : styles.tabLabel}
         >
-          Sleep
+          Orders
         </Text>
       </TouchableOpacity>
 
       {/* Center Logo Button - Opens Bottom Sheet */}
       <View style={styles.centerLogoContainer}>
         <TouchableOpacity
-          // style={styles.centerLogoButton}
+          style={styles.centerLogoButton}
           onPress={toggleSheet}
         >
-          <Image
-            source={require("@/assets/images/group.png")}
-            style={styles.centerLogoImage}
-            resizeMode="contain"
-          />
+          <PinIcon />
         </TouchableOpacity>
       </View>
 
       {/* Explore Tab */}
       <TouchableOpacity
         style={state.index === 3 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("ExploreTab")}
+        onPress={() => navigation.navigate("ChatScreen")}
       >
-        <Image
-          source={require("@/assets/images/explore.png")}
-          style={{
-            width: 24,
-            height: 24,
-            tintColor: state.index === 3 ? "#7B61FF" : "#B3B7C6",
-          }}
-          resizeMode="contain"
-        />
+        <ChatIcon color={state.index === 3 ? "#001871" : "#B3B7C6"} />
         <Text
           style={state.index === 3 ? styles.tabLabelActive : styles.tabLabel}
         >
-          Explore
+          Chat
         </Text>
       </TouchableOpacity>
 
       {/* Profile Tab */}
       <TouchableOpacity
         style={state.index === 4 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("Music")}
+        onPress={() => navigation.navigate("MedicinesScreen")}
       >
-        <Image
-          source={require("@/assets/images/music.png")}
-          style={{
-            width: 24,
-            height: 24,
-            tintColor: state.index === 4 ? "#7B61FF" : "#B3B7C6",
-          }}
-          resizeMode="contain"
-        />
+        <RxIcon color={state.index === 4 ? "#001871" : "#B3B7C6"} />
         <Text
           style={state.index === 4 ? styles.tabLabelActive : styles.tabLabel}
         >
-          Music
+          Rx
         </Text>
       </TouchableOpacity>
     </View>
@@ -144,13 +117,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
     borderTopWidth: 0.5,
     borderTopColor: "rgba(0,0,0,0.1)",
-    // borderTopLeftRadius: 20,
-    // borderTopRightRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 5,
+    overflow: "visible",
   },
   tabItem: {
     alignItems: "center",
@@ -167,7 +139,7 @@ const styles = StyleSheet.create({
   },
   tabLabelActive: {
     fontSize: 12,
-    color: "#7B61FF",
+    color: "#001871",
     marginTop: 2,
     fontWeight: "700",
   },
@@ -175,23 +147,25 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "visible",
   },
   centerLogoButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    // backgroundColor: '#7B61FF',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     justifyContent: "center",
     alignItems: "center",
-    // shadowColor: '#7B61FF',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
-    marginTop: -30, // Elevate above the tab bar
+    shadowRadius: 2,
+    elevation: 2,
   },
   centerLogoImage: {
-    width: 80,
-    height: 80,
+    width: 35,
+    height: 35,
   },
 });

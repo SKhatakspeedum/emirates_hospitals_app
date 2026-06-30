@@ -10,6 +10,8 @@ import {
   Image,
   KeyboardAvoidingView,
   ScrollView,
+  Alert,
+  Dimensions,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
@@ -25,6 +27,7 @@ import {
   SPD_USER_NAME,
   USER_FULL_DATA,
 } from "../config/config";
+import { Colors } from "../config/colors";
 import { useRoute } from "@react-navigation/native";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
@@ -95,6 +98,12 @@ export default function OTPVerificationScreen() {
     const code = otp.join("");
     if (code.length < 6) {
       setError("Please enter the 6-digit code sent to your email.");
+      Toast.show({
+        type: "error",
+        text1: "Invalid OTP",
+        text2: "Please enter the 6-digit code.",
+      });
+      Alert.alert("Invalid OTP", "Please enter the 6-digit code.");
       return;
     }
     setLoading(true);
@@ -209,29 +218,30 @@ export default function OTPVerificationScreen() {
     }
   };
 
-  const isOtpComplete = otp.join("").length === 6;
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 680;
 
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
-            <View style={styles.logoContainer}>
+          <View style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}>
+            <View style={[styles.logoContainer, { marginVertical: isSmallScreen ? 15 : 40 }]}>
               <Image
                 source={require("@/assets/images/logo.png")}
-                style={styles.logoImg}
+                style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
                 resizeMode="contain"
               />
             </View>
 
             <Text style={styles.startTitle}>Awesome, Thanks!</Text>
-            <Text style={styles.startSubtitle}>
+            <Text style={[styles.startSubtitle, { marginBottom: isSmallScreen ? 20 : 40 }]}>
               Enter the 6 digit code we sent to {phoneDisplay} to verify your number.
             </Text>
 
@@ -268,26 +278,29 @@ export default function OTPVerificationScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={{ flex: 0.35 }} />
-
-            <TouchableOpacity
-              style={[
-                styles.verifyBtn,
-                isOtpComplete ? styles.verifyBtnEnabled : styles.verifyBtnDisabled,
-              ]}
-              onPress={handleVerifyOtp}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.verifyBtnText}>Verify</Text>
-              )}
-            </TouchableOpacity>
+            <View style={{ height: 40 }} />
           </View>
         </ScrollView>
+
+        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
+          <TouchableOpacity
+            style={[
+              styles.verifyBtn,
+              styles.verifyBtnEnabled,
+            ]}
+            onPress={handleVerifyOtp}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color={Colors.label} />
+            ) : (
+              <Text style={styles.verifyBtnText}>Verify</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
+      <Toast />
     </View>
   );
 }
@@ -295,7 +308,7 @@ export default function OTPVerificationScreen() {
 const styles: any = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
@@ -305,8 +318,9 @@ const styles: any = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 40,
+
     width: "100%",
+    marginVertical: 40,
   },
   logoImg: {
     width: 280,
@@ -315,14 +329,14 @@ const styles: any = StyleSheet.create({
   startTitle: {
     fontSize: 24,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     marginBottom: 8,
     textAlign: "left",
   },
   startSubtitle: {
     fontSize: 15,
     fontFamily: "QuicksandMedium",
-    color: "#6F768E",
+    color: Colors.label,
     marginBottom: 40,
     textAlign: "left",
     lineHeight: 22,
@@ -334,7 +348,7 @@ const styles: any = StyleSheet.create({
   phoneLabel: {
     fontSize: 14,
     fontFamily: "QuicksandSemiBold",
-    color: "#8E95A9",
+    color: Colors.label,
     marginBottom: 16,
   },
   otpRow: {
@@ -348,18 +362,18 @@ const styles: any = StyleSheet.create({
     height: 52,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#F0F1F9",
+    borderColor: Colors.border,
     fontSize: 20,
     textAlign: "center",
     color: "#1B2130",
-    backgroundColor: "#FAFAFF",
+    backgroundColor: Colors.lightgray,
     fontFamily: "QuicksandBold",
     // @ts-ignore: outlineStyle is web-only
     outlineStyle: "none",
     outlineWidth: 0,
   },
   otpInputFocused: {
-    borderColor: "#0177C8",
+    borderColor: Colors.secondary,
   },
   otpInputError: {
     borderColor: "#E53935",
@@ -379,27 +393,32 @@ const styles: any = StyleSheet.create({
     justifyContent: "flex-start",
   },
   resendText: {
-    color: "#6F768E",
+    color: Colors.label,
     fontSize: 14,
     fontFamily: "QuicksandMedium",
   },
   resendLink: {
-    color: "#0177C8",
+    color: Colors.secondary,
     fontFamily: "QuicksandBold",
     fontSize: 14,
+  },
+  bottomBtnContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
+    paddingTop: 12,
+    backgroundColor: Colors.background,
   },
   verifyBtn: {
     width: "100%",
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
-    marginTop: 24,
   },
   verifyBtnEnabled: {
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: "#001871",
+        shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -410,10 +429,10 @@ const styles: any = StyleSheet.create({
     }),
   },
   verifyBtnDisabled: {
-    backgroundColor: "#D0D4DF",
+    backgroundColor: Colors.inactive,
   },
   verifyBtnText: {
-    color: "#fff",
+    color: Colors.lightgray,
     fontSize: 16,
     fontFamily: "QuicksandSemiBold",
   },

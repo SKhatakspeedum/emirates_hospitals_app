@@ -5,67 +5,71 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import confettiParticles from "../json_dummy_datas/confettiParticles";
+import { Colors } from "../config/colors";
 
 export default function SuccessScreen() {
   const router = useRouter();
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 720;
+  const isTinyScreen = screenHeight < 600;
 
   const handleGoToHome = () => {
     router.replace("/tab_bar_home/HomeScreen");
   };
 
-  // Custom confetti particles with positions, sizes, rotations and colors from the mockup
-  const confettiParticles = [
-    { id: 1, size: 7, top: 20, left: 60, color: "#A5A9C0", rotate: "15deg" },
-    { id: 2, size: 5, top: 40, left: 180, color: "#8C90A6", rotate: "45deg" },
-    { id: 3, size: 8, top: 60, left: 280, color: "#A5A9C0", rotate: "30deg" },
-    { id: 4, size: 6, top: 80, left: 90, color: "#B8BACF", rotate: "12deg" },
-    { id: 5, size: 9, top: 90, left: 200, color: "#A5A9C0", rotate: "60deg" },
-    { id: 6, size: 4, top: 130, left: 200, color: "#D2D4E2", rotate: "25deg" },
-    { id: 7, size: 7, top: 140, left: 50, color: "#8C90A6", rotate: "50deg" },
-    { id: 8, size: 5, top: 170, left: 160, color: "#B8BACF", rotate: "80deg" },
-    { id: 9, size: 8, top: 180, left: 80, color: "#A5A9C0", rotate: "35deg" },
-    { id: 10, size: 6, top: 10, left: 220, color: "#8C90A6", rotate: "18deg" },
-    { id: 11, size: 7, top: 20, left: 110, color: "#A5A9C0", rotate: "40deg" },
-    { id: 12, size: 5, top: 225, left: 280, color: "#D2D4E2", rotate: "15deg" },
-    { id: 13, size: 9, top: 240, left: 30, color: "#A5A9C0", rotate: "65deg" },
-    { id: 14, size: 6, top: 250, left: 170, color: "#B8BACF", rotate: "22deg" },
-    { id: 15, size: 8, top: 260, left: 170, color: "#8C90A6", rotate: "48deg" },
-    { id: 16, size: 5, top: 280, left: 250, color: "#A5A9C0", rotate: "10deg" },
-    { id: 17, size: 7, top: 290, left: 130, color: "#B8BACF", rotate: "75deg" },
-  ];
+
+
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: isTinyScreen ? 20 : (isSmallScreen ? 40 : 80) }]}>
 
         {/* Confetti & Checkmark Area */}
-        <View style={styles.illustrationContainer}>
-          {confettiParticles.map((particle) => (
-            <View
-              key={particle.id}
-              style={[
-                styles.confetti,
-                {
-                  width: particle.size,
-                  height: particle.size,
-                  top: particle.top,
-                  left: particle.left,
-                  backgroundColor: particle.color,
-                  transform: [{ rotate: particle.rotate }],
-                },
-              ]}
-            />
-          ))}
+        <View style={[
+          styles.illustrationContainer,
+          {
+            width: isTinyScreen ? 180 : (isSmallScreen ? 220 : 280),
+            height: isTinyScreen ? 180 : (isSmallScreen ? 220 : 280),
+            marginVertical: isTinyScreen ? 5 : (isSmallScreen ? 15 : 40),
+          }
+        ]}>
+          <View style={{
+            position: "absolute",
+            width: 280,
+            height: 280,
+            transform: [{ scale: isTinyScreen ? 0.6 : (isSmallScreen ? 0.8 : 1) }],
+            justifyContent: "center",
+            alignItems: "center",
+          }}>
+            {confettiParticles.map((particle) => (
+              <View
+                key={particle.id}
+                style={[
+                  styles.confetti,
+                  {
+                    width: particle.size,
+                    height: particle.size,
+                    top: particle.top,
+                    left: particle.left,
+                    backgroundColor: particle.color,
+                    transform: [{ rotate: particle.rotate }],
+                  },
+                ]}
+              />
+            ))}
 
-          <View style={styles.checkmarkCircle}>
-            <Ionicons name="checkmark" size={50} color="#fff" />
+            <View style={styles.checkmarkCircle}>
+              <Ionicons name="checkmark" size={50} color="#fff" />
+            </View>
           </View>
         </View>
 
         {/* Text Area */}
-        <View style={styles.textContainer}>
+        <View style={[styles.textContainer, { marginTop: isTinyScreen ? 5 : (isSmallScreen ? 10 : 20) }]}>
           <Text style={styles.title}>Success!</Text>
           <Text style={styles.subtitle}>
             Congratulations, your account has been created.
@@ -75,7 +79,7 @@ export default function SuccessScreen() {
           </Text>
         </View>
 
-        <View style={{ flex: 0.2 }} />
+        <View style={{ flex: 1 }} />
 
         {/* Pinned Go to Home Button */}
         <TouchableOpacity
@@ -93,7 +97,7 @@ export default function SuccessScreen() {
 const styles: any = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
@@ -108,18 +112,18 @@ const styles: any = StyleSheet.create({
     position: "relative",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 40,
+    marginVertical: 40,
   },
   checkmarkCircle: {
     width: 100,
     height: 100,
     borderRadius: 55,
-    backgroundColor: "#0076D6",
+    backgroundColor: Colors.secondary,
     justifyContent: "center",
     alignItems: "center",
     ...Platform.select({
       ios: {
-        shadowColor: "#0076D6",
+        shadowColor: Colors.secondary,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
         shadowRadius: 10,
@@ -141,27 +145,27 @@ const styles: any = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    color: Colors.text,
     marginBottom: 16,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 15,
     fontFamily: "QuicksandMedium",
-    color: "#8E95A9",
+    color: Colors.label,
     textAlign: "center",
     lineHeight: 22,
   },
   homeBtn: {
     width: "100%",
-    backgroundColor: "#001871",
+    backgroundColor: Colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 24,
     ...Platform.select({
       ios: {
-        shadowColor: "#001871",
+        shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -172,7 +176,7 @@ const styles: any = StyleSheet.create({
     }),
   },
   homeBtnText: {
-    color: "#fff",
+    color: Colors.lightgray,
     fontSize: 16,
     fontFamily: "QuicksandSemiBold",
   },

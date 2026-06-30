@@ -1,4 +1,10 @@
 export const spd_processId_config = {
+  sgconf_get_mst_organization_by_org_patient_portal_url:
+    "sgconf_get_mst_organization_by_org_patient_portal_url",
+  sgconf_save_mst_user_otp_for_sms: "sgconf_save_mst_user_otp_for_sms",
+  sgconf_verify_otp_for_user_for_all_authentication_factor_type:
+    "sgconf_verify_otp_for_user_for_all_authentication_factor_type",
+
   spdonmood9_get_md_user_accounts_login:
     "spdonmood9_get_md_user_accounts_login",
   sgconf_save_mst_user_otp_for_reset_password:

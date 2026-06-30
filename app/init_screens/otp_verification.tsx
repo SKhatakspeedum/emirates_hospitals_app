@@ -10,36 +10,21 @@ import {
   Image,
   KeyboardAvoidingView,
   ScrollView,
-  Alert,
   Dimensions,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import {
-  generateOtp,
-  generateOtpEmail,
-  getDecryptedID,
-} from "../suggestus_plugin/util/util_functions";
-import {
-  IS_LOGGED_IN,
-  SIGNUP_API_URL_STEP_3,
-  SPD_USER_EMAIL,
-  SPD_USER_ID,
-  SPD_USER_NAME,
-  USER_FULL_DATA,
-} from "../config/config";
+import { useRouter } from "expo-router";
+import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
+import { SPD_USER_EMAIL, USER_FULL_DATA } from "../config/config";
 import { Colors } from "../config/colors";
 import { useRoute } from "@react-navigation/native";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import Toast from "react-native-toast-message";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function OTPVerificationScreen() {
   const route = useRoute();
-  let { check_otp } = route.params as { check_otp: string };
   const router = useRouter();
-  const { email = "" } = useLocalSearchParams();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -97,70 +82,39 @@ export default function OTPVerificationScreen() {
   const handleVerifyOtp = async () => {
     const code = otp.join("");
     if (code.length < 6) {
-      setError("Please enter the 6-digit code sent to your email.");
+      setError("Please enter the 6-digit code sent to your phone.");
       Toast.show({
         type: "error",
         text1: "Invalid OTP",
         text2: "Please enter the 6-digit code.",
       });
-      Alert.alert("Invalid OTP", "Please enter the 6-digit code.");
       return;
     }
+
     setLoading(true);
     try {
-      const user_id = await getDecryptedID(SPD_USER_ID);
+      const rawPhone = (route.params as any)?.phone_number ?? phoneDisplay;
+      const phoneE164 = rawPhone.replace(/\s+/g, "");
 
-      // Guest User Bypass
-      if (user_id === "guest_user_id") {
-        if (code === check_otp || code === "123456") {
-          Toast.show({
-            type: "success",
-            text1: "Account verified successfully.",
-          });
-          router.replace("/init_screens/personal_details");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "OTP verification failed. Please try again.",
-          });
-        }
-        setLoading(false);
-        return;
-      }
-
-      const verify_otp_response = await callSuggestusAPI(
-        spd_processId_config.spdonmood9_validate_md_user_accounts_otp,
+      const res = await callSuggestusAPI(
+        spd_processId_config.sgconf_verify_otp_for_user_for_all_authentication_factor_type,
         {
-          p_user_id: user_id,
+          p_usr_otp_authentication_factor: phoneE164,
           p_otp: code,
+          p_usr_otp_authentication_factor_type: "sms",
         },
       );
-      if (verify_otp_response.returnCode == true) {
-        if (!!verify_otp_response.returnData[0].id) {
-          /// now lets take user to Home screen
-          await callSuggestusAPI(
-            spd_processId_config.spdonmood9_update_md_user_accounts_status,
-            {
-              p_user_id: user_id,
-              p_status: "Active",
-            },
-          );
-          Toast.show({
-            type: "success",
-            text1: "Account verified successfully.",
-          });
-          router.replace("/init_screens/personal_details");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "OTP verification failed. Please try again.",
-          });
-        }
-      } else {
+
+      setLoading(false);
+
+      if (res?.returnCode === true) {
         Toast.show({
-          type: "error",
-          text1: "OTP verification failed. Please try again.",
+          type: "success",
+          text1: "Phone verified successfully.",
         });
+        router.replace("/init_screens/personal_details");
+      } else {
+        setError("OTP verification failed. Please try again.");
       }
     } catch (err) {
       setLoading(false);
@@ -169,47 +123,28 @@ export default function OTPVerificationScreen() {
   };
 
   const handleResendOtp = async () => {
-    let otp = generateOtp();
-    let email_id = await getDecryptedID(SPD_USER_EMAIL);
-    let fullName = await getDecryptedID(SPD_USER_NAME);
-    let user_id = await getDecryptedID(SPD_USER_ID);
-    let { subject, message } = generateOtpEmail(fullName, otp);
-    const save_otp_response = await callSuggestusAPI(
-      spd_processId_config.spdonmood9_update_md_user_accounts_otp,
+    const rawPhone = (route.params as any)?.phone_number ?? phoneDisplay;
+    const fullPhoneNumber = rawPhone.replace(/\s+/g, " ").trim();
+
+    const res = await callSuggestusAPI(
+      spd_processId_config.sgconf_save_mst_user_otp_for_sms,
       {
-        p_user_id: user_id,
-        p_otp: otp,
+        p_email_id: "",
+        p_usr_phone_number: fullPhoneNumber,
+        p_additional_attributes: {
+          p_name: "",
+          p_usr_additional_attributes: JSON.stringify({
+            p_first_name: "",
+            p_last_name: "",
+          }),
+          p_ai_code: SiteConfig.AI_CODE,
+          p_domian_url: SiteConfig.ACTION_URL,
+        },
       },
     );
-    if (save_otp_response.returnCode == true) {
-      const resend_otp_response = await callSuggestusAPI(
-        spd_processId_config.sgconf_integration_postAPICallJWT,
-        {
-          get_api_url: SiteConfig.on_mood9_API_URL + SIGNUP_API_URL_STEP_3,
-          get_api_url_params: {
-            message: message,
-            email: email_id,
-            subject: subject,
-          },
-        },
-      );
-      if (resend_otp_response.returnCode == true) {
-        let status = resend_otp_response.returnData[0].p_return_result.status;
-        if (status == true) {
-          check_otp = otp;
-          Toast.show({ type: "success", text1: "OTP sent successfully." });
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Some error occurred while resending OTP. Please try again.",
-          });
-        }
-      } else {
-        Toast.show({
-          type: "error",
-          text1: "Some error occurred while resending OTP. Please try again.",
-        });
-      }
+
+    if (res?.returnCode === true) {
+      Toast.show({ type: "success", text1: "OTP sent successfully." });
     } else {
       Toast.show({
         type: "error",

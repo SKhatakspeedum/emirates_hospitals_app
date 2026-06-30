@@ -12,19 +12,13 @@ import {
   Modal,
   FlatList,
   Platform,
-  Alert,
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { setEncryptedID } from "../suggestus_plugin/util/util_functions";
-import {
-  SPD_USER_ID,
-  USER_FULL_DATA,
-  IS_LOGGED_IN,
-  SPD_USER_NAME,
-  SPD_USER_EMAIL,
-} from "../config/config";
 import { Colors } from "../config/colors";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { SiteConfig } from "../config/site_config";
 
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -62,34 +56,47 @@ export default function LoginScreen() {
         text1: "Invalid Number",
         text2: "Phone number is invalid.",
       });
-
-      Alert.alert("Invalid Number", "Phone number is invalid.");
       return;
     }
+
     setPhoneLoading(true);
     const fullPhoneNumber = `${selectedCountry.code} ${phoneDigits}`;
-    const mockOtp = "123456";
-    setTimeout(async () => {
-      setPhoneLoading(false);
-      Toast.show({
-        type: "success",
-        text1: "Verification Code Sent",
-        text2: `Your code is ${mockOtp}`,
-      });
-      await setEncryptedID(USER_FULL_DATA, JSON.stringify({
-        fname: "Guest User",
-        email: "guest@emirates.ae",
-        contact: fullPhoneNumber,
-      }));
-      await setEncryptedID(SPD_USER_ID, "guest_user_id");
-      await setEncryptedID(SPD_USER_NAME, "Guest User");
-      await setEncryptedID(SPD_USER_EMAIL, "guest@emirates.ae");
 
-      router.replace({
-        pathname: "./otp_verification",
-        params: { check_otp: mockOtp, phone_number: fullPhoneNumber },
-      });
-    }, 1500);
+    try {
+      const res = await callSuggestusAPI(
+        spd_processId_config.sgconf_save_mst_user_otp_for_sms,
+        {
+          p_email_id: "",
+          p_usr_phone_number: fullPhoneNumber,
+          p_additional_attributes: {
+            p_name: "",
+            p_usr_additional_attributes: JSON.stringify({
+              p_first_name: "",
+              p_last_name: "",
+            }),
+            p_ai_code: SiteConfig.AI_CODE,
+            p_domian_url: SiteConfig.ACTION_URL,
+          },
+        },
+      );
+
+      setPhoneLoading(false);
+
+      if (res?.returnCode === true) {
+        const returnedOtp = res?.returnData?.[0]?.otp ?? "";
+        Toast.show({
+          type: "success",
+          text1: "Verification Code Sent",
+          text2: "A code has been sent to your phone.",
+        });
+        router.replace({
+          pathname: "./otp_verification",
+          params: { check_otp: returnedOtp, phone_number: fullPhoneNumber },
+        });
+      }
+    } catch (e) {
+      setPhoneLoading(false);
+    }
   };
 
   const filteredCountries = countries.filter(

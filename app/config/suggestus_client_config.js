@@ -7,7 +7,7 @@ const suggestusClientConfig = {
   SUGGESTUS_INTERNAL_URL: "https://dev-mysql-sgi.speedum.tech",
   SUGGESTUS_ULTRA_URL: "https://dev-mysql-sgu.speedum.tech/", //  Inpatient server
   SUGGESTUS_EVN: "TELE",
-  SUGGESTUS_AI_CODE: "INPATIENT",
+  SUGGESTUS_AI_CODE: "EHG_REHAB_EHG_REHAB_JUMEIRAH",
 
   MSG_DEFAULT_SUCCESS: "Process has been completed successfully.",
   MSG_DEFAULT_ERR: "We got some error, Please try again.",

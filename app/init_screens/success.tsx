@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +14,9 @@ import { Colors } from "../config/colors";
 
 export default function SuccessScreen() {
   const router = useRouter();
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 720;
+  const isTinyScreen = screenHeight < 600;
 
   const handleGoToHome = () => {
     router.replace("/tab_bar_home/HomeScreen");
@@ -22,34 +26,50 @@ export default function SuccessScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: isTinyScreen ? 20 : (isSmallScreen ? 40 : 80) }]}>
 
         {/* Confetti & Checkmark Area */}
-        <View style={styles.illustrationContainer}>
-          {confettiParticles.map((particle) => (
-            <View
-              key={particle.id}
-              style={[
-                styles.confetti,
-                {
-                  width: particle.size,
-                  height: particle.size,
-                  top: particle.top,
-                  left: particle.left,
-                  backgroundColor: particle.color,
-                  transform: [{ rotate: particle.rotate }],
-                },
-              ]}
-            />
-          ))}
+        <View style={[
+          styles.illustrationContainer,
+          {
+            width: isTinyScreen ? 180 : (isSmallScreen ? 220 : 280),
+            height: isTinyScreen ? 180 : (isSmallScreen ? 220 : 280),
+            marginVertical: isTinyScreen ? 5 : (isSmallScreen ? 15 : 40),
+          }
+        ]}>
+          <View style={{
+            position: "absolute",
+            width: 280,
+            height: 280,
+            transform: [{ scale: isTinyScreen ? 0.6 : (isSmallScreen ? 0.8 : 1) }],
+            justifyContent: "center",
+            alignItems: "center",
+          }}>
+            {confettiParticles.map((particle) => (
+              <View
+                key={particle.id}
+                style={[
+                  styles.confetti,
+                  {
+                    width: particle.size,
+                    height: particle.size,
+                    top: particle.top,
+                    left: particle.left,
+                    backgroundColor: particle.color,
+                    transform: [{ rotate: particle.rotate }],
+                  },
+                ]}
+              />
+            ))}
 
-          <View style={styles.checkmarkCircle}>
-            <Ionicons name="checkmark" size={50} color="#fff" />
+            <View style={styles.checkmarkCircle}>
+              <Ionicons name="checkmark" size={50} color="#fff" />
+            </View>
           </View>
         </View>
 
         {/* Text Area */}
-        <View style={styles.textContainer}>
+        <View style={[styles.textContainer, { marginTop: isTinyScreen ? 5 : (isSmallScreen ? 10 : 20) }]}>
           <Text style={styles.title}>Success!</Text>
           <Text style={styles.subtitle}>
             Congratulations, your account has been created.

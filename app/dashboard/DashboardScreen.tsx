@@ -110,7 +110,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
+
 
       {/* Fixed Sticky Header Top Bar (positioned absolutely to avoid Android ScrollView sticky bugs) */}
       <View style={styles.stickyHeader}>

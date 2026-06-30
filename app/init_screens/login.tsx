@@ -12,6 +12,8 @@ import {
   Modal,
   FlatList,
   Platform,
+  Alert,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { setEncryptedID } from "../suggestus_plugin/util/util_functions";
@@ -30,6 +32,8 @@ import countries from "../json_dummy_datas/country";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 680;
 
   // Dynamic country picker states
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
@@ -51,9 +55,17 @@ export default function LoginScreen() {
     setPhoneDigits(digits);
   };
 
-  const isPhoneValid = phoneDigits.length >= 7 && phoneDigits.length <= 12;
-
   const handlePhoneContinue = async () => {
+    if (phoneDigits.length < 6) {
+      Toast.show({
+        type: "error",
+        text1: "Invalid Number",
+        text2: "Phone number is invalid.",
+      });
+
+      Alert.alert("Invalid Number", "Phone number is invalid.");
+      return;
+    }
     setPhoneLoading(true);
     const fullPhoneNumber = `${selectedCountry.code} ${phoneDigits}`;
     const mockOtp = "123456";
@@ -111,17 +123,17 @@ export default function LoginScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
-            <View style={styles.logoContainer}>
+          <View style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}>
+            <View style={[styles.logoContainer, { marginVertical: isSmallScreen ? 15 : 50 }]}>
               <Image
                 source={require("@/assets/images/logo.png")}
-                style={styles.logoImg}
+                style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
                 resizeMode="contain"
               />
             </View>
 
             <Text style={styles.startTitle}>Let's get started</Text>
-            <Text style={styles.startSubtitle}>To start, what is your mobile phone number?</Text>
+            <Text style={[styles.startSubtitle, { marginBottom: isSmallScreen ? 20 : 40 }]}>To start, what is your mobile phone number?</Text>
 
             <View style={styles.inputContainer}>
               <Text style={styles.phoneLabel}>Phone No.</Text>
@@ -154,13 +166,13 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
 
-        <View style={styles.bottomBtnContainer}>
+        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
           <TouchableOpacity
             style={[
               styles.continueBtn,
-              isPhoneValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
+              styles.continueBtnEnabled,
             ]}
-            disabled={!isPhoneValid || phoneLoading}
+            disabled={phoneLoading}
             onPress={handlePhoneContinue}
             activeOpacity={0.8}
           >
@@ -225,6 +237,7 @@ export default function LoginScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+      <Toast />
     </View>
   );
 }

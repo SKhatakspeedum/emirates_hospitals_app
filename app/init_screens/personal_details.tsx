@@ -11,6 +11,8 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Alert,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -41,6 +43,7 @@ export default function PersonalDetailsScreen() {
         text1: "Required Field",
         text2: "Please enter your full name to continue.",
       });
+      Alert.alert("Required Field", "Please enter your full name to continue.");
       return;
     }
 
@@ -98,7 +101,8 @@ export default function PersonalDetailsScreen() {
     }
   };
 
-  const isContinueEnabled = fullName.trim().length > 0;
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 680;
 
   return (
     <View style={styles.container}>
@@ -110,18 +114,18 @@ export default function PersonalDetailsScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
+          <View style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}>
             {/* Centered Brand Logo */}
-            <View style={styles.logoContainer}>
+            <View style={[styles.logoContainer, { marginVertical: isSmallScreen ? 15 : 40 }]}>
               <Image
                 source={require("@/assets/images/logo.png")}
-                style={styles.logoImg}
+                style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
                 resizeMode="contain"
               />
             </View>
 
             {/* Header Title */}
-            <Text style={styles.title}>Enter your personal details</Text>
+            <Text style={[styles.title, { marginBottom: isSmallScreen ? 15 : 32 }]}>Enter your personal details</Text>
 
             {/* Full Name Input Field */}
             <View style={styles.inputContainer}>
@@ -190,13 +194,13 @@ export default function PersonalDetailsScreen() {
           </View>
         </ScrollView>
 
-        <View style={styles.bottomBtnContainer}>
+        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
           <TouchableOpacity
             style={[
               styles.continueBtn,
-              isContinueEnabled ? styles.continueBtnEnabled : styles.continueBtnDisabled,
+              styles.continueBtnEnabled,
             ]}
-            disabled={!isContinueEnabled || loading}
+            disabled={loading}
             onPress={handleContinue}
             activeOpacity={0.8}
           >
@@ -208,6 +212,7 @@ export default function PersonalDetailsScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      <Toast />
     </View>
   );
 }

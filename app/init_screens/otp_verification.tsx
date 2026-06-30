@@ -10,6 +10,8 @@ import {
   Image,
   KeyboardAvoidingView,
   ScrollView,
+  Alert,
+  Dimensions,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
@@ -96,6 +98,12 @@ export default function OTPVerificationScreen() {
     const code = otp.join("");
     if (code.length < 6) {
       setError("Please enter the 6-digit code sent to your email.");
+      Toast.show({
+        type: "error",
+        text1: "Invalid OTP",
+        text2: "Please enter the 6-digit code.",
+      });
+      Alert.alert("Invalid OTP", "Please enter the 6-digit code.");
       return;
     }
     setLoading(true);
@@ -210,7 +218,8 @@ export default function OTPVerificationScreen() {
     }
   };
 
-  const isOtpComplete = otp.join("").length === 6;
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 680;
 
   return (
     <View style={styles.container}>
@@ -222,17 +231,17 @@ export default function OTPVerificationScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
-            <View style={styles.logoContainer}>
+          <View style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}>
+            <View style={[styles.logoContainer, { marginVertical: isSmallScreen ? 15 : 40 }]}>
               <Image
                 source={require("@/assets/images/logo.png")}
-                style={styles.logoImg}
+                style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
                 resizeMode="contain"
               />
             </View>
 
             <Text style={styles.startTitle}>Awesome, Thanks!</Text>
-            <Text style={styles.startSubtitle}>
+            <Text style={[styles.startSubtitle, { marginBottom: isSmallScreen ? 20 : 40 }]}>
               Enter the 6 digit code we sent to {phoneDisplay} to verify your number.
             </Text>
 
@@ -273,11 +282,11 @@ export default function OTPVerificationScreen() {
           </View>
         </ScrollView>
 
-        <View style={styles.bottomBtnContainer}>
+        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
           <TouchableOpacity
             style={[
               styles.verifyBtn,
-              isOtpComplete ? styles.verifyBtnEnabled : styles.verifyBtnDisabled,
+              styles.verifyBtnEnabled,
             ]}
             onPress={handleVerifyOtp}
             disabled={loading}
@@ -291,6 +300,7 @@ export default function OTPVerificationScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      <Toast />
     </View>
   );
 }

@@ -16,6 +16,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import CustomHeader from "../components/CustomHeader";
 
 export default function ConfirmScreen() {
   const navigation = useNavigation<any>();
@@ -89,12 +90,7 @@ export default function ConfirmScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <SafeAreaView style={{ flex: 1 }}>
         {/* Title Header */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="chevron-back" size={22} color={Colors.text} />
-            <Text style={styles.headerTitle}>Confirm</Text>
-          </TouchableOpacity>
-        </View>
+        <CustomHeader title="Confirm" />
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Banner Image */}

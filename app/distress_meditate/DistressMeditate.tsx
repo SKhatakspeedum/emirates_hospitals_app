@@ -16,7 +16,7 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 import { COURSES_SUB_URL, SPD_USER_SUBSCRIPTION } from "../config/config";
-import CustomTopHeader from "../(drawer)/tab_bar_home/CustomTopHeader";
+import CustomHeader from "../components/CustomHeader";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useResponsiveHorizontalMargin from "../hooks/useResponsiveHorizontalMargin";
@@ -341,7 +341,7 @@ const DistressMeditate = () => {
                     COURSES_SUB_URL +
                     item.module_image,
                 }
-              : ""
+              : undefined
           }
           style={styles.moduleImage}
           resizeMode="cover"
@@ -390,7 +390,7 @@ const DistressMeditate = () => {
         style={styles.background}
         resizeMode="cover"
       >
-        <CustomTopHeader title="Back" />
+        <CustomHeader title="Back" />
         <View style={styles.container}>
           {/* Main Content */}
           {categoryGroups.length > 0 ? (

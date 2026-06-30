@@ -15,6 +15,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import CustomHeader from "../components/CustomHeader";
 
 export default function PatientDetailsScreen() {
   const navigation = useNavigation<any>();
@@ -123,12 +124,7 @@ export default function PatientDetailsScreen() {
     >
       <View style={styles.container}>
         {/* Title Header */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={handleBack} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="chevron-back" size={22} color={Colors.text} />
-            <Text style={styles.headerTitle}>Patient Details</Text>
-          </TouchableOpacity>
-        </View>
+        <CustomHeader title="Patient Details" onBackPress={handleBack} />
 
         {!showAddForm ? (
           <ScrollView contentContainerStyle={styles.listScrollContent} showsVerticalScrollIndicator={false}>

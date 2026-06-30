@@ -6,20 +6,22 @@ import {
   TouchableOpacity,
   Platform,
   Dimensions,
+  Alert,
 } from "react-native";
 import { MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
 
 const ACTIONS = [
   {
     label: "De-stress",
-    screen: "distress_meditate/DistressMeditate",
+    screen: "DistressMeditate",
     params: { category_code: "DE_STRESS" },
     icon: <MaterialCommunityIcons name="spa" size={28} color="#7B61FF" />,
   },
   {
     label: "Meditate",
-    screen: "distress_meditate/DistressMeditate",
+    screen: "DistressMeditate",
     params: { category_code: "MINDFULNESS" },
     icon: (
       <MaterialCommunityIcons name="meditation" size={28} color="#7B61FF" />
@@ -116,7 +118,18 @@ export default function QuickActionButtonsGrid() {
       {rows.map((row, rowIdx) =>
         row.map((action, colIdx) => (
           <TouchableOpacity
-            onPress={() => navigation.navigate(action.screen, action.params)}
+            onPress={() => {
+              if (action.label === "De-stress" || action.label === "Meditate") {
+                Toast.show({
+                  type: "info",
+                  text1: "Coming Soon",
+                  text2: `${action.label} feature is coming soon. Stay tuned!`,
+                  position: "top",
+                });
+              } else {
+                navigation.navigate(action.screen, action.params);
+              }
+            }}
             key={action.label}
             style={buttonStyle}
           >

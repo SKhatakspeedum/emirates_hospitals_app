@@ -7,6 +7,10 @@ export const spd_processId_config = {
   sgconf_util_validate_user_v2: "sgconf_util_validate_user_v2",
   sgconf_save_mst_user_from_signup_wrapper:
     "sgconf_save_mst_user_from_signup_wrapper",
+  xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard:
+    "xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard",
+  hospapp_get_patient_appointment_category:
+    "hospapp_get_patient_appointment_category",
 
   spdonmood9_get_md_user_accounts_login:
     "spdonmood9_get_md_user_accounts_login",

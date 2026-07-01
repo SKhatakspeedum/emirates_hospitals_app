@@ -21,8 +21,19 @@ import {
 } from "./config/config";
 import { setEncryptedID } from "./suggestus_plugin/util/util_functions";
 import { useRouter } from "expo-router";
-import { View, Platform, Image, ActivityIndicator, StyleSheet, Dimensions } from "react-native";
-import { callSuggestusAPI } from "./suggestus_plugin/suggestusClient";
+import {
+  View,
+  Platform,
+  Image,
+  ActivityIndicator,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
+import {
+  callSuggestusAPI,
+  createSuggestusSession,
+  initializeSuggestus,
+} from "./suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "./config/process_id";
 import { SiteConfig } from "./config/site_config";
 
@@ -44,7 +55,12 @@ export default function RootLayout() {
   );
 
   useEffect(() => {
-    console.log("[RootLayout] loaded or isReady changed. loaded:", loaded, "isReady:", isReady);
+    console.log(
+      "[RootLayout] loaded or isReady changed. loaded:",
+      loaded,
+      "isReady:",
+      isReady,
+    );
     if (loaded && isReady) {
       SplashScreen.hideAsync().catch((err) =>
         console.error("[RootLayout] SplashScreen.hideAsync error:", err),
@@ -125,9 +141,37 @@ export default function RootLayout() {
     checkReload();
   }, [isReady]);
 
+  const init = async () => {
+    try {
+      const sessionResult = await initializeSuggestus();
+      console.log("sessionResult:>>", sessionResult);
+      if (!sessionResult?.returnCode) {
+        // Retry once with session-only call (footprint may already exist)
+
+        const retryResult = await createSuggestusSession();
+        if (!retryResult?.returnCode) {
+          return;
+        }
+      }
+
+      // Step 2: Check persistent login
+      const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
+
+      if (isLoggedIn === "true") {
+        router.replace("/tab_bar_home/HomeScreen");
+      } else {
+        router.replace("/init_screens/login");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     const handleInitialRedirect = async () => {
       try {
+        await init();
+
         const res = await callSuggestusAPI(
           spd_processId_config.sgconf_get_mst_organization_by_org_patient_portal_url,
           {
@@ -212,7 +256,12 @@ export default function RootLayout() {
           // ── Full org config JSON (used by login page config etc.) ─────
           await setEncryptedID("DEFAULT_JSON_DATA", responseData);
 
-          console.log("[RootLayout] org config stored. org_id:", org_id, "ai_code:", org_ai_code);
+          console.log(
+            "[RootLayout] org config stored. org_id:",
+            org_id,
+            "ai_code:",
+            org_ai_code,
+          );
         } else {
           console.warn(
             "[RootLayout] org config fetch failed or empty:",
@@ -248,7 +297,9 @@ export default function RootLayout() {
   }, []);
 
   if (!loaded || !isReady) {
-    console.log("[RootLayout] not loaded or not ready, rendering Splash Screen view");
+    console.log(
+      "[RootLayout] not loaded or not ready, rendering Splash Screen view",
+    );
     return (
       <View style={styles.splashContainer}>
         <Image
@@ -268,10 +319,7 @@ export default function RootLayout() {
             resizeMode="contain"
           />
           <View style={styles.loaderContainer}>
-            <ActivityIndicator
-              size="large"
-              color="#0177C8"
-            />
+            <ActivityIndicator size="large" color="#0177C8" />
           </View>
         </View>
       </View>
@@ -295,12 +343,12 @@ const bgSize = screenWidth * 0.9;
 const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
   },
   topBg: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     right: 0,
     width: bgSize,
@@ -308,12 +356,12 @@ const styles = StyleSheet.create({
     opacity: 0.2,
   },
   bottomBg: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     width: bgSize,
     height: bgSize,
-    transform: [{ rotate: '180deg' }],
+    transform: [{ rotate: "180deg" }],
     opacity: 0.2,
   },
   centerContent: {

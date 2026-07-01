@@ -2,15 +2,22 @@
  * Suggestus Utility Functions - React Native Version
  */
 
-import suggestusClientConfig from '../config/suggestus_client_config';
+import suggestusClientConfig from "../config/suggestus_client_config";
 
-import sg_session_body from './models/sg_session_model';
-import mGlobal_vars from './config/global_variables';
-import mMessages_obj from './config/error_messages';
-import {getDecryptedID,saveDataFromLocalStorage,createAPIBody,setEncryptedID,fetchDataFromLocalStorage,convertUTCTimeToLocal} from './util/util_functions';
-import axios from 'axios';
-import { Alert } from 'react-native';
-import Toast from 'react-native-toast-message';
+import sg_session_body from "./models/sg_session_model";
+import mGlobal_vars from "./config/global_variables";
+import mMessages_obj from "./config/error_messages";
+import {
+  getDecryptedID,
+  saveDataFromLocalStorage,
+  createAPIBody,
+  setEncryptedID,
+  fetchDataFromLocalStorage,
+  convertUTCTimeToLocal,
+} from "./util/util_functions";
+import axios from "axios";
+import { Alert } from "react-native";
+import Toast from "react-native-toast-message";
 
 /*
  * Create Suggestus Session
@@ -25,9 +32,9 @@ export async function createSuggestusSession() {
     sg_session_body.setAiCode(ai_code);
     sg_session_body.setDeviceType(mGlobal_vars.DEVICE_TYPE);
     sg_session_body.setDeviceUniqueId(uuid);
-    sg_session_body.setDeviceOs('');
-    sg_session_body.setDeviceOsVersion('');
-    sg_session_body.setDeviceIp('');
+    sg_session_body.setDeviceOs("");
+    sg_session_body.setDeviceOsVersion("");
+    sg_session_body.setDeviceIp("");
 
     const session_body = sg_session_body.getSessionResponse();
     const axiosConfig = {
@@ -42,18 +49,33 @@ export async function createSuggestusSession() {
 
     if (response.status === 200) {
       const { return_AppIdentifier, return_LicenseIdentifier } = response.data;
-      if (return_AppIdentifier === "true" && return_LicenseIdentifier === "true") {
-        await saveDataFromLocalStorage("SessionTokenNode", response.data.return_SessionToken);
-        await saveDataFromLocalStorage("SessionExpiryNode", response.data.return_SessionExpiry);
+      if (
+        return_AppIdentifier === "true" &&
+        return_LicenseIdentifier === "true"
+      ) {
+        await saveDataFromLocalStorage(
+          "SessionTokenNode",
+          response.data.return_SessionToken,
+        );
+        await saveDataFromLocalStorage(
+          "SessionExpiryNode",
+          response.data.return_SessionExpiry,
+        );
         return { returnCode: true };
       }
       return { returnCode: false };
     } else {
-      return { msg: "Error146 while Creating Suggestus Session", returnCode: false };
+      return {
+        msg: "Error146 while Creating Suggestus Session",
+        returnCode: false,
+      };
     }
   } catch (error) {
     console.log("Exception in createSuggestusSession:", error.message);
-    return { msg: "Error85 while initializing Suggestus: " + error.message, returnCode: false };
+    return {
+      msg: "Error85 while initializing Suggestus: " + error.message,
+      returnCode: false,
+    };
   }
 }
 
@@ -72,9 +94,9 @@ export async function createSuggestusFootPrint() {
     sg_session_body.setAiCode(ai_code);
     sg_session_body.setDeviceType(mGlobal_vars.DEVICE_TYPE);
     sg_session_body.setDeviceUniqueId(uuid);
-    sg_session_body.setDeviceOs('');
-    sg_session_body.setDeviceOsVersion('');
-    sg_session_body.setDeviceIp('');
+    sg_session_body.setDeviceOs("");
+    sg_session_body.setDeviceOsVersion("");
+    sg_session_body.setDeviceIp("");
 
     const foot_print_body = sg_session_body.getSessionResponse();
     const axiosConfig = {
@@ -85,20 +107,36 @@ export async function createSuggestusFootPrint() {
       },
     };
 
+    console.log(
+      "url, foot_print_body, axiosConfig :>> ",
+      url,
+      foot_print_body,
+      axiosConfig,
+    );
     const response = await axios.post(url, foot_print_body, axiosConfig);
+    console.log("response :>> ", response.data);
 
     if (response.status === 200) {
       const { return_AppIdentifier, return_LicenseIdentifier } = response.data;
-      if (return_AppIdentifier === "true" && return_LicenseIdentifier === "true") {
+      if (
+        return_AppIdentifier === "true" &&
+        return_LicenseIdentifier === "true"
+      ) {
         return await createSuggestusSession();
       }
       return { returnCode: false };
     } else {
-      return { msg: "Error146 while Creating Suggestus Foot Print", returnCode: false };
+      return {
+        msg: "Error146 while Creating Suggestus Foot Print",
+        returnCode: false,
+      };
     }
   } catch (error) {
     console.log("Exception in createSuggestusFootPrint:", error.message);
-    return { msg: "Error145 while initializing Suggestus: " + error.message, returnCode: false };
+    return {
+      msg: "Error145 while initializing Suggestus: " + error.message,
+      returnCode: false,
+    };
   }
 }
 
@@ -112,9 +150,18 @@ export async function initializeSuggestus() {
 /*
  * Call Suggestus API
  */
-export async function callSuggestusAPI(process_id, dataJSON, app_ver= '', otherdata = '', userdata = '', metadata = '', tab_id, showToastFlag = true) {
+export async function callSuggestusAPI(
+  process_id,
+  dataJSON,
+  app_ver = "",
+  otherdata = "",
+  userdata = "",
+  metadata = "",
+  tab_id,
+  showToastFlag = true,
+) {
   if (!process_id) {
-    Toast.show({ type: 'error', text1: 'Process ID is blank' });
+    Toast.show({ type: "error", text1: "Process ID is blank" });
     return { msg: mMessages_obj.PROCESS_ID_BLANK, returnCode: false };
   }
 
@@ -130,7 +177,16 @@ export async function callSuggestusAPI(process_id, dataJSON, app_ver= '', otherd
       session_token = await fetchDataFromLocalStorage("SessionTokenNode");
     }
 
-    const request_body = await createAPIBody(env, app_ver, process_id, dataJSON, otherdata, userdata, metadata, tab_id);
+    const request_body = await createAPIBody(
+      env,
+      app_ver,
+      process_id,
+      dataJSON,
+      otherdata,
+      userdata,
+      metadata,
+      tab_id,
+    );
     const axiosConfig = {
       timeout: 60000,
       headers: {
@@ -139,7 +195,11 @@ export async function callSuggestusAPI(process_id, dataJSON, app_ver= '', otherd
       },
     };
 
-    const response = await axios.post(api_url, JSON.stringify(request_body), axiosConfig);
+    const response = await axios.post(
+      api_url,
+      JSON.stringify(request_body),
+      axiosConfig,
+    );
 
     if (response.status === 200) {
       if (response.data.returnCode?.toLowerCase() === "true") {
@@ -148,7 +208,11 @@ export async function callSuggestusAPI(process_id, dataJSON, app_ver= '', otherd
         }
         return { ...response.data, returnCode: true };
       } else {
-        Toast.show({ type: 'error', text1: 'Error', text2: mMessages_obj.SUGGESTUS_ERR });
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: mMessages_obj.SUGGESTUS_ERR,
+        });
         return { msg: mMessages_obj.SUGGESTUS_ERR, returnCode: false };
       }
     } else {
@@ -156,8 +220,11 @@ export async function callSuggestusAPI(process_id, dataJSON, app_ver= '', otherd
     }
   } catch (error) {
     console.log("Exception in callSuggestusAPI:", error.message);
-    Alert.alert('Error', mMessages_obj.SUGGESTUS_ERR + error.message);
-    return { msg: mMessages_obj.SUGGESTUS_ERR + error.message, returnCode: false };
+    Alert.alert("Error", mMessages_obj.SUGGESTUS_ERR + error.message);
+    return {
+      msg: mMessages_obj.SUGGESTUS_ERR + error.message,
+      returnCode: false,
+    };
   }
 }
 

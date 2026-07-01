@@ -32,6 +32,28 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 
+const formatEmiratesId = (text: string) => {
+  const cleaned = text.replace(/\D/g, "");
+  let formatted = "";
+  if (cleaned.length > 0) {
+    formatted += cleaned.substring(0, 3);
+  }
+  if (cleaned.length > 3) {
+    formatted += "-" + cleaned.substring(3, 7);
+  }
+  if (cleaned.length > 7) {
+    formatted += "-" + cleaned.substring(7, 14);
+  }
+  if (cleaned.length > 14) {
+    formatted += "-" + cleaned.substring(14, 15);
+  }
+  return formatted;
+};
+
+const formatPassport = (text: string) => {
+  return text.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+};
+
 export default function PersonalDetailsScreen() {
   const router = useRouter();
   const route = useRoute();
@@ -253,10 +275,11 @@ export default function PersonalDetailsScreen() {
                     placeholder="123-0000-5505123-1"
                     placeholderTextColor="#B3B7C6"
                     value={emiratesId}
-                    onChangeText={setEmiratesId}
+                    onChangeText={(text) => setEmiratesId(formatEmiratesId(text))}
                     onFocus={() => setFocusedField("emiratesId")}
                     onBlur={() => setFocusedField("")}
                     keyboardType="numeric"
+                    maxLength={18}
                     returnKeyType="next"
                   />
                 </View>
@@ -275,10 +298,11 @@ export default function PersonalDetailsScreen() {
                     placeholder="K5012250"
                     placeholderTextColor="#B3B7C6"
                     value={passportNo}
-                    onChangeText={setPassportNo}
+                    onChangeText={(text) => setPassportNo(formatPassport(text))}
                     onFocus={() => setFocusedField("passportNo")}
                     onBlur={() => setFocusedField("")}
                     autoCapitalize="characters"
+                    maxLength={12}
                     returnKeyType="next"
                   />
                 </View>

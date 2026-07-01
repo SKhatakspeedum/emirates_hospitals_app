@@ -11,11 +11,39 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Modal,
+  Dimensions,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import dayjs from "dayjs";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
+
+const formatEmiratesId = (text: string) => {
+  const cleaned = text.replace(/\D/g, "");
+  let formatted = "";
+  if (cleaned.length > 0) {
+    formatted += cleaned.substring(0, 3);
+  }
+  if (cleaned.length > 3) {
+    formatted += "-" + cleaned.substring(3, 7);
+  }
+  if (cleaned.length > 7) {
+    formatted += "-" + cleaned.substring(7, 14);
+  }
+  if (cleaned.length > 14) {
+    formatted += "-" + cleaned.substring(14, 15);
+  }
+  return formatted;
+};
+
+const formatPassport = (text: string) => {
+  return text.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+};
+
+const { width } = Dimensions.get("window");
 
 export default function PatientDetailsScreen() {
   const navigation = useNavigation<any>();
@@ -32,12 +60,18 @@ export default function PatientDetailsScreen() {
   ]);
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<"self" | "family">("self");
-  const [patientName, setPatientName] = useState("");
-  const [patientAge, setPatientAge] = useState("");
-  const [patientGender, setPatientGender] = useState("Female");
-  const [relationship, setRelationship] = useState("Spouse");
   const [symptoms, setSymptoms] = useState("");
+
+  // New Patient Form States
+  const [idType, setIdType] = useState<"emirates" | "passport">("emirates");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [idNumber, setIdNumber] = useState("");
+  const [dob, setDob] = useState<Date>(new Date(1990, 0, 1));
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [gender, setGender] = useState<"Male" | "Female">("Male");
+  const [relationship, setRelationship] = useState("Spouse");
+  const [focusedField, setFocusedField] = useState("");
 
   const getInitials = (name: string) => {
     if (!name) return "P";
@@ -60,52 +94,68 @@ export default function PatientDetailsScreen() {
     });
   };
 
-  const handleSelectPatientType = (type: "self" | "family") => {
-    setSelectedPatient(type);
-    if (type === "self") {
-      setPatientName("John Doe");
-      setPatientAge("30");
-      setPatientGender("Male");
-      setRelationship("Self");
-    } else {
-      setPatientName("");
-      setPatientAge("");
-      setPatientGender("Female");
-      setRelationship("Spouse");
+  const handleAddPatient = () => {
+    if (!idNumber.trim()) {
+      alert(`Please enter ${idType === "emirates" ? "Emirates ID" : "Passport number"}`);
+      return;
     }
-  };
+    if (!firstName.trim()) {
+      alert("Please enter First name");
+      return;
+    }
+    if (!lastName.trim()) {
+      alert("Please enter Last name");
+      return;
+    }
+    if (!gender) {
+      alert("Please select gender");
+      return;
+    }
+    if (!relationship) {
+      alert("Please select relationship");
+      return;
+    }
 
-  const handleContinue = () => {
-    if (!patientName.trim()) {
-      alert("Please enter patient name");
-      return;
-    }
-    if (!patientAge.trim()) {
-      alert("Please enter patient age");
-      return;
-    }
+    const fName = firstName.trim();
+    const lName = lastName.trim();
+    const name = `${fName} ${lName}`;
+
+    // calculate age from dob
+    const age = (new Date().getFullYear() - dob.getFullYear()).toString();
 
     const newPatient = {
       id: Date.now().toString(),
-      name: patientName,
-      age: patientAge,
-      gender: patientGender,
+      name: name,
+      age: age,
+      gender: gender,
       relationship: relationship,
+      idNumber: idNumber.trim(),
+      dob: dayjs(dob).format("YYYY-MM-DD"),
     };
 
     setPatients((prev) => [...prev, newPatient]);
     setShowAddForm(false);
 
+    // Reset form fields
+    setIdType("emirates");
+    setFirstName("");
+    setLastName("");
+    setIdNumber("");
+    setDob(new Date(1990, 0, 1));
+    setGender("Male");
+    setRelationship("Spouse");
+
+    // Automatically navigate forward with the new patient
     navigation.navigate("AppointmentType", {
       doctorId,
       doctorName,
       specialty,
       avatar,
-      patientName,
-      patientAge,
-      patientGender,
-      relationship,
-      symptoms,
+      patientName: name,
+      patientAge: age,
+      patientGender: gender,
+      relationship: relationship,
+      symptoms: symptoms,
     });
   };
 
@@ -126,181 +176,340 @@ export default function PatientDetailsScreen() {
         {/* Title Header */}
         <CustomHeader title="Patient Details" onBackPress={handleBack} />
 
-        {!showAddForm ? (
-          <ScrollView contentContainerStyle={styles.listScrollContent} showsVerticalScrollIndicator={false}>
-            <Text style={styles.mainQuestionText}>Who is the appointment for?</Text>
+        <ScrollView contentContainerStyle={styles.listScrollContent} showsVerticalScrollIndicator={false}>
+          <Text style={styles.mainQuestionText}>Who is the appointment for?</Text>
 
-            {patients.map((patient) => (
-              <Pressable
-                key={patient.id}
-                style={({ pressed }) => [
-                  styles.patientCard,
-                  {
-                    backgroundColor: pressed ? Colors.pressed : Colors.border,
-                    borderWidth: pressed ? 1 : 0,
-                    borderColor: pressed ? Colors.activeBorder : Colors.border,
-                    transform: [{ scale: pressed ? 0.95 : 1 }],
-                  }
-                ]}
-                onPress={() => handleSelectPatientAndContinue(patient)}
-              >
-                <View style={styles.initialsCircle}>
-                  <Text style={styles.initialsText}>{getInitials(patient.name)}</Text>
-                </View>
-                <View style={styles.patientInfo}>
-                  <Text style={styles.patientCardName}>{patient.name}</Text>
-                  <Text style={styles.patientMeta}>
-                    {patient.age} year old {patient.gender.toLowerCase()}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.text} style={{ marginLeft: "auto" }} />
-              </Pressable>
-            ))}
-
+          {patients.map((patient) => (
             <Pressable
+              key={patient.id}
               style={({ pressed }) => [
-                styles.addPatientButton,
+                styles.patientCard,
                 {
-
-
+                  backgroundColor: pressed ? Colors.pressed : Colors.border,
+                  borderWidth: pressed ? 1 : 0,
+                  borderColor: pressed ? Colors.activeBorder : Colors.border,
                   transform: [{ scale: pressed ? 0.95 : 1 }],
-                  opacity: pressed ? 0.5 : 1,
                 }
               ]}
-
-              onPress={() => {
-
-              }}
+              onPress={() => handleSelectPatientAndContinue(patient)}
             >
-              <Ionicons name="person-add-outline" size={20} color={Colors.secondary} />
-              <Text style={styles.addPatientText}>Add patient</Text>
-            </Pressable>
-          </ScrollView>
-        ) : (
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            {/* Doctor Brief Info */}
-            <View style={styles.doctorCard}>
-              <Image source={{ uri: avatar }} style={styles.doctorAvatar} />
-              <View style={styles.doctorInfo}>
-                <Text style={styles.doctorName}>{doctorName}</Text>
-                <Text style={styles.doctorSpecialty}>{specialty}</Text>
+              <View style={styles.initialsCircle}>
+                <Text style={styles.initialsText}>{getInitials(patient.name)}</Text>
               </View>
-            </View>
-
-            <Text style={styles.sectionTitle}>Add New Patient</Text>
-
-            {/* Patient Switcher */}
-            <View style={styles.patientTabs}>
-              <TouchableOpacity
-                style={[
-                  styles.patientTabBtn,
-                  selectedPatient === "self" && styles.patientTabBtnActive,
-                ]}
-                onPress={() => handleSelectPatientType("self")}
-              >
-                <Ionicons
-                  name="person-outline"
-                  size={20}
-                  color={selectedPatient === "self" ? Colors.background : Colors.text}
-                />
-                <Text
-                  style={[
-                    styles.patientTabText,
-                    selectedPatient === "self" && styles.patientTabTextActive,
-                  ]}
-                >
-                  Myself
+              <View style={styles.patientInfo}>
+                <Text style={styles.patientCardName}>{patient.name}</Text>
+                <Text style={styles.patientMeta}>
+                  {patient.age} year old {patient.gender.toLowerCase()}
                 </Text>
-              </TouchableOpacity>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.text} style={{ marginLeft: "auto" }} />
+            </Pressable>
+          ))}
 
-              <TouchableOpacity
-                style={[
-                  styles.patientTabBtn,
-                  selectedPatient === "family" && styles.patientTabBtnActive,
-                ]}
-                onPress={() => handleSelectPatientType("family")}
+          {/* Add Patient Trigger */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.addPatientButton,
+              {
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+                opacity: pressed ? 0.5 : 1,
+              }
+            ]}
+            onPress={() => {
+              setIdType("emirates");
+              setFirstName("");
+              setLastName("");
+              setIdNumber("");
+              setDob(new Date(1990, 0, 1));
+              setGender("Male");
+              setRelationship("Spouse");
+              setShowAddForm(true);
+            }}
+          >
+            <Ionicons name="person-add-outline" size={20} color={Colors.secondary} />
+            <Text style={styles.addPatientText}>Add patient</Text>
+          </Pressable>
+
+
+        </ScrollView>
+
+        {/* Bottom Sheet Modal for Adding Patient */}
+        <Modal
+          visible={showAddForm}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowAddForm(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable style={styles.modalDismissArea} onPress={() => setShowAddForm(false)} />
+            <View style={styles.bottomSheetContainer}>
+              <View style={styles.sheetGrabber} />
+
+              <View style={styles.sheetHeader}>
+                <Text style={styles.sheetTitle}>Add New Patient</Text>
+                <TouchableOpacity onPress={() => setShowAddForm(false)}>
+                  <Ionicons name="close" size={24} color={Colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                contentContainerStyle={styles.sheetScrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
               >
-                <Ionicons
-                  name="people-outline"
-                  size={20}
-                  color={selectedPatient === "family" ? Colors.background : Colors.text}
-                />
-                <Text
-                  style={[
-                    styles.patientTabText,
-                    selectedPatient === "family" && styles.patientTabTextActive,
-                  ]}
-                >
-                  Someone Else
-                </Text>
-              </TouchableOpacity>
-            </View>
 
-            {/* Form */}
-            <View style={styles.form}>
-              <Text style={styles.inputLabel}>Patient Name</Text>
-              <TextInput
-                style={styles.input}
-                value={patientName}
-                onChangeText={setPatientName}
-                placeholder="Enter full name"
-                placeholderTextColor={Colors.label}
-                editable={selectedPatient === "family"}
-              />
+                {/* ID Type Selection (Radio Buttons) */}
+                <View style={styles.inputContainer}>
+                  {/* <Text style={styles.inputLabel}>Document Type</Text> */}
+                  <View style={[styles.rowContainer, { marginBottom: 4, alignItems: "center" }]}>
+                    <TouchableOpacity
+                      style={{ flexDirection: "row", alignItems: "center", marginRight: 24 }}
+                      onPress={() => {
+                        setIdType("emirates");
+                        setIdNumber("");
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View
+                        style={[
+                          styles.radioOuter,
+                          idType === "emirates" && styles.radioOuterActive,
+                          { width: 18, height: 18, borderRadius: 9, marginRight: 8 }
+                        ]}
+                      >
+                        {idType === "emirates" && <View style={[styles.radioInner, { width: 8, height: 8, borderRadius: 4 }]} />}
+                      </View>
+                      <Text style={{ fontSize: 14, fontFamily: "QuicksandBold", color: Colors.text }}>Emirates ID</Text>
+                    </TouchableOpacity>
 
-              <View style={styles.formRow}>
-                <View style={styles.formCol}>
-                  <Text style={styles.inputLabel}>Age</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={patientAge}
-                    onChangeText={setPatientAge}
-                    placeholder="e.g. 28"
-                    placeholderTextColor={Colors.label}
-                    keyboardType="numeric"
-                    editable={selectedPatient === "family"}
-                  />
+                    <TouchableOpacity
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                      onPress={() => {
+                        setIdType("passport");
+                        setIdNumber("");
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View
+                        style={[
+                          styles.radioOuter,
+                          idType === "passport" && styles.radioOuterActive,
+                          { width: 18, height: 18, borderRadius: 9, marginRight: 8 }
+                        ]}
+                      >
+                        {idType === "passport" && <View style={[styles.radioInner, { width: 8, height: 8, borderRadius: 4 }]} />}
+                      </View>
+                      <Text style={{ fontSize: 14, fontFamily: "QuicksandBold", color: Colors.text }}>Passport no.</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
-                <View style={styles.formCol}>
-                  <Text style={styles.inputLabel}>Gender</Text>
-                  {selectedPatient === "family" ? (
-                    <View style={styles.genderSelectRow}>
-                      <TouchableOpacity
-                        style={[
-                          styles.genderChip,
-                          patientGender === "Male" && styles.genderChipActive,
-                        ]}
-                        onPress={() => setPatientGender("Male")}
-                      >
-                        <Text style={[styles.genderChipText, patientGender === "Male" && styles.genderChipTextActive]}>
-                          Male
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.genderChip,
-                          patientGender === "Female" && styles.genderChipActive,
-                        ]}
-                        onPress={() => setPatientGender("Female")}
-                      >
-                        <Text style={[styles.genderChipText, patientGender === "Female" && styles.genderChipTextActive]}>
-                          Female
-                        </Text>
-                      </TouchableOpacity>
+                {/* Emirates ID / Passport field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>
+                    {idType === "emirates" ? "Emirates ID" : "Passport no."}
+                  </Text>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      focusedField === "idNumber" && styles.inputWrapperFocused,
+                    ]}
+                  >
+                    <TextInput
+                      style={[styles.input, styles.inputNoOutline]}
+                      placeholder={idType === "emirates" ? "123-0000-5505123-1" : "K5012250"}
+                      placeholderTextColor="#B3B7C6"
+                      value={idNumber}
+                      onChangeText={(text) => {
+                        if (idType === "emirates") {
+                          setIdNumber(formatEmiratesId(text));
+                        } else {
+                          setIdNumber(formatPassport(text));
+                        }
+                      }}
+                      onFocus={() => setFocusedField("idNumber")}
+                      onBlur={() => setFocusedField("")}
+                      autoCapitalize="characters"
+                      keyboardType={idType === "emirates" ? "numeric" : "default"}
+                      maxLength={idType === "emirates" ? 18 : 12}
+                      returnKeyType="next"
+                    />
+                  </View>
+                </View>
+
+                {/* First Name & Last Name row */}
+                <View style={styles.rowContainer}>
+                  <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.inputLabel}>First name</Text>
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        focusedField === "firstName" && styles.inputWrapperFocused,
+                      ]}
+                    >
+                      <Ionicons
+                        name="person-outline"
+                        size={20}
+                        color={focusedField === "firstName" ? Colors.secondary : Colors.label}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={[styles.input, styles.inputNoOutline]}
+                        placeholder="John"
+                        placeholderTextColor="#B3B7C6"
+                        value={firstName}
+                        onChangeText={setFirstName}
+                        onFocus={() => setFocusedField("firstName")}
+                        onBlur={() => setFocusedField("")}
+                        autoCapitalize="words"
+                        returnKeyType="next"
+                      />
+                    </View>
+                  </View>
+
+                  <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.inputLabel}>Last name</Text>
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        focusedField === "lastName" && styles.inputWrapperFocused,
+                      ]}
+                    >
+                      <Ionicons
+                        name="person-outline"
+                        size={20}
+                        color={focusedField === "lastName" ? Colors.secondary : Colors.label}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={[styles.input, styles.inputNoOutline]}
+                        placeholder="Doe"
+                        placeholderTextColor="#B3B7C6"
+                        value={lastName}
+                        onChangeText={setLastName}
+                        onFocus={() => setFocusedField("lastName")}
+                        onBlur={() => setFocusedField("")}
+                        autoCapitalize="words"
+                        returnKeyType="next"
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                {/* Date of birth */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Date of birth</Text>
+                  {Platform.OS === "web" ? (
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        focusedField === "dob" && styles.inputWrapperFocused,
+                      ]}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color={focusedField === "dob" ? Colors.secondary : Colors.label}
+                        style={styles.inputIcon}
+                      />
+                      <input
+                        type="date"
+                        value={dayjs(dob).format("YYYY-MM-DD")}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setDob(new Date(e.target.value));
+                          }
+                        }}
+                        onFocus={() => setFocusedField("dob")}
+                        onBlur={() => setFocusedField("")}
+                        style={{
+                          flex: 1,
+                          border: "none",
+                          outline: "none",
+                          fontSize: "16px",
+                          fontFamily: "QuicksandMedium",
+                          color: "#1B2130",
+                          backgroundColor: "transparent",
+                          width: "100%",
+                          height: "100%",
+                        }}
+                      />
                     </View>
                   ) : (
-                    <TextInput
-                      style={[styles.input, styles.disabledInput]}
-                      value={patientGender}
-                      editable={false}
-                    />
+                    <TouchableOpacity
+                      style={[
+                        styles.inputWrapper,
+                        showDatePicker && styles.inputWrapperFocused,
+                      ]}
+                      onPress={() => setShowDatePicker(true)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color={showDatePicker ? Colors.secondary : Colors.label}
+                        style={styles.inputIcon}
+                      />
+                      <Text style={styles.inputFieldText}>
+                        {dayjs(dob).format("MMM DD, YYYY")}
+                      </Text>
+                      <Text style={styles.changeLinkText}>Change</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
-              </View>
 
-              {selectedPatient === "family" && (
-                <>
+                {/* Gender Select */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Gender</Text>
+                  <View style={styles.rowContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.genderBox,
+                        gender === "Male" && styles.genderBoxActive,
+                        { marginRight: 8 },
+                      ]}
+                      onPress={() => setGender("Male")}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.radioContainer}>
+                        <View
+                          style={[
+                            styles.radioOuter,
+                            gender === "Male" && styles.radioOuterActive,
+                          ]}
+                        >
+                          {gender === "Male" && <View style={styles.radioInner} />}
+                        </View>
+                        <Text style={styles.genderText}>Male</Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.genderBox,
+                        gender === "Female" && styles.genderBoxActive,
+                        { marginLeft: 8 },
+                      ]}
+                      onPress={() => setGender("Female")}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.radioContainer}>
+                        <View
+                          style={[
+                            styles.radioOuter,
+                            gender === "Female" && styles.radioOuterActive,
+                          ]}
+                        >
+                          {gender === "Female" && <View style={styles.radioInner} />}
+                        </View>
+                        <Text style={styles.genderText}>Female</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Relationship Select */}
+                <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Relationship</Text>
                   <View style={styles.relationRow}>
                     {["Spouse", "Child", "Parent", "Sibling", "Friend"].map((rel) => (
@@ -318,24 +527,32 @@ export default function PatientDetailsScreen() {
                       </TouchableOpacity>
                     ))}
                   </View>
-                </>
-              )}
+                </View>
 
-              <Text style={styles.inputLabel}>Describe Symptoms (Optional)</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={symptoms}
-                onChangeText={setSymptoms}
-                placeholder="Describe what you or the patient are feeling (e.g. fever, headache, skin rash...)"
-                placeholderTextColor={Colors.label}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
+                {/* Action Button */}
+                <TouchableOpacity
+                  style={styles.modalRegisterBtn}
+                  onPress={handleAddPatient}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalRegisterBtnText}>Register</Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
-          </ScrollView>
-        )}
+          </View>
+        </Modal>
 
+        <DateTimePickerModal
+          isVisible={showDatePicker}
+          mode="date"
+          date={dob}
+          maximumDate={new Date()}
+          onConfirm={(date) => {
+            setDob(date);
+            setShowDatePicker(false);
+          }}
+          onCancel={() => setShowDatePicker(false)}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -346,20 +563,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
-    marginVertical: 15,
-    backgroundColor: Colors.background,
-  },
-  headerTitle: {
-    fontSize: 20,
-    color: Colors.text,
-    marginLeft: 5,
-    fontFamily: "Quicksand",
-  },
   listScrollContent: {
     paddingBottom: 40,
   },
@@ -369,7 +572,7 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     textAlign: "center",
     marginVertical: 28,
-    fontFamily: "Quicksand",
+    fontFamily: "QuicksandBold",
   },
   patientCard: {
     flexDirection: "row",
@@ -421,89 +624,17 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     fontWeight: "600",
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+  symptomsContainer: {
+    paddingHorizontal: 16,
+    marginTop: 20,
   },
-  doctorCard: {
-    flexDirection: "row",
-    backgroundColor: Colors.background,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  doctorAvatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    marginRight: 12,
-  },
-  doctorInfo: {
-    flex: 1,
-  },
-  doctorName: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: Colors.text,
-  },
-  doctorSpecialty: {
-    fontSize: 13,
-    color: Colors.secondary,
-    marginTop: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.text,
-    marginBottom: 12,
-  },
-  patientTabs: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
-  },
-  patientTabBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    paddingVertical: 12,
-  },
-  patientTabBtnActive: {
-    backgroundColor: Colors.secondary,
-    borderColor: Colors.secondary,
-  },
-  patientTabText: {
-    fontSize: 14,
-    color: Colors.text,
-    fontWeight: "600",
-  },
-  patientTabTextActive: {
-    color: Colors.background,
-    fontWeight: "700",
-  },
-  form: {
-    backgroundColor: Colors.background,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  inputLabel: {
+  symptomsLabel: {
     fontSize: 14,
     fontWeight: "600",
     color: Colors.text,
     marginBottom: 8,
   },
-  input: {
+  symptomsInput: {
     backgroundColor: Colors.lightgray,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -514,44 +645,160 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 16,
   },
-  disabledInput: {
-    color: Colors.label,
-    backgroundColor: Colors.border,
+  textArea: {
+    height: 100,
+    paddingTop: 12,
   },
-  formRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  formCol: {
+
+  // Modal / Bottom Sheet Styles
+  modalOverlay: {
     flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
-  genderSelectRow: {
-    flexDirection: "row",
-    gap: 8,
-    height: 48,
+  modalDismissArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  bottomSheetContainer: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "85%",
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  sheetGrabber: {
+    width: 40,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    alignSelf: "center",
     marginBottom: 16,
   },
-  genderChip: {
-    flex: 1,
-    justifyContent: "center",
+  sheetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 20,
+  },
+  sheetTitle: {
+    fontSize: 20,
+    fontFamily: "QuicksandBold",
+    color: Colors.text,
+  },
+  sheetSubtitle: {
+    fontSize: 14,
+    fontFamily: "QuicksandMedium",
+    color: Colors.label,
+    marginBottom: 24,
+    lineHeight: 20,
+    textAlign: "left",
+  },
+  sheetScrollContent: {
+    paddingBottom: 40,
+  },
+  inputContainer: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontFamily: "QuicksandSemiBold",
+    color: Colors.label,
+    marginBottom: 8,
+    textAlign: "left",
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.lightgray,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 8,
-    backgroundColor: Colors.lightgray,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 56,
+    width: "100%",
   },
-  genderChipActive: {
-    backgroundColor: Colors.pressed,
-    borderColor: Colors.activeBorder,
+  inputWrapperFocused: {
+    borderColor: Colors.secondary,
   },
-  genderChipText: {
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: "#1B2130",
+    fontFamily: "QuicksandMedium",
+    paddingVertical: 0,
+  },
+  // @ts-ignore: outlineStyle is web-only
+  inputNoOutline: {
+    outlineStyle: "none",
+    outlineWidth: 0,
+  } as any,
+  inputFieldText: {
+    flex: 1,
+    fontSize: 16,
+    color: "#1B2130",
+    fontFamily: "QuicksandMedium",
+  },
+  changeLinkText: {
     fontSize: 14,
-    color: Colors.text,
-    fontWeight: "600",
-  },
-  genderChipTextActive: {
+    fontFamily: "QuicksandBold",
     color: Colors.secondary,
-    fontWeight: "700",
+  },
+  rowContainer: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "flex-start",
+  },
+  genderBox: {
+    flex: 1,
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.lightgray,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  genderBoxActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.background,
+  },
+  radioContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#B3B7C6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  radioOuterActive: {
+    borderColor: Colors.primary,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.primary,
+  },
+  genderText: {
+    fontSize: 16,
+    fontFamily: "QuicksandBold",
+    color: Colors.text,
   },
   relationRow: {
     flexDirection: "row",
@@ -579,25 +826,17 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     fontWeight: "600",
   },
-  textArea: {
-    height: 100,
-    paddingTop: 12,
-  },
-  footerContainer: {
-    padding: 16,
-    backgroundColor: Colors.background,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  continueButton: {
+  modalRegisterBtn: {
     backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
+    marginTop: 10,
+    marginBottom: 20,
   },
-  continueButtonText: {
+  modalRegisterBtnText: {
     fontSize: 16,
+    fontFamily: "QuicksandSemiBold",
     color: Colors.background,
-    fontWeight: "700"
-  }
+  },
 });

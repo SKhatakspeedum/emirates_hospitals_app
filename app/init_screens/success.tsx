@@ -70,13 +70,11 @@ export default function SuccessScreen() {
 
         {/* Text Area */}
         <View style={[styles.textContainer, { marginTop: isTinyScreen ? 5 : (isSmallScreen ? 10 : 20) }]}>
-          <Text style={styles.title}>Success!</Text>
+          <Text style={styles.title}>Verification Successful!</Text>
           <Text style={styles.subtitle}>
-            Congratulations, your account has been created.
+            You're now signed in as a guest. Explore the app and access essential healthcare services
           </Text>
-          <Text style={styles.subtitle}>
-            You can start using the app
-          </Text>
+
         </View>
 
         <View style={{ flex: 1 }} />

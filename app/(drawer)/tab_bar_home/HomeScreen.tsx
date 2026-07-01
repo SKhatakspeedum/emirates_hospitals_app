@@ -10,13 +10,16 @@ import {
   Platform,
   StatusBar,
   ImageBackground,
+  Alert,
 } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
+import { router } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Footer from "./Footer";
 import BottomSheetContent from "./BottomSheetContent";
+import Toast from "react-native-toast-message";
 // import SleepScreen from "../../sleep_tab/SleepScreen";
 import ExploreScreen from "../../explore_tab/ExploreScreen";
 // import MusicScreen from "../../music_tab/MusicScreen";
@@ -24,7 +27,7 @@ import ExploreScreen from "../../explore_tab/ExploreScreen";
 import DashboardScreen from "@/app/dashboard/DashboardScreen";
 // import AppHeaderWeb from "./AppHeaderWeb";
 import OrdersScreen from "@/app/orders/OrdersScreen";
-import MedicinesScreen from "@/app/medicines/MedicinesScreen";
+import MedicinesStackScreen from "@/app/medicines/MedicinesStackScreen";
 import ChatScreen from "@/app/chats/ChatScreen";
 import HomeStackScreen from "./HomeStackScreen";
 
@@ -46,6 +49,7 @@ export default function HomeScreen() {
   const [showSheet, setShowSheet] = useState(false);
   const translateY = useRef(new Animated.Value(SHEET_MAX_HEIGHT + 60)).current;
   const isScrolling = useRef(false);
+  const tabNavigationRef = useRef<any>(null);
 
   // Listen for window resize events to update screen width
   useEffect(() => {
@@ -94,9 +98,24 @@ export default function HomeScreen() {
 
       // If a menu item with a screen was passed, navigate to that screen
       if (menuItem && menuItem.screen) {
-        navigation
-          .getParent()
-          ?.navigate("DistressMeditate", { category_code: "MUSIC" });
+        if (
+          menuItem.label === "Self Help" ||
+          menuItem.label === "Learning" ||
+          menuItem.label === "Playlist"
+        ) {
+          Toast.show({
+            type: "info",
+            text1: "Coming Soon",
+            text2: `${menuItem.label} feature is coming soon. Stay tuned!`,
+            position: "top",
+          });
+        } else {
+          if (tabNavigationRef.current) {
+            tabNavigationRef.current.navigate(menuItem.screen, menuItem.params);
+          } else {
+            (navigation as any).navigate(menuItem.screen, menuItem.params);
+          }
+        }
       }
     });
   };
@@ -153,9 +172,10 @@ export default function HomeScreen() {
           >
             {/* Main content */}
             <Tab.Navigator
-              tabBar={(props) => (
-                <Footer {...props} toggleSheet={toggleSheet} />
-              )}
+              tabBar={(props) => {
+                tabNavigationRef.current = props.navigation;
+                return <Footer {...props} toggleSheet={toggleSheet} />;
+              }}
               screenOptions={{ headerShown: false }}
             >
               <Tab.Screen name="HomeTab" component={HomeStackScreen} />
@@ -169,7 +189,7 @@ export default function HomeScreen() {
                 }}
               />
               <Tab.Screen name="ExploreTab" component={ExploreScreen} />
-              <Tab.Screen name="MedicinesScreen" component={MedicinesScreen} />
+              <Tab.Screen name="MedicinesScreen" component={MedicinesStackScreen} />
             </Tab.Navigator>
 
             {/* Custom Bottom Sheet */}
@@ -218,7 +238,10 @@ export default function HomeScreen() {
         >
           {/* Main content */}
           <Tab.Navigator
-            tabBar={(props) => <Footer {...props} toggleSheet={toggleSheet} />}
+            tabBar={(props) => {
+              tabNavigationRef.current = props.navigation;
+              return <Footer {...props} toggleSheet={toggleSheet} />;
+            }}
             screenOptions={{ headerShown: false }}
           >
             <Tab.Screen name="HomeTab" component={HomeStackScreen} />
@@ -232,7 +255,7 @@ export default function HomeScreen() {
               }}
             />
             <Tab.Screen name="ChatScreen" component={ChatScreen} />
-            <Tab.Screen name="MedicinesScreen" component={MedicinesScreen} />
+            <Tab.Screen name="MedicinesScreen" component={MedicinesStackScreen} />
           </Tab.Navigator>
 
           {/* Custom Bottom Sheet */}

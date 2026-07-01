@@ -14,6 +14,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import CustomHeader from "../components/CustomHeader";
 
 const SERVICES = [
   {
@@ -110,12 +111,7 @@ export default function AppointmentTypeScreen() {
   return (
     <View style={styles.container}>
       {/* Title Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="chevron-back" size={22} color={Colors.text} />
-          <Text style={styles.headerTitle}>Appointment type</Text>
-        </TouchableOpacity>
-      </View>
+      <CustomHeader title="Appointment type" />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.mainTitle}>What are you looking for?</Text>

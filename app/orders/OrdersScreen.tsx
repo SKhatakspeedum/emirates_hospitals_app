@@ -17,6 +17,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../config/colors';
+import CustomHeader from '../components/CustomHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -262,12 +263,7 @@ export default function OrdersScreen() {
             <StatusBar barStyle="dark-content" />
 
             {/* Screen Header */}
-            <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="chevron-back" size={22} color="#262626" style={{ marginRight: 4 }} />
-                    <Text style={styles.headerTitle}>Orders</Text>
-                </TouchableOpacity>
-            </View>
+            <CustomHeader title="Orders" />
 
             {/* Tab Selector + Filter Row */}
             <View style={styles.tabWrapper}>

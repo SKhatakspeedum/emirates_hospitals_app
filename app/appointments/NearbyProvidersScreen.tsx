@@ -15,6 +15,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import CustomHeader from "../components/CustomHeader";
 
 // Static Doctor Mock Data
 const PROVIDERS = [
@@ -99,12 +100,7 @@ export default function NearbyProvidersScreen() {
     <View style={styles.container}>
 
       {/* Title Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="chevron-back" size={22} color="#262626" />
-          <Text style={styles.headerTitle}>Nearby providers</Text>
-        </TouchableOpacity>
-      </View>
+      <CustomHeader title="Nearby providers" />
 
       {/* Categories Horizontal Scroll */}
       <View style={styles.categoriesContainer}>

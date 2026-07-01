@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
 import { OrderIcon, PinIcon, ChatIcon, RxIcon } from "./TabIcons";
+import { Colors } from "@/app/config/colors";
 
 const { width } = Dimensions.get("window");
 
@@ -44,7 +45,7 @@ export default function Footer({
           style={{
             width: 24,
             height: 24,
-            tintColor: state.index === 0 ? "#001871" : "#B3B7C6",
+            tintColor: state.index === 0 ? Colors.primary : Colors.inactive,
           }}
           resizeMode="contain"
         />
@@ -60,7 +61,7 @@ export default function Footer({
         style={state.index === 1 ? styles.tabItemActive : styles.tabItem}
         onPress={() => navigation.navigate("OrderScreen")}
       >
-        <OrderIcon color={state.index === 1 ? "#001871" : "#B3B7C6"} />
+        <OrderIcon color={state.index === 1 ? Colors.primary : Colors.inactive} />
         <Text
           style={state.index === 1 ? styles.tabLabelActive : styles.tabLabel}
         >
@@ -83,7 +84,7 @@ export default function Footer({
         style={state.index === 3 ? styles.tabItemActive : styles.tabItem}
         onPress={() => navigation.navigate("ChatScreen")}
       >
-        <ChatIcon color={state.index === 3 ? "#001871" : "#B3B7C6"} />
+        <ChatIcon color={state.index === 3 ? Colors.primary : Colors.inactive} />
         <Text
           style={state.index === 3 ? styles.tabLabelActive : styles.tabLabel}
         >
@@ -96,7 +97,7 @@ export default function Footer({
         style={state.index === 4 ? styles.tabItemActive : styles.tabItem}
         onPress={() => navigation.navigate("MedicinesScreen")}
       >
-        <RxIcon color={state.index === 4 ? "#001871" : "#B3B7C6"} />
+        <RxIcon color={state.index === 4 ? Colors.primary : Colors.inactive} />
         <Text
           style={state.index === 4 ? styles.tabLabelActive : styles.tabLabel}
         >
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     alignItems: "center",
     height: 70,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     zIndex: 10,
     borderTopWidth: 0.5,
     borderTopColor: "rgba(0,0,0,0.1)",
@@ -134,12 +135,12 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 12,
-    color: "#B3B7C6",
+    color: Colors.inactive,
     marginTop: 2,
   },
   tabLabelActive: {
     fontSize: 12,
-    color: "#001871",
+    color: Colors.primary,
     marginTop: 2,
     fontWeight: "700",
   },

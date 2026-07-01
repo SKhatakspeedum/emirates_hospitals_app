@@ -15,6 +15,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import CustomHeader from "../components/CustomHeader";
 
 const getDynamicScheduleData = () => {
   const today = new Date();
@@ -137,12 +138,7 @@ export default function ScheduleBookScreen() {
     <View style={styles.container}>
 
       {/* Title Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="chevron-back" size={22} color={Colors.text} />
-          <Text style={styles.headerTitle}>Date & Time</Text>
-        </TouchableOpacity>
-      </View>
+      <CustomHeader title="Date & Time" />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Notice/Disclaimer Box */}

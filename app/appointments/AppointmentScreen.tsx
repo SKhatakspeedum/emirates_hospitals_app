@@ -16,6 +16,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import CustomHeader from "../components/CustomHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -101,12 +102,7 @@ export default function AppointmentScreen() {
       <SafeAreaView style={styles.safeArea}>
 
         {/* Title Header */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="chevron-back" size={22} color="#262626" />
-            <Text style={styles.headerTitle}>Appointments</Text>
-          </TouchableOpacity>
-        </View>
+        <CustomHeader title="Appointments" />
 
         {/* Tab Segment Controls */}
         <View style={styles.tabWrapper}>

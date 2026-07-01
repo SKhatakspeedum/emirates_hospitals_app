@@ -166,6 +166,8 @@ export default function LoginScreen() {
                   placeholderTextColor="#B3B7C6"
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
+                  onSubmitEditing={handlePhoneContinue}
+                  returnKeyType="done"
                 />
               </View>
             </View>

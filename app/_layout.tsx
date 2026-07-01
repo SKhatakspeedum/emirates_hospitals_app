@@ -21,7 +21,7 @@ import {
 } from "./config/config";
 import { setEncryptedID } from "./suggestus_plugin/util/util_functions";
 import { useRouter } from "expo-router";
-import { View, Platform } from "react-native";
+import { View, Platform, Image, ActivityIndicator, StyleSheet, Dimensions } from "react-native";
 import { callSuggestusAPI } from "./suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "./config/process_id";
 import { SiteConfig } from "./config/site_config";
@@ -44,13 +44,13 @@ export default function RootLayout() {
   );
 
   useEffect(() => {
-    console.log("[RootLayout] loaded changed:", loaded);
-    if (loaded) {
+    console.log("[RootLayout] loaded or isReady changed. loaded:", loaded, "isReady:", isReady);
+    if (loaded && isReady) {
       SplashScreen.hideAsync().catch((err) =>
         console.error("[RootLayout] SplashScreen.hideAsync error:", err),
       );
     }
-  }, [loaded]);
+  }, [loaded, isReady]);
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -247,15 +247,37 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!loaded) {
-    console.log("[RootLayout] fonts not loaded yet, returning null");
-    return null;
+  if (!loaded || !isReady) {
+    console.log("[RootLayout] not loaded or not ready, rendering Splash Screen view");
+    return (
+      <View style={styles.splashContainer}>
+        <Image
+          source={require("@/assets/images/splash_bg.png")}
+          style={styles.topBg}
+          resizeMode="contain"
+        />
+        <Image
+          source={require("@/assets/images/splash_bg.png")}
+          style={styles.bottomBg}
+          resizeMode="contain"
+        />
+        <View style={styles.centerContent}>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator
+              size="large"
+              color="#0177C8"
+            />
+          </View>
+        </View>
+      </View>
+    );
   }
 
-  if (!isReady) {
-    console.log("[RootLayout] isReady is false, rendering blank View");
-    return <View></View>;
-  }
   return (
     <AuthProvider>
       <ThemeProvider value={DefaultTheme}>
@@ -266,3 +288,47 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+
+const { width: screenWidth } = Dimensions.get("window");
+const bgSize = screenWidth * 0.9;
+
+const styles = StyleSheet.create({
+  splashContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  topBg: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: bgSize,
+    height: bgSize,
+    opacity: 0.2,
+  },
+  bottomBg: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: bgSize,
+    height: bgSize,
+    transform: [{ rotate: '180deg' }],
+    opacity: 0.2,
+  },
+  centerContent: {
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  logo: {
+    width: screenWidth * 0.8,
+    maxWidth: 280,
+    aspectRatio: 4,
+    height: 70,
+    backgroundColor: "transparent",
+  },
+  loaderContainer: {
+    marginTop: 16,
+  },
+});

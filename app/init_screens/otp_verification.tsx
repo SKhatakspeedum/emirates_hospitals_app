@@ -105,8 +105,6 @@ export default function OTPVerificationScreen() {
         },
       );
 
-      setLoading(false);
-
       if (res?.returnCode === true) {
         Toast.show({
           type: "success",
@@ -136,6 +134,7 @@ export default function OTPVerificationScreen() {
           });
         }
       } else {
+        setLoading(false);
         setError("OTP verification failed. Please try again.");
       }
     } catch (err) {
@@ -233,7 +232,14 @@ export default function OTPVerificationScreen() {
                     onChangeText={(text) => handleChange(text, idx)}
                     onFocus={() => setFocusedIdx(idx)}
                     onBlur={() => setFocusedIdx(null)}
-                    returnKeyType="next"
+                    returnKeyType={idx === 5 ? "done" : "next"}
+                    onSubmitEditing={() => {
+                      if (idx === 5) {
+                        handleVerifyOtp();
+                      } else {
+                        inputRefs.current[idx + 1]?.focus();
+                      }
+                    }}
                     autoFocus={idx === 0}
                   />
                 ))}

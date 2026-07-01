@@ -112,7 +112,29 @@ export default function OTPVerificationScreen() {
           type: "success",
           text1: "Phone verified successfully.",
         });
-        router.replace("/init_screens/personal_details");
+
+        const validateRes = await callSuggestusAPI(
+          spd_processId_config.sgconf_util_validate_user_v2,
+          {
+            p_username: phoneE164.replace(/^\+/, ""),
+            p_password: "",
+            p_ai_code: SiteConfig.AI_CODE,
+            p_login_type: "external",
+          },
+        );
+
+        if (
+          validateRes?.returnCode === true &&
+          validateRes?.returnData?.length > 0
+        ) {
+          router.replace("/(drawer)/tab_bar_home/HomeScreen");
+        } else {
+          // router.replace("/init_screens/signup");
+          router.replace({
+            pathname: "/init_screens/personal_details",
+            params: { phone_number: rawPhone },
+          });
+        }
       } else {
         setError("OTP verification failed. Please try again.");
       }
@@ -166,8 +188,15 @@ export default function OTPVerificationScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}>
-            <View style={[styles.logoContainer, { marginVertical: isSmallScreen ? 15 : 40 }]}>
+          <View
+            style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}
+          >
+            <View
+              style={[
+                styles.logoContainer,
+                { marginVertical: isSmallScreen ? 15 : 40 },
+              ]}
+            >
               <Image
                 source={require("@/assets/images/logo.png")}
                 style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
@@ -176,8 +205,14 @@ export default function OTPVerificationScreen() {
             </View>
 
             <Text style={styles.startTitle}>Awesome, Thanks!</Text>
-            <Text style={[styles.startSubtitle, { marginBottom: isSmallScreen ? 20 : 40 }]}>
-              Enter the 6 digit code we sent to {phoneDisplay} to verify your number.
+            <Text
+              style={[
+                styles.startSubtitle,
+                { marginBottom: isSmallScreen ? 20 : 40 },
+              ]}
+            >
+              Enter the 6 digit code we sent to {phoneDisplay} to verify your
+              number.
             </Text>
 
             <View style={styles.inputContainer}>
@@ -217,12 +252,17 @@ export default function OTPVerificationScreen() {
           </View>
         </ScrollView>
 
-        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
+        <View
+          style={[
+            styles.bottomBtnContainer,
+            {
+              paddingBottom:
+                Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24,
+            },
+          ]}
+        >
           <TouchableOpacity
-            style={[
-              styles.verifyBtn,
-              styles.verifyBtnEnabled,
-            ]}
+            style={[styles.verifyBtn, styles.verifyBtnEnabled]}
             onPress={handleVerifyOtp}
             disabled={loading}
             activeOpacity={0.8}

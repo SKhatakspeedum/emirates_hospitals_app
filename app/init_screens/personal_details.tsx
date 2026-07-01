@@ -15,6 +15,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import {
@@ -28,9 +29,13 @@ import {
   setEncryptedID,
   getDecryptedID,
 } from "../suggestus_plugin/util/util_functions";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { SiteConfig } from "../config/site_config";
 
 export default function PersonalDetailsScreen() {
   const router = useRouter();
+  const route = useRoute();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,18 +54,25 @@ export default function PersonalDetailsScreen() {
 
     setLoading(true);
     try {
+      const name = fullName.trim();
+      const nameParts = name.split(" ");
+      const firstName = nameParts[0] ?? name;
+      const lastName = nameParts.slice(1).join(" ");
+
+      const rawPhone = (route.params as any)?.phone_number ?? "";
+
       // 1. Save Full Name and Email encrypted
-      await setEncryptedID(SPD_USER_NAME, fullName.trim());
+      await setEncryptedID(SPD_USER_NAME, name);
       if (email.trim()) {
         await setEncryptedID(SPD_USER_EMAIL, email.trim());
       }
 
-      // 2. Fetch current USER_FULL_DATA, parse it, update the profile, and save it back
+      // 2. Fetch current USER_FULL_DATA, update and save back
       const currentDataStr = await getDecryptedID(USER_FULL_DATA);
-      let updatedData = {
-        fname: fullName.trim(),
+      let updatedData: Record<string, string> = {
+        fname: name,
         email: email.trim(),
-        contact: "",
+        contact: rawPhone,
       };
 
       if (currentDataStr) {
@@ -68,17 +80,47 @@ export default function PersonalDetailsScreen() {
           const parsed = JSON.parse(currentDataStr);
           updatedData = {
             ...parsed,
-            fname: fullName.trim(),
+            fname: name,
             email: email.trim() || parsed.email,
+            contact: rawPhone || parsed.contact,
           };
         } catch (e) {
-          // Keep default if parse fails
+          // keep default
         }
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
 
-      // 3. Mark the user as logged in
+      // 3. Register user via signup wrapper
+      const signupRes = await callSuggestusAPI(
+        spd_processId_config.sgconf_save_mst_user_from_signup_wrapper,
+        {
+          p_create_ai_code: SiteConfig.AI_CODE,
+          p_next_process_id:
+            "sgconf_get_mst_user_profile_for_authentic_token_v2",
+          p_register_new_patient_flag: "N",
+          p_usr_phone: rawPhone,
+          p_usr_name: name,
+          p_usr_additional_attributes: JSON.stringify({
+            p_first_name: firstName,
+            p_last_name: lastName,
+            USER_LOGIN_TYPE: "external",
+            USER_LOGIN_TYPE_DETAIL: "otp",
+            user_emirates_id: "",
+          }),
+        },
+      );
+
+      if (signupRes?.returnCode !== true) {
+        Toast.show({
+          type: "error",
+          text1: "Registration failed. Please try again.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 4. Mark the user as logged in
       await AsyncStorage.setItem(IS_LOGGED_IN, "true");
 
       Toast.show({
@@ -87,7 +129,7 @@ export default function PersonalDetailsScreen() {
         text2: "Welcome to Emirates Hospitals Group",
       });
 
-      // 4. Redirect to Success screen
+      // 5. Redirect to Success screen
       router.replace("/init_screens/success");
     } catch (error) {
       console.error("Error saving personal details:", error);

@@ -4,6 +4,9 @@ export const spd_processId_config = {
   sgconf_save_mst_user_otp_for_sms: "sgconf_save_mst_user_otp_for_sms",
   sgconf_verify_otp_for_user_for_all_authentication_factor_type:
     "sgconf_verify_otp_for_user_for_all_authentication_factor_type",
+  sgconf_util_validate_user_v2: "sgconf_util_validate_user_v2",
+  sgconf_save_mst_user_from_signup_wrapper:
+    "sgconf_save_mst_user_from_signup_wrapper",
 
   spdonmood9_get_md_user_accounts_login:
     "spdonmood9_get_md_user_accounts_login",

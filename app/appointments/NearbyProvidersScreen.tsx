@@ -250,6 +250,7 @@ export default function NearbyProvidersScreen() {
                   doctorName: provider.name,
                   specialty: provider.specialty,
                   avatar: provider.avatar,
+                  hospital: provider.hospital,
                 })
               }
             >

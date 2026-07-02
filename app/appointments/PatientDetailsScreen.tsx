@@ -25,11 +25,12 @@ import { USER_FULL_DATA } from "../config/config";
 export default function PatientDetailsScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { doctorId, doctorName, specialty, avatar } = route.params || {
+  const { doctorId, doctorName, specialty, avatar, hospital } = route.params || {
     doctorId: "1",
     doctorName: "Dr. Harry Dewson",
     specialty: "Dermatologist",
     avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+    hospital: "",
   };
 
   const [patients, setPatients] = useState([
@@ -162,6 +163,7 @@ export default function PatientDetailsScreen() {
       doctorName,
       specialty,
       avatar,
+      hospital,
       patientName: patient.name,
       patientAge: patient.age,
       patientGender: patient.gender,
@@ -234,6 +236,7 @@ export default function PatientDetailsScreen() {
       doctorName,
       specialty,
       avatar,
+      hospital,
       patientId: savedPatientId,
       patientName,
       patientAge,

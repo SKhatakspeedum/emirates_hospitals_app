@@ -21,8 +21,29 @@ const getDynamicScheduleData = () => {
   const tomorrow = new Date();
   tomorrow.setDate(today.getDate() + 1);
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const days = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const days = [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ];
 
   const formatDateStr = (d: Date) => {
     const monthStr = months[d.getMonth()];
@@ -44,7 +65,15 @@ const getDynamicScheduleData = () => {
       dateStr: formatDateStr(today),
       dayLabel: days[today.getDay()],
       fullDate: formatFullDate(today),
-      slots: ["9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM"],
+      slots: [
+        "9:30 AM",
+        "10:00 AM",
+        "10:30 AM",
+        "11:00 AM",
+        "11:30 AM",
+        "12:00 PM",
+        "12:30 PM",
+      ],
     },
     {
       dateId: "2",
@@ -66,7 +95,7 @@ export default function HealthPackageScheduleScreen() {
       id: "pkg1",
       title: "Men's Silver Health Check Up",
       price: "AED 1,800",
-    }
+    },
   };
 
   const [selectedDate, setSelectedDate] = useState(SCHEDULE_DATA[0]);
@@ -89,7 +118,10 @@ export default function HealthPackageScheduleScreen() {
     return selectedDate.dateId === dateId && selectedSlot === slot;
   };
 
-  const handleSlotSelect = (dateItem: typeof SCHEDULE_DATA[0], slot: string) => {
+  const handleSlotSelect = (
+    dateItem: (typeof SCHEDULE_DATA)[0],
+    slot: string,
+  ) => {
     setSelectedDate(dateItem);
     setSelectedSlot(slot);
   };
@@ -98,17 +130,25 @@ export default function HealthPackageScheduleScreen() {
     <View style={styles.container}>
       {/* Title Header */}
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ flexDirection: "row", alignItems: "center" }}
+        >
           <Ionicons name="chevron-back" size={22} color={Colors.text} />
-          <Text style={styles.headerTitle}>Date & Time</Text>
+          <Text style={styles.headerTitle}>Date & Time tes</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Notice/Disclaimer Box */}
         <View style={styles.disclaimerContainer}>
           <Text style={styles.disclaimerText}>
-            To give our clinical team adequate time to prepare for your appointment, you must complete the booking at least 20 minutes before the scheduled start time.
+            To give our clinical team adequate time to prepare for your
+            appointment, you must complete the booking at least 20 minutes
+            before the scheduled start time.
           </Text>
         </View>
 
@@ -143,11 +183,13 @@ export default function HealthPackageScheduleScreen() {
                       {
                         transform: [{ scale: pressed ? 0.95 : 1 }],
                         opacity: pressed ? 0.8 : 1,
-                      }
+                      },
                     ]}
                     onPress={() => handleSlotSelect(item, slot)}
                   >
-                    <Text style={[styles.slotText, active && styles.slotTextActive]}>
+                    <Text
+                      style={[styles.slotText, active && styles.slotTextActive]}
+                    >
                       {slot}
                     </Text>
                   </Pressable>
@@ -166,7 +208,7 @@ export default function HealthPackageScheduleScreen() {
             {
               transform: [{ scale: pressed ? 0.95 : 1 }],
               opacity: pressed ? 0.85 : 1,
-            }
+            },
           ]}
           onPress={handleConfirm}
         >
@@ -187,7 +229,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
     backgroundColor: Colors.background,
   },

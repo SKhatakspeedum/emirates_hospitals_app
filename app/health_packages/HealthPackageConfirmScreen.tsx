@@ -20,7 +20,7 @@ import { Colors } from "../config/colors";
 export default function HealthPackageConfirmScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  
+
   const { pkg, date, time } = route.params || {
     pkg: {
       id: "pkg1",
@@ -38,17 +38,18 @@ export default function HealthPackageConfirmScreen() {
       [
         {
           text: "OK",
-          onPress: () => navigation.navigate("AppointmentDetails", {
-            isPackage: true,
-            type: pkg.title,
-            date: date,
-            time: time,
-            patientName: "John Doe",
-            price: pkg.price,
-            pkg: pkg,
-          }),
+          onPress: () =>
+            navigation.navigate("AppointmentDetails", {
+              isPackage: true,
+              type: pkg.title,
+              date: date,
+              time: time,
+              patientName: "John Doe",
+              price: pkg.price,
+              pkg: pkg,
+            }),
         },
-      ]
+      ],
     );
   };
 
@@ -60,7 +61,20 @@ export default function HealthPackageConfirmScreen() {
         const monthStr = parts[1];
         const year = parseInt(parts[2], 10);
 
-        const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(monthStr);
+        const monthIndex = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ].indexOf(monthStr);
         if (monthIndex !== -1) {
           const d = new Date(year, monthIndex, day);
           const daysShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -80,16 +94,24 @@ export default function HealthPackageConfirmScreen() {
       <SafeAreaView style={{ flex: 1 }}>
         {/* Title Header */}
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ flexDirection: "row", alignItems: "center" }}
+          >
             <Ionicons name="chevron-back" size={22} color={Colors.text} />
             <Text style={styles.headerTitle}>Confirm Booking</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Banner Image */}
           <Image
-            source={{ uri: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800" }}
+            source={{
+              uri: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800",
+            }}
             style={styles.bannerImage}
             resizeMode="cover"
           />
@@ -98,7 +120,12 @@ export default function HealthPackageConfirmScreen() {
           <View style={styles.listContainer}>
             {/* Package details title */}
             <View style={styles.listItem}>
-              <Ionicons name="medkit-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+              <Ionicons
+                name="medkit-outline"
+                size={22}
+                color={Colors.primary}
+                style={styles.itemIcon}
+              />
               <View style={styles.textColumn}>
                 <Text style={styles.itemTitle}>Selected Package</Text>
                 <Text style={styles.itemValue}>{pkg.title}</Text>
@@ -110,11 +137,20 @@ export default function HealthPackageConfirmScreen() {
             {/* Date and Time Slot with Change Button */}
             <View style={[styles.listItem, styles.listItemSpaceBetween]}>
               <View style={styles.listItemLeft}>
-                <Ionicons name="time-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+                <Ionicons
+                  name="time-outline"
+                  size={22}
+                  color={Colors.primary}
+                  style={styles.itemIcon}
+                />
                 <View style={styles.textColumn}>
                   <Text style={styles.itemTitle}>Scheduled slot</Text>
-                  <Text style={styles.itemValue}>{getFormattedDateDisplay(date)}</Text>
-                  <Text style={[styles.itemValue, { marginTop: 2 }]}>{time}</Text>
+                  <Text style={styles.itemValue}>
+                    {getFormattedDateDisplay(date)}
+                  </Text>
+                  <Text style={[styles.itemValue, { marginTop: 2 }]}>
+                    {time}
+                  </Text>
                 </View>
               </View>
               <Pressable
@@ -123,7 +159,7 @@ export default function HealthPackageConfirmScreen() {
                   {
                     backgroundColor: pressed ? Colors.primary : "transparent",
                     transform: [{ scale: pressed ? 0.95 : 1 }],
-                  }
+                  },
                 ]}
                 onPress={() => navigation.goBack()}
               >
@@ -131,7 +167,7 @@ export default function HealthPackageConfirmScreen() {
                   <Text
                     style={[
                       styles.changeButtonText,
-                      { color: pressed ? Colors.background : Colors.primary }
+                      { color: pressed ? Colors.background : Colors.primary },
                     ]}
                   >
                     Change
@@ -143,7 +179,7 @@ export default function HealthPackageConfirmScreen() {
             <View style={styles.divider} />
 
             {/* Location / Address */}
-            <View style={styles.listItem}>
+            {/* <View style={styles.listItem}>
               <Ionicons name="location-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
               <View style={styles.textColumn}>
                 <Text style={styles.itemTitle}>Location</Text>
@@ -151,13 +187,18 @@ export default function HealthPackageConfirmScreen() {
                   P.O Box 28973, Dubai,{"\n"}Emirates - 28973
                 </Text>
               </View>
-            </View>
+            </View> */}
 
             <View style={styles.divider} />
 
             {/* Price / Payment */}
             <View style={styles.listItem}>
-              <Ionicons name="card-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+              <Ionicons
+                name="card-outline"
+                size={22}
+                color={Colors.primary}
+                style={styles.itemIcon}
+              />
               <View style={styles.textColumn}>
                 <Text style={styles.itemTitle}>Payment (Self Pay)</Text>
                 <Text style={styles.itemValue}>{pkg.price}</Text>
@@ -174,12 +215,16 @@ export default function HealthPackageConfirmScreen() {
               {
                 transform: [{ scale: pressed ? 0.95 : 1 }],
                 opacity: pressed ? 0.85 : 1,
-              }
+              },
             ]}
             onPress={handleDone}
           >
             <Text style={styles.confirmButtonText}>Confirm Booking</Text>
-            <Ionicons name="arrow-forward" size={18} color={Colors.background} />
+            <Ionicons
+              name="arrow-forward"
+              size={18}
+              color={Colors.background}
+            />
           </Pressable>
         </View>
       </SafeAreaView>
@@ -196,7 +241,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
     backgroundColor: Colors.background,
   },

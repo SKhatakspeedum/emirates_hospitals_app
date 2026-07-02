@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,72 +8,142 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
-  Dimensions,
   Alert,
   Platform,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
-const { width } = Dimensions.get("window");
 
-// Original Mock Data structure
-const UPCOMING_APPOINTMENTS = [
-  {
-    id: "1",
-    doctorName: "Dr. Harry Dewson",
-    specialty: "Dermatologist",
-    avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-    date: "02 Mar 2026",
-    time: "09:30 AM - 10:00 AM",
-    status: "Confirmed",
-    type: "Video Consult",
-  },
-  {
-    id: "2",
-    doctorName: "Dr. Wael Berro",
-    specialty: "Family Medicine",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    date: "05 Mar 2026",
-    time: "11:00 AM - 11:30 AM",
-    status: "Confirmed",
-    type: "In-Clinic",
-  },
+type Appointment = {
+  id: string;
+  doctorName: string;
+  specialty: string;
+  avatar: string;
+  date: string;
+  time: string;
+  status: string;
+  statusHtml: string;
+  type: string;
+  apptypName: string;
+  patientDet: string;
+  resourceId: string;
+  appSubtypeId: string;
+};
+
+const HISTORY_APPOINTMENTS: Appointment[] = [
+  { id: "3", doctorName: "Dr. Sheena Cherry", specialty: "Specialist Medicine", avatar: "https://randomuser.me/api/portraits/women/68.jpg", date: "20 Feb 2026", time: "02:00 PM", status: "Completed", statusHtml: "", type: "Video Consult", apptypName: "", patientDet: "", resourceId: "", appSubtypeId: "" },
+  { id: "4", doctorName: "Dr. Yanal Salam", specialty: "Consultant Medicine", avatar: "https://randomuser.me/api/portraits/men/46.jpg", date: "15 Feb 2026", time: "10:30 AM", status: "Cancelled", statusHtml: "", type: "In-Clinic", apptypName: "", patientDet: "", resourceId: "", appSubtypeId: "" },
 ];
 
-const HISTORY_APPOINTMENTS = [
-  {
-    id: "3",
-    doctorName: "Dr. Sheena Cherry",
-    specialty: "Specialist Medicine",
-    avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-    date: "20 Feb 2026",
-    time: "02:00 PM - 02:30 PM",
-    status: "Completed",
-    type: "Video Consult",
-  },
-  {
-    id: "4",
-    doctorName: "Dr. Yanal Salam",
-    specialty: "Consultant Medicine",
-    avatar: "https://randomuser.me/api/portraits/men/46.jpg",
-    date: "15 Feb 2026",
-    time: "10:30 AM - 11:00 AM",
-    status: "Cancelled",
-    type: "In-Clinic",
-  },
-];
+// Strips HTML tags: "<div class="badge-success">BOOKED</div>" → "BOOKED"
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
+
+// Returns color/bg from badge class: badge-outline-success, badge-outline-danger, etc.
+const getStatusStyle = (htmlStr: string) => {
+  if (htmlStr.includes("success")) return { color: "#16a34a", bg: "#dcfce7" };
+  if (htmlStr.includes("danger")) return { color: "#dc2626", bg: "#fee2e2" };
+  if (htmlStr.includes("warning")) return { color: "#d97706", bg: "#fef3c7" };
+  return { color: Colors.primary, bg: "#e0f2fe" };
+};
+
+// Converts "09:15:00" or "09:15 AM" → "09:15 AM"
+const formatAmPm = (timeStr: string): string => {
+  if (!timeStr) return "";
+  // Already has AM/PM
+  if (/am|pm/i.test(timeStr)) return timeStr.trim();
+  const [hStr, mStr] = timeStr.split(":");
+  const h = parseInt(hStr, 10);
+  const m = mStr ?? "00";
+  if (isNaN(h)) return timeStr;
+  const suffix = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${String(h12).padStart(2, "0")}:${m} ${suffix}`;
+};
+
+// Parses "Friday, Jul 03 2026" or "02 Mar 2026" → { month, day }
+const parseDateBadge = (dateStr: string) => {
+  const clean = dateStr.replace(/^\w+,\s*/, "").trim(); // strip "Friday, "
+  const parts = clean.split(" ");
+  if (parts.length >= 3) {
+    if (isNaN(Number(parts[0]))) return { month: parts[0], day: parts[1] }; // "Jul 03 2026"
+    return { month: parts[1], day: parts[0] };                              // "02 Mar 2026"
+  }
+  return { month: "Mar", day: "02" };
+};
 
 export default function AppointmentScreen() {
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<"upcoming" | "history">("upcoming");
-  const [upcomingList, setUpcomingList] = useState(UPCOMING_APPOINTMENTS);
+  const [upcomingList, setUpcomingList] = useState<Appointment[]>([]);
   const [historyList, setHistoryList] = useState(HISTORY_APPOINTMENTS);
+  const [isLoading, setIsLoading] = useState(false);
 
   const appointments = activeTab === "upcoming" ? upcomingList : historyList;
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      setIsLoading(true);
+      try {
+        const patientId = await fetchDataFromLocalStorage("sg_patientId");
+        const response = await callSuggestusAPI(
+          spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
+          {
+            p_patient_id: patientId ?? "",
+            p_visit_id: null,
+            menu_name: "Wellness",
+            menu_tab_type: "always_patient_specific",
+            maximization_redirection_label: "Make appointment",
+            p_max_offset: 100,
+            p_offset: 0,
+          },
+        );
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const mapItem = (a: any): Appointment => ({
+            id: String(a.p_appt_id ?? a.sch_id ?? a.appointment_id ?? ""),
+            doctorName: a.resource_name ?? a.phy_name ?? a.doctor_name ?? "",
+            specialty: a.dpt_description ?? a.dept_name ?? a.speciality_name ?? "",
+            avatar: a.p_doc_image_url ?? a.phy_photo ?? a.doctor_photo ?? "",
+            date: a.appt_date_dashboard ?? a.sch_date ?? a.appointment_date ?? "",
+            time: a.appt_start_time ?? a.sch_time ?? a.appointment_time ?? "",
+            status: a.appstat_name ?? a.sch_status ?? a.appointment_status ?? "Confirmed",
+            statusHtml: a.appstat_html_name ?? "",
+            type: a.appsubtyp_name ?? a.appointment_type ?? a.visit_type ?? "In-Clinic",
+            apptypName: stripHtml(a.apptyp_name ?? ""),
+            patientDet: a.patient_det ?? "",
+            resourceId: String(a.appt_resource_id ?? a.resource_id ?? ""),
+            appSubtypeId: String(a.appsubtyp_id ?? ""),
+          });
+
+          const upcoming: Appointment[] = [];
+          const history: Appointment[] = [];
+          response.returnData.forEach((a: any) => {
+            const histType = (a.appointment_history_type ?? "").toLowerCase();
+            if (histType === "history") {
+              history.push(mapItem(a));
+            } else {
+              upcoming.push(mapItem(a));
+            }
+          });
+
+          setUpcomingList(upcoming);
+          if (history.length > 0) setHistoryList(history);
+        }
+      } catch (_) {
+        // keep fallback lists on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAppointments();
+  }, []);
 
   const handleCancelAppointment = (id: string, name: string) => {
     Alert.alert(
@@ -86,9 +156,9 @@ export default function AppointmentScreen() {
           style: "destructive",
           onPress: () => {
             if (activeTab === "upcoming") {
-              setUpcomingList((prev) => prev.filter((item) => item.id !== id));
+              setUpcomingList((prev: Appointment[]) => prev.filter((item: Appointment) => item.id !== id));
             } else {
-              setHistoryList((prev) => prev.filter((item) => item.id !== id));
+              setHistoryList((prev: Appointment[]) => prev.filter((item: Appointment) => item.id !== id));
             }
           },
         },
@@ -149,7 +219,13 @@ export default function AppointmentScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {appointments.length === 0 ? (
+          {isLoading ? (
+            <ActivityIndicator
+              size="large"
+              color={Colors.primary}
+              style={{ marginTop: 60 }}
+            />
+          ) : appointments.length === 0 ? (
             // Empty State UI (Screen 1 & Screen 2)
             <View style={styles.emptyContainer}>
               <Image
@@ -175,13 +251,11 @@ export default function AppointmentScreen() {
             </View>
           ) : (
             // Populated State UI (Screen 3)
-            appointments.map((item) => {
-              const dateParts = item.date.split(" ");
-              const dateNum = dateParts[0] || "02";
-              const dateMonth = dateParts[1] || "Mar";
-              const startTime = item.time.split(" - ")[0] || item.time;
-              const specialty = item.specialty;
-
+            appointments.map((item: Appointment) => {
+              const { month: dateMonth, day: dateNum } = parseDateBadge(item.date);
+              const startTime = formatAmPm(item.time.split(" - ")[0] || item.time);
+              const statusLabel = item.statusHtml ? stripHtml(item.statusHtml) : item.status;
+              const statusStyle = getStatusStyle(item.statusHtml ?? "");
 
               return (
                 <View key={item.id} style={styles.appointmentRow}>
@@ -191,12 +265,15 @@ export default function AppointmentScreen() {
                       { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
                     ]}
                     onPress={() => navigation.navigate("AppointmentDetails", {
-                      doctorId: item.id,
+                      apptId: item.id,
+                      doctorId: item.resourceId || item.id,
                       doctorName: item.doctorName,
                       specialty: item.specialty,
                       avatar: item.avatar,
-                      patientName: "John Doe",
+                      patientDet: item.patientDet,
                       type: item.type || "Primary care visit",
+                      apptypName: item.apptypName,
+                      appSubtypeId: item.appSubtypeId,
                       date: item.date,
                       time: startTime,
                       isHistory: activeTab === "history",
@@ -214,19 +291,23 @@ export default function AppointmentScreen() {
 
                     {/* Details Column */}
                     <View style={styles.detailsCol}>
-                      <Text style={styles.appointmentTitle}>{specialty}</Text>
+                      {/* resource_name */}
+                      <Text style={styles.appointmentTitle}>{item.doctorName}</Text>
 
+                      {/* appt_date (time part) */}
                       <View style={styles.metaRow}>
                         <Ionicons name="time-outline" size={14} color={styles.iconColor.color} />
                         <Text style={styles.metaText}>{startTime}</Text>
                       </View>
 
-                      <View style={styles.metaRow}>
-                        <Ionicons name="location-outline" size={14} color={styles.iconColor.color} />
-                        <Text style={styles.metaText} numberOfLines={1}>
-                          P.O Box 28973, Dubai, Emirates - 28973
-                        </Text>
-                      </View>
+                      {/* appstat_html_name → status badge */}
+                      {!!statusLabel && (
+                        <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                          <Text style={[styles.statusBadgeText, { color: statusStyle.color }]}>
+                            {statusLabel}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   </Pressable>
 
@@ -457,5 +538,17 @@ const styles = StyleSheet.create({
   },
   iconColor: {
     color: Colors.primary,
-  }
+  },
+  statusBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 5,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
 });

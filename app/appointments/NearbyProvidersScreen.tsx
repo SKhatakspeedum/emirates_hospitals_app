@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,11 +11,15 @@ import {
   TextInput,
   Platform,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
 // Static Doctor Mock Data
 const PROVIDERS = [
@@ -81,16 +85,103 @@ const PROVIDERS = [
   },
 ];
 
-const CATEGORIES = ["All", "Dermatologist", "Family Medicine", "Internal Medicine", "Pediatrician"];
+const CATEGORIES = [
+  "All",
+  "Dermatologist",
+  "Family Medicine",
+  "Internal Medicine",
+  "Pediatrician",
+];
+
+function DoctorAvatar({ uri, name }: { uri: string; name: string }) {
+  const [hasError, setHasError] = useState(false);
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+
+  return (
+    <View style={styles.avatarContainer}>
+      {uri && !hasError ? (
+        <Image
+          source={{ uri }}
+          style={styles.avatar}
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <View style={[styles.avatar, styles.avatarFallback]}>
+          <Text style={styles.avatarInitialsText}>{initials || "DR"}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function NearbyProvidersScreen() {
   const navigation = useNavigation<any>();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [providers, setProviders] = useState(PROVIDERS);
+  const [categories, setCategories] = useState(CATEGORIES);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const filteredProviders = PROVIDERS.filter((provider) => {
-    const matchesCategory = selectedCategory === "All" || provider.specialty === selectedCategory;
-    const matchesSearch = provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  useEffect(() => {
+    const fetchProviders = async () => {
+      setIsLoading(true);
+      try {
+        const patientId = await fetchDataFromLocalStorage("sg_patientId");
+        const now = new Date();
+        const response = await callSuggestusAPI(
+          spd_processId_config.hospapp_get_resources,
+          {
+            p_patient_id: patientId ?? "",
+            p_resource_code: "",
+            p_month: now.getMonth() + 1,
+            p_year: now.getFullYear(),
+            p_process_type: "",
+            p_visit_id: null,
+            p_category_code: "CAT005",
+          },
+        );
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const fetched = response.returnData.map((r: any) => ({
+            id: String(r.resource_id ?? r.id ?? Math.random()),
+            name: r.resource_name ?? r.name ?? "",
+            specialty: r.dpt_description ?? r.dept_name ?? "",
+            qualification: r.doctor_education ?? r.doctor_short_description ?? "",
+            hospital: r.org_name ?? "",
+            distance: r.distance ?? "",
+            rating: String(r.rating ?? ""),
+            reviews: String(r.reviews ?? ""),
+            avatar: r.resource_image_url ?? "",
+            nextAvailable: r.next_available ?? r.next_slot ?? "",
+          }));
+          setProviders(fetched);
+
+          const uniqueSpecialties: string[] = [
+            "All",
+            ...Array.from(
+              new Set<string>(fetched.map((p: any) => p.specialty).filter(Boolean)),
+            ),
+          ];
+          setCategories(uniqueSpecialties);
+        }
+      } catch (_) {
+        // keep fallback data on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProviders();
+  }, []);
+
+  const filteredProviders = providers.filter((provider) => {
+    const matchesCategory =
+      selectedCategory === "All" || provider.specialty === selectedCategory;
+    const matchesSearch =
+      provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       provider.hospital.toLowerCase().includes(searchQuery.toLowerCase()) ||
       provider.specialty.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -98,14 +189,17 @@ export default function NearbyProvidersScreen() {
 
   return (
     <View style={styles.container}>
-
       {/* Title Header */}
       <CustomHeader title="Nearby providers" />
 
       {/* Categories Horizontal Scroll */}
       <View style={styles.categoriesContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
-          {CATEGORIES.map((category) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesScroll}
+        >
+          {categories.map((category) => (
             <TouchableOpacity
               key={category}
               style={[
@@ -128,43 +222,84 @@ export default function NearbyProvidersScreen() {
       </View>
 
       {/* Providers List */}
-      <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
-        {filteredProviders.length === 0 ? (
+      <ScrollView
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {isLoading ? (
+          <ActivityIndicator
+            size="large"
+            color={Colors.primary}
+            style={{ marginTop: 60 }}
+          />
+        ) : filteredProviders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="people-outline" size={64} color="#B3B7C6" />
-            <Text style={styles.emptyText}>No providers found matching search</Text>
+            <Text style={styles.emptyText}>
+              No providers found matching search
+            </Text>
           </View>
         ) : (
           filteredProviders.map((provider) => (
-            <View key={provider.id} style={styles.card}>
+            <View
+              key={provider.id}
+              style={styles.card}
+              onTouchEnd={() =>
+                navigation.navigate("PatientDetails", {
+                  doctorId: provider.id,
+                  doctorName: provider.name,
+                  specialty: provider.specialty,
+                  avatar: provider.avatar,
+                  hospital: provider.hospital,
+                })
+              }
+            >
               <View style={styles.cardContent}>
-                <View style={styles.avatarContainer}>
-                  <Image source={{ uri: provider.avatar }} style={styles.avatar} />
-                </View>
+                <DoctorAvatar uri={provider.avatar} name={provider.name} />
                 <View style={styles.infoCol}>
                   <Text style={styles.name}>{provider.name}</Text>
-                  <Text style={styles.qualification}>{provider.qualification}</Text>
+                  {!!provider.specialty && (
+                    <Text style={styles.specialty}>{provider.specialty}</Text>
+                  )}
+                  {!!provider.qualification && (
+                    <Text style={styles.qualification}>{provider.qualification}</Text>
+                  )}
 
                   {/* Actions Row */}
                   <View style={styles.actionsRow}>
-                    <TouchableOpacity style={styles.actionIconButton} activeOpacity={0.7}>
+                    <TouchableOpacity
+                      style={styles.actionIconButton}
+                      activeOpacity={0.7}
+                    >
                       <Ionicons name="call" size={14} color={Colors.primary} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionIconButton} activeOpacity={0.7}>
-                      <Ionicons name="chatbubble" size={14} color={Colors.primary} />
+                    <TouchableOpacity
+                      style={styles.actionIconButton}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="chatbubble"
+                        size={14}
+                        color={Colors.primary}
+                      />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionIconButton} activeOpacity={0.7}>
+                    <TouchableOpacity
+                      style={styles.actionIconButton}
+                      activeOpacity={0.7}
+                    >
                       <Text style={styles.infoText}>i</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               </View>
 
-              <Pressable
+              {/* <Pressable
                 style={({ pressed }) => [
                   styles.bookButton,
                   {
-                    backgroundColor: pressed ? Colors.primary : Colors.background,
+                    backgroundColor: pressed
+                      ? Colors.primary
+                      : Colors.background,
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
                 ]}
@@ -185,19 +320,23 @@ export default function NearbyProvidersScreen() {
                         { color: pressed ? Colors.background : Colors.primary },
                       ]}
                     >
-                      Book an appointment
+                      Book an appointment test
                     </Text>
                     <Text
                       style={[
                         styles.bookButtonSubtext,
-                        { color: pressed ? "rgba(255, 255, 255, 0.8)" : Colors.label },
+                        {
+                          color: pressed
+                            ? "rgba(255, 255, 255, 0.8)"
+                            : Colors.label,
+                        },
                       ]}
                     >
                       {provider.nextAvailable}
                     </Text>
                   </>
                 )}
-              </Pressable>
+              </Pressable> */}
             </View>
           ))
         )}
@@ -218,7 +357,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
     backgroundColor: Colors.background,
   },
@@ -305,15 +445,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
-
   },
   avatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
   },
+  avatarFallback: {
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarInitialsText: {
+    color: Colors.background,
+    fontSize: 20,
+    fontWeight: "700",
+  },
   infoCol: {
     flex: 1,
+  },
+  specialty: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: "600",
+    marginBottom: 2,
   },
   name: {
     fontSize: 17,

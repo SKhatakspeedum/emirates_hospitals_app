@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,9 @@ import {
   Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
@@ -22,45 +25,110 @@ export default function ConfirmScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const {
+    apptId,
     doctorId,
     doctorName,
     specialty,
     avatar,
+    hospital,
+    patientId,
     patientName,
+    patientAge,
+    patientGender,
+    relationship,
+    appSubtypeId,
     type,
     date,
     time,
+    slotId,
   } = route.params || {
     doctorId: "1",
     doctorName: "Dr. Harry Dewson",
     specialty: "Dermatologist",
     avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+    hospital: "",
+    patientId: "",
     patientName: "John Doe",
+    patientAge: "",
+    patientGender: "",
+    relationship: "Self",
+    appSubtypeId: "",
     type: "Video Consult",
     date: "02 Mar 2026",
     time: "09:30 AM",
+    slotId: "",
   };
 
-  const handleDone = () => {
-    Alert.alert(
-      "Success",
-      "Your appointment has been successfully scheduled.",
-      [
+  const [locationText, setLocationText] = useState<string>(hospital ?? "");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (hospital) return;
+    fetchDataFromLocalStorage("sg_org_name").then((val) => {
+      if (val) setLocationText(val);
+    });
+  }, []);
+
+  // Converts "2026-07-03-07:45:00-08:30:00" → "2026-07-03~07:45:00~08:30:00"
+  const buildSlotsList = (id: string): string => {
+    if (!id) return "";
+    const datePart = id.slice(0, 10);
+    const startPart = id.slice(11, 19);
+    const endPart = id.slice(20, 28);
+    return `${datePart}~${startPart}~${endPart}`;
+  };
+
+  const handleDone = async () => {
+    console.log("apptId Final:>>", apptId);
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "";
+      const pid =
+        patientId || (await fetchDataFromLocalStorage("sg_patientId")) || "";
+      const pSlotsList = buildSlotsList(slotId ?? "");
+
+      const res = await callSuggestusAPI(
+        spd_processId_config.hospapp_save_patient_appointment_hv,
         {
-          text: "OK",
-          onPress: () => navigation.navigate("AppointmentDetails", {
-            doctorId,
-            doctorName,
-            specialty,
-            avatar,
-            patientName,
-            type,
-            date,
-            time,
-          }),
+          p_doctor_id: doctorId ?? "",
+          p_patient_id: pid,
+          p_slots_list: pSlotsList,
+          p_appt_id: apptId ?? "",
+          p_org_id: orgId,
+          p_online_appointment_flag: "Y",
+          p_appt_subtype: appSubtypeId ?? "",
+          p_reschedule_appointment: "",
+          p_remarks: "",
         },
-      ]
-    );
+      );
+
+      if (res?.returnCode === true) {
+        Alert.alert(
+          "Success",
+          "Your appointment has been successfully scheduled.",
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.navigate("Appointment"),
+            },
+          ],
+        );
+
+        setTimeout(() => {
+          navigation.navigate("Appointment");
+        }, 1000);
+      } else {
+        Alert.alert(
+          "Error",
+          res?.returnMessage ?? "Failed to save appointment. Please try again.",
+        );
+      }
+    } catch (_) {
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getFormattedDateDisplay = (dateStr: string) => {
@@ -71,7 +139,20 @@ export default function ConfirmScreen() {
         const monthStr = parts[1];
         const year = parseInt(parts[2], 10);
 
-        const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(monthStr);
+        const monthIndex = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ].indexOf(monthStr);
         if (monthIndex !== -1) {
           const d = new Date(year, monthIndex, day);
           const daysShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -92,10 +173,15 @@ export default function ConfirmScreen() {
         {/* Title Header */}
         <CustomHeader title="Confirm" />
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Banner Image */}
           <Image
-            source={{ uri: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800" }}
+            source={{
+              uri: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800",
+            }}
             style={styles.bannerImage}
             resizeMode="cover"
           />
@@ -104,16 +190,73 @@ export default function ConfirmScreen() {
           <View style={styles.listContainer}>
             {/* Finalize Appointment Title */}
             <View style={styles.listItem}>
-              <Ionicons name="calendar-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+              <Ionicons
+                name="calendar-outline"
+                size={22}
+                color={Colors.primary}
+                style={styles.itemIcon}
+              />
               <Text style={styles.itemTitle}>Finalize your appointment</Text>
             </View>
 
             <View style={styles.divider} />
 
-            {/* Patient Name */}
+            {/* Doctor Info */}
             <View style={styles.listItem}>
-              <Ionicons name="person-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
-              <Text style={styles.itemValue}>{patientName}</Text>
+              {avatar ? (
+                <Image source={{ uri: avatar }} style={styles.doctorAvatar} />
+              ) : (
+                <View
+                  style={[styles.doctorAvatar, styles.doctorAvatarFallback]}
+                >
+                  <Ionicons name="person" size={18} color={Colors.background} />
+                </View>
+              )}
+              <View style={styles.textColumn}>
+                <Text style={styles.itemValue}>{doctorName}</Text>
+                {!!specialty && (
+                  <Text style={styles.itemSubValue}>{specialty}</Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Appointment Type */}
+            <View style={styles.listItem}>
+              <Ionicons
+                name="medical-outline"
+                size={22}
+                color={Colors.primary}
+                style={styles.itemIcon}
+              />
+              <Text style={styles.itemValue}>{type}</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Patient Info */}
+            <View style={styles.listItem}>
+              <Ionicons
+                name="person-outline"
+                size={22}
+                color={Colors.primary}
+                style={styles.itemIcon}
+              />
+              <View style={styles.textColumn}>
+                <Text style={styles.itemValue}>{patientName}</Text>
+                {(patientAge || patientGender) && (
+                  <Text style={styles.itemSubValue}>
+                    {[
+                      patientAge && `${patientAge} yrs`,
+                      patientGender,
+                      relationship,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Text>
+                )}
+              </View>
             </View>
 
             <View style={styles.divider} />
@@ -121,10 +264,17 @@ export default function ConfirmScreen() {
             {/* Date and Time Slot with Change Button */}
             <View style={[styles.listItem, styles.listItemSpaceBetween]}>
               <View style={styles.listItemLeft}>
-                <Ionicons name="time-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+                <Ionicons
+                  name="time-outline"
+                  size={22}
+                  color={Colors.primary}
+                  style={styles.itemIcon}
+                />
                 <View style={styles.textColumn}>
-                  <Text style={styles.itemValue}>{getFormattedDateDisplay(date)}</Text>
-                  <Text style={[styles.itemValue, { marginTop: 2 }]}>{time}</Text>
+                  <Text style={styles.itemValue}>
+                    {getFormattedDateDisplay(date)}
+                  </Text>
+                  <Text style={styles.itemSubValue}>{time}</Text>
                 </View>
               </View>
               <Pressable
@@ -133,7 +283,7 @@ export default function ConfirmScreen() {
                   {
                     backgroundColor: pressed ? Colors.primary : "transparent",
                     transform: [{ scale: pressed ? 0.95 : 1 }],
-                  }
+                  },
                 ]}
                 onPress={() => navigation.goBack()}
               >
@@ -141,7 +291,7 @@ export default function ConfirmScreen() {
                   <Text
                     style={[
                       styles.changeButtonText,
-                      { color: pressed ? Colors.background : Colors.primary }
+                      { color: pressed ? Colors.background : Colors.primary },
                     ]}
                   >
                     Change
@@ -153,19 +303,29 @@ export default function ConfirmScreen() {
             <View style={styles.divider} />
 
             {/* Location / Address */}
-            <View style={styles.listItem}>
-              <Ionicons name="location-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+            {/* <View style={styles.listItem}>
+              <Ionicons
+                name="location-outline"
+                size={22}
+                color={Colors.primary}
+                style={styles.itemIcon}
+              />
               <Text style={styles.itemValue}>
                 P.O Box 28973, Dubai,{"\n"}Emirates - 28973
               </Text>
-            </View>
+            </View> */}
 
             <View style={styles.divider} />
 
             {/* Payment / Self Pay with Add Button */}
             <View style={[styles.listItem, styles.listItemSpaceBetween]}>
               <View style={styles.listItemLeft}>
-                <Ionicons name="card-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+                <Ionicons
+                  name="card-outline"
+                  size={22}
+                  color={Colors.primary}
+                  style={styles.itemIcon}
+                />
                 <Text style={styles.itemValue}>Self Pay</Text>
               </View>
               <Pressable
@@ -174,7 +334,7 @@ export default function ConfirmScreen() {
                   {
                     transform: [{ scale: pressed ? 0.95 : 1 }],
                     opacity: pressed ? 0.8 : 1,
-                  }
+                  },
                 ]}
               >
                 <Text style={styles.addButtonText}>Add</Text>
@@ -188,15 +348,23 @@ export default function ConfirmScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.confirmButton,
-              {
+              isSaving && { opacity: 0.6 },
+              !isSaving && {
                 transform: [{ scale: pressed ? 0.95 : 1 }],
                 opacity: pressed ? 0.85 : 1,
-              }
+              },
             ]}
             onPress={handleDone}
+            disabled={isSaving}
           >
-            <Text style={styles.confirmButtonText}>Continue</Text>
-            <Ionicons name="arrow-forward" size={18} color={Colors.background} />
+            <Text style={styles.confirmButtonText}>
+              {isSaving ? "Saving..." : "Continue"}
+            </Text>
+            <Ionicons
+              name="arrow-forward"
+              size={18}
+              color={Colors.background}
+            />
           </Pressable>
         </View>
       </SafeAreaView>
@@ -213,7 +381,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
     backgroundColor: Colors.background,
   },
@@ -260,6 +429,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: Colors.primary,
+  },
+  doctorAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 16,
+  },
+  doctorAvatarFallback: {
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  itemSubValue: {
+    fontSize: 13,
+    color: Colors.label,
+    marginTop: 2,
   },
   itemValue: {
     fontSize: 15,

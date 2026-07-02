@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,54 +10,43 @@ import {
   TextInput,
   Platform,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
-const SERVICES = [
-  {
-    id: "counselling",
-    title: "Counselling",
-    icon: "chatbubbles-outline",
-    bgColor: "#E0F2FE", // Soft sky blue
-    iconColor: "#0076D6",
-  },
+const DEFAULT_SERVICE_STYLES = [
+  { bgColor: "#E0F2FE", iconColor: "#0076D6", icon: "chatbubbles-outline" },
+  { bgColor: "#FEE2E2", iconColor: "#EF4444", icon: "document-text-outline" },
+  { bgColor: "#F3F4F6", iconColor: "#4B5563", icon: "people-outline" },
+  { bgColor: "#F3E8FF", iconColor: "#A855F7", icon: "git-network-outline" },
+  { bgColor: "#FEF9C3", iconColor: "#EAB308", icon: "happy-outline" },
+  { bgColor: "#CCFBF1", iconColor: "#0D9488", icon: "flask-outline" },
+];
+
+const FALLBACK_SERVICES = [
+  { id: "counselling", title: "Counselling", ...DEFAULT_SERVICE_STYLES[0] },
   {
     id: "clinical",
     title: "Clinical assessments",
-    icon: "document-text-outline",
-    bgColor: "#FEE2E2", // Soft red
-    iconColor: "#EF4444",
+    ...DEFAULT_SERVICE_STYLES[1],
   },
-  {
-    id: "family",
-    title: "Family therapy",
-    icon: "people-outline",
-    bgColor: "#F3F4F6", // Soft grey
-    iconColor: "#4B5563",
-  },
+  { id: "family", title: "Family therapy", ...DEFAULT_SERVICE_STYLES[2] },
   {
     id: "cognitive",
     title: "Cognitive behavioral\ntherapy",
-    icon: "git-network-outline",
-    bgColor: "#F3E8FF", // Soft purple
-    iconColor: "#A855F7",
+    ...DEFAULT_SERVICE_STYLES[3],
   },
-  {
-    id: "psychotherapy",
-    title: "Psychotherapy",
-    icon: "happy-outline",
-    bgColor: "#FEF9C3", // Soft yellow
-    iconColor: "#EAB308",
-  },
+  { id: "psychotherapy", title: "Psychotherapy", ...DEFAULT_SERVICE_STYLES[4] },
   {
     id: "diagnostic",
     title: "Diagnostic\nappointment",
-    icon: "flask-outline",
-    bgColor: "#CCFBF1", // Soft teal
-    iconColor: "#0D9488",
+    ...DEFAULT_SERVICE_STYLES[5],
   },
 ];
 
@@ -69,6 +58,7 @@ export default function AppointmentTypeScreen() {
     doctorName,
     specialty,
     avatar,
+    patientId,
     patientName,
     patientAge,
     patientGender,
@@ -88,6 +78,46 @@ export default function AppointmentTypeScreen() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [services, setServices] = useState(FALLBACK_SERVICES);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    console.log("services :>>", services);
+    fetchServices();
+  }, []);
+
+  const fetchServices = async () => {
+    setIsLoading(true);
+    try {
+      const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "3";
+      const response = await callSuggestusAPI(
+        spd_processId_config.hospapp_get_patient_appointment_category,
+        { p_org_id: orgId },
+        "",
+        "",
+        "",
+        JSON.stringify({ sgPatientId: patientId ?? "", sgVisitId: "" }),
+        undefined,
+        false,
+      );
+      if (response?.returnCode === true && response.returnData?.length > 0) {
+        const mapped = response.returnData.map((item: any, index: number) => {
+          const style =
+            DEFAULT_SERVICE_STYLES[index % DEFAULT_SERVICE_STYLES.length];
+          return {
+            id: String(item.apptcatg_id ?? item.category_id ?? index),
+            title: item.apptcatg_desc ?? item.category_name ?? item.title ?? "",
+            ...style,
+          };
+        });
+        setServices(mapped);
+      }
+    } catch (_) {
+      // keep fallback services
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSelectServiceAndContinue = (serviceTitle: string) => {
     navigation.navigate("ScheduleBook", {
@@ -95,17 +125,18 @@ export default function AppointmentTypeScreen() {
       doctorName,
       specialty,
       avatar,
+      patientId,
       patientName,
       patientAge,
       patientGender,
       relationship,
       symptoms,
-      type: serviceTitle.replace("\n", " "), // Remove clean linebreaks for navigation payload
+      type: serviceTitle.replace("\n", " "),
     });
   };
 
-  const filteredServices = SERVICES.filter((service) =>
-    service.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredServices = services.filter((service) =>
+    service.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -113,11 +144,19 @@ export default function AppointmentTypeScreen() {
       {/* Title Header */}
       <CustomHeader title="Appointment type" />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.mainTitle}>What are you looking for?</Text>
 
         {/* Search Input Bar */}
-        <View style={[styles.searchBarContainer, isFocused && styles.searchBarContainerFocused]}>
+        <View
+          style={[
+            styles.searchBarContainer,
+            isFocused && styles.searchBarContainerFocused,
+          ]}
+        >
           <Ionicons
             name="search-outline"
             size={20}
@@ -137,9 +176,17 @@ export default function AppointmentTypeScreen() {
 
         {/* Services Grid */}
         <View style={styles.gridContainer}>
-          {filteredServices.length === 0 ? (
+          {isLoading ? (
+            <ActivityIndicator
+              size="large"
+              color={Colors.primary}
+              style={{ marginTop: 20, width: "100%" }}
+            />
+          ) : filteredServices.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No services found matching keyword</Text>
+              <Text style={styles.emptyText}>
+                No services found matching keyword
+              </Text>
             </View>
           ) : (
             filteredServices.map((service) => (
@@ -150,12 +197,21 @@ export default function AppointmentTypeScreen() {
                   {
                     transform: [{ scale: pressed ? 0.95 : 1 }],
                     opacity: pressed ? 0.7 : 1,
-                  }
+                  },
                 ]}
                 onPress={() => handleSelectServiceAndContinue(service.title)}
               >
-                <View style={[styles.iconCircle, { backgroundColor: service.bgColor }]}>
-                  <Ionicons name={service.icon as any} size={32} color={service.iconColor} />
+                <View
+                  style={[
+                    styles.iconCircle,
+                    { backgroundColor: service.bgColor },
+                  ]}
+                >
+                  <Ionicons
+                    name={service.icon as any}
+                    size={32}
+                    color={service.iconColor}
+                  />
                 </View>
                 <Text style={styles.serviceLabel}>{service.title}</Text>
               </Pressable>
@@ -176,7 +232,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
     backgroundColor: Colors.background,
   },

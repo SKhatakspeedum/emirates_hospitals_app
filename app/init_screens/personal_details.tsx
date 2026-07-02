@@ -28,8 +28,15 @@ import { Colors } from "../config/colors";
 import {
   setEncryptedID,
   getDecryptedID,
+  saveDataFromLocalStorage,
 } from "../suggestus_plugin/util/util_functions";
-import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import {
+  callSuggestusAPI,
+  setUserId,
+  setRoleId,
+  setUserName,
+  setPatientId,
+} from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 
@@ -120,7 +127,33 @@ export default function PersonalDetailsScreen() {
         return;
       }
 
-      // 4. Mark the user as logged in
+      // 4. Fetch full user profile to get usr_id, rol_id, org_id, etc.
+      const phoneE164 = rawPhone.replace(/\s+/g, "");
+      const validateRes = await callSuggestusAPI(
+        spd_processId_config.sgconf_util_validate_user_v2,
+        {
+          p_username: phoneE164.replace(/^\+/, ""),
+          p_password: "",
+          p_ai_code: SiteConfig.AI_CODE,
+          p_login_type: "external",
+        },
+      );
+
+      if (validateRes?.returnCode === true && validateRes?.returnData?.length > 0) {
+        const u = validateRes.returnData[0];
+        await Promise.all([
+          setUserId(String(u.usr_id ?? "")),
+          setRoleId(String(u.rol_id ?? "")),
+          setUserName(u.usr_name ?? ""),
+          saveDataFromLocalStorage("sg_userEmail", u.usr_email ?? ""),
+          saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
+          saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
+          saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(u)),
+          u.usr_patient_id ? setPatientId(String(u.usr_patient_id)) : Promise.resolve(),
+        ]);
+      }
+
+      // 5. Mark the user as logged in
       await AsyncStorage.setItem(IS_LOGGED_IN, "true");
 
       Toast.show({
@@ -129,7 +162,7 @@ export default function PersonalDetailsScreen() {
         text2: "Welcome to Emirates Hospitals Group",
       });
 
-      // 5. Redirect to Success screen
+      // 6. Redirect to Success screen
       router.replace("/init_screens/success");
     } catch (error) {
       console.error("Error saving personal details:", error);

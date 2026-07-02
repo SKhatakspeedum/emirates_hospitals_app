@@ -13,8 +13,17 @@ import {
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
+import {
+  getDecryptedID,
+  saveDataFromLocalStorage,
+} from "../suggestus_plugin/util/util_functions";
 import { SPD_USER_EMAIL, USER_FULL_DATA } from "../config/config";
+import {
+  setUserId,
+  setRoleId,
+  setUserName,
+  setPatientId,
+} from "../suggestus_plugin/suggestusClient";
 import { Colors } from "../config/colors";
 import { useRoute } from "@react-navigation/native";
 import { spd_processId_config } from "../config/process_id";
@@ -125,6 +134,21 @@ export default function OTPVerificationScreen() {
           validateRes?.returnCode === true &&
           validateRes?.returnData?.length > 0
         ) {
+          const u = validateRes.returnData[0];
+          console.log("usr_id: ", u);
+          await Promise.all([
+            setUserId(u.usr_id ?? ""),
+            setRoleId(u.rol_id ?? ""),
+            setUserName(u.usr_name ?? ""),
+            saveDataFromLocalStorage("sg_userEmail", u.usr_email ?? ""),
+            saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
+            saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
+            saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(u)),
+            saveDataFromLocalStorage("isLoggedIn", "true"),
+            u.usr_patient_id
+              ? setPatientId(String(u.usr_patient_id))
+              : Promise.resolve(),
+          ]);
           router.replace("/(drawer)/tab_bar_home/HomeScreen");
         } else {
           // router.replace("/init_screens/signup");

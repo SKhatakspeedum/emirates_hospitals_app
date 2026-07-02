@@ -83,6 +83,11 @@ export const spd_processId_config = {
     "spdonmood9_update_md_onmood9_users_change_password",
   spdonmood9_update_md_onmood9_users_assets_for_profile:
     "spdonmood9_update_md_onmood9_users_assets_for_profile",
+  xcelpat_save_trn_patient_master: "xcelpat_save_trn_patient_master",
+  xcelpat_get_trn_patient_details_ehg_pntapp:
+    "xcelpat_get_trn_patient_details_ehg_pntapp",
+  xcelpat_update_trn_patient_user_mapping_ehg_pntapp:
+    "xcelpat_update_trn_patient_user_mapping_ehg_pntapp",
   spdonmood9_get_md_category_group_module_recent_played_wrapper:
     "spdonmood9_get_md_category_group_module_recent_played_wrapper",
   spdonmood9_save_md_user_played_sessions:

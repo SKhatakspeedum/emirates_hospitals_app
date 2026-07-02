@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,11 +11,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+import { USER_FULL_DATA } from "../config/config";
 
 export default function PatientDetailsScreen() {
   const navigation = useNavigation<any>();
@@ -28,16 +33,117 @@ export default function PatientDetailsScreen() {
   };
 
   const [patients, setPatients] = useState([
-    { id: "1", name: "John Doe", age: "30", gender: "Male", relationship: "Self" }
+    {
+      id: "1",
+      name: "John Doe",
+      age: "30",
+      gender: "Male",
+      relationship: "Self",
+    },
   ]);
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<"self" | "family">("self");
+  const [selectedPatient, setSelectedPatient] = useState<"self" | "family">(
+    "self",
+  );
   const [patientName, setPatientName] = useState("");
+  const [savedPatientId, setSavedPatientId] = useState<string | null>(null);
   const [patientAge, setPatientAge] = useState("");
   const [patientGender, setPatientGender] = useState("Female");
   const [relationship, setRelationship] = useState("Spouse");
   const [symptoms, setSymptoms] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const init = async () => {
+      const patientId = await fetchDataFromLocalStorage("sg_patientId");
+      fetchPatientData(patientId ?? undefined);
+    };
+    init();
+  }, []);
+
+  const fetchPatientData = async (p_patient_id?: string) => {
+    setIsLoading(true);
+    try {
+      const response = await callSuggestusAPI(
+        spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+        {
+          p_patient_id: p_patient_id,
+          p_search_text: "",
+          p_search_additional_attributes: "",
+        },
+        "",
+        "",
+        "",
+        "",
+        undefined,
+        false,
+      );
+      if (response?.returnCode === true && response.returnData?.length > 0) {
+        const fetched = response.returnData.map((p: any) => ({
+          id: String(p.patient_id ?? p.p_patient_id ?? Date.now()),
+          name: [p.p_name, p.p_middle_name, p.p_last_name]
+            .filter(Boolean)
+            .join(" "),
+          age: String(p.p_age ?? ""),
+          gender: p.p_gender === "1" ? "Male" : "Female",
+          relationship: "Self",
+        }));
+        setPatients(fetched);
+      }
+    } catch (_) {
+      // keep default patient on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const savePatient = async (): Promise<string | null> => {
+    const nameParts = patientName.trim().split(" ");
+    const firstName = nameParts[0] ?? "";
+    const lastName = nameParts.slice(1).join(" ") ?? "";
+    const genderCode = patientGender === "Male" ? "1" : "2";
+
+    setIsSaving(true);
+    try {
+      const response = await callSuggestusAPI(
+        spd_processId_config.xcelpat_save_trn_patient_master,
+        {
+          p_patient_id: null,
+
+          p_patient_title: genderCode,
+          p_name: firstName,
+          p_middle_name: "",
+          p_last_name: lastName,
+          p_gender: genderCode,
+          p_dob: "",
+          p_age: patientAge,
+          p_marital_status: "",
+
+          p_mobile_no: "",
+          "p_mobile_no~CTN": "",
+          p_email: "",
+          ptd_home_phone: "",
+          "ptd_home_phone~CTN": "",
+
+          p_additional_attribute: {
+            p_father_name: "",
+            p_emirates_id: "", //312-3232-1332132-1
+            p_identification_type: "", //Passport Number
+            p_identification_num: "", //PASPORT3213213232
+          },
+          p_additional_attributes: {},
+        },
+      );
+      const patientId = response?.returnData?.[0]?.p_patient_id ?? null;
+      return patientId !== null ? String(patientId) : null;
+    } catch (_) {
+      return null;
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const getInitials = (name: string) => {
     if (!name) return "P";
@@ -46,7 +152,7 @@ export default function PatientDetailsScreen() {
     return (parts[0][0] + (parts[1]?.[0] || "")).toUpperCase();
   };
 
-  const handleSelectPatientAndContinue = (patient: typeof patients[0]) => {
+  const handleSelectPatientAndContinue = (patient: (typeof patients)[0]) => {
     navigation.navigate("AppointmentType", {
       doctorId,
       doctorName,
@@ -75,7 +181,7 @@ export default function PatientDetailsScreen() {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!patientName.trim()) {
       alert("Please enter patient name");
       return;
@@ -85,15 +191,38 @@ export default function PatientDetailsScreen() {
       return;
     }
 
-    const newPatient = {
-      id: Date.now().toString(),
-      name: patientName,
-      age: patientAge,
-      gender: patientGender,
-      relationship: relationship,
-    };
+    const savedPatientId = await savePatient();
 
-    setPatients((prev) => [...prev, newPatient]);
+    if (savedPatientId) {
+      let userId = await fetchDataFromLocalStorage("sg_userId");
+      if (!userId) {
+        const fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
+        if (fullDataStr) {
+          try { userId = JSON.parse(fullDataStr)?.usr_id ?? ""; } catch (_) {}
+        }
+      }
+      await callSuggestusAPI(
+        spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
+        {
+          p_patient_id: savedPatientId,
+          p_user_id: userId ?? "",
+          p_additional_attribites: {},
+        },
+      );
+      await fetchPatientData(savedPatientId);
+    } else {
+      setPatients((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          name: patientName,
+          age: patientAge,
+          gender: patientGender,
+          relationship: relationship,
+        },
+      ]);
+    }
+
     setShowAddForm(false);
 
     navigation.navigate("AppointmentType", {
@@ -101,6 +230,7 @@ export default function PatientDetailsScreen() {
       doctorName,
       specialty,
       avatar,
+      patientId: savedPatientId,
       patientName,
       patientAge,
       patientGender,
@@ -127,57 +257,81 @@ export default function PatientDetailsScreen() {
         <CustomHeader title="Patient Details" onBackPress={handleBack} />
 
         {!showAddForm ? (
-          <ScrollView contentContainerStyle={styles.listScrollContent} showsVerticalScrollIndicator={false}>
-            <Text style={styles.mainQuestionText}>Who is the appointment for?</Text>
+          <ScrollView
+            contentContainerStyle={styles.listScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.mainQuestionText}>
+              Who is the appointment for?
+            </Text>
 
-            {patients.map((patient) => (
-              <Pressable
-                key={patient.id}
-                style={({ pressed }) => [
-                  styles.patientCard,
-                  {
-                    backgroundColor: pressed ? Colors.pressed : Colors.border,
-                    borderWidth: pressed ? 1 : 0,
-                    borderColor: pressed ? Colors.activeBorder : Colors.border,
-                    transform: [{ scale: pressed ? 0.95 : 1 }],
-                  }
-                ]}
-                onPress={() => handleSelectPatientAndContinue(patient)}
-              >
-                <View style={styles.initialsCircle}>
-                  <Text style={styles.initialsText}>{getInitials(patient.name)}</Text>
-                </View>
-                <View style={styles.patientInfo}>
-                  <Text style={styles.patientCardName}>{patient.name}</Text>
-                  <Text style={styles.patientMeta}>
-                    {patient.age} year old {patient.gender.toLowerCase()}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.text} style={{ marginLeft: "auto" }} />
-              </Pressable>
-            ))}
+            {isLoading ? (
+              <ActivityIndicator
+                size="large"
+                color={Colors.primary}
+                style={{ marginTop: 40 }}
+              />
+            ) : (
+              patients.map((patient) => (
+                <Pressable
+                  key={patient.id}
+                  style={({ pressed }) => [
+                    styles.patientCard,
+                    {
+                      backgroundColor: pressed ? Colors.pressed : Colors.border,
+                      borderWidth: pressed ? 1 : 0,
+                      borderColor: pressed
+                        ? Colors.activeBorder
+                        : Colors.border,
+                      transform: [{ scale: pressed ? 0.95 : 1 }],
+                    },
+                  ]}
+                  onPress={() => handleSelectPatientAndContinue(patient)}
+                >
+                  <View style={styles.initialsCircle}>
+                    <Text style={styles.initialsText}>
+                      {getInitials(patient.name)}
+                    </Text>
+                  </View>
+                  <View style={styles.patientInfo}>
+                    <Text style={styles.patientCardName}>{patient.name}</Text>
+                    <Text style={styles.patientMeta}>
+                      {patient.age} year old {patient.gender.toLowerCase()}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={Colors.text}
+                    style={{ marginLeft: "auto" }}
+                  />
+                </Pressable>
+              ))
+            )}
 
             <Pressable
               style={({ pressed }) => [
                 styles.addPatientButton,
                 {
-
-
                   transform: [{ scale: pressed ? 0.95 : 1 }],
                   opacity: pressed ? 0.5 : 1,
-                }
+                },
               ]}
-
-              onPress={() => {
-
-              }}
+              onPress={() => setShowAddForm(true)}
             >
-              <Ionicons name="person-add-outline" size={20} color={Colors.secondary} />
+              <Ionicons
+                name="person-add-outline"
+                size={20}
+                color={Colors.secondary}
+              />
               <Text style={styles.addPatientText}>Add patient</Text>
             </Pressable>
           </ScrollView>
         ) : (
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Doctor Brief Info */}
             <View style={styles.doctorCard}>
               <Image source={{ uri: avatar }} style={styles.doctorAvatar} />
@@ -201,7 +355,9 @@ export default function PatientDetailsScreen() {
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={selectedPatient === "self" ? Colors.background : Colors.text}
+                  color={
+                    selectedPatient === "self" ? Colors.background : Colors.text
+                  }
                 />
                 <Text
                   style={[
@@ -223,7 +379,11 @@ export default function PatientDetailsScreen() {
                 <Ionicons
                   name="people-outline"
                   size={20}
-                  color={selectedPatient === "family" ? Colors.background : Colors.text}
+                  color={
+                    selectedPatient === "family"
+                      ? Colors.background
+                      : Colors.text
+                  }
                 />
                 <Text
                   style={[
@@ -273,7 +433,13 @@ export default function PatientDetailsScreen() {
                         ]}
                         onPress={() => setPatientGender("Male")}
                       >
-                        <Text style={[styles.genderChipText, patientGender === "Male" && styles.genderChipTextActive]}>
+                        <Text
+                          style={[
+                            styles.genderChipText,
+                            patientGender === "Male" &&
+                              styles.genderChipTextActive,
+                          ]}
+                        >
                           Male
                         </Text>
                       </TouchableOpacity>
@@ -284,7 +450,13 @@ export default function PatientDetailsScreen() {
                         ]}
                         onPress={() => setPatientGender("Female")}
                       >
-                        <Text style={[styles.genderChipText, patientGender === "Female" && styles.genderChipTextActive]}>
+                        <Text
+                          style={[
+                            styles.genderChipText,
+                            patientGender === "Female" &&
+                              styles.genderChipTextActive,
+                          ]}
+                        >
                           Female
                         </Text>
                       </TouchableOpacity>
@@ -303,25 +475,34 @@ export default function PatientDetailsScreen() {
                 <>
                   <Text style={styles.inputLabel}>Relationship</Text>
                   <View style={styles.relationRow}>
-                    {["Spouse", "Child", "Parent", "Sibling", "Friend"].map((rel) => (
-                      <TouchableOpacity
-                        key={rel}
-                        style={[
-                          styles.relationChip,
-                          relationship === rel && styles.relationChipActive,
-                        ]}
-                        onPress={() => setRelationship(rel)}
-                      >
-                        <Text style={[styles.relationText, relationship === rel && styles.relationTextActive]}>
-                          {rel}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                    {["Spouse", "Child", "Parent", "Sibling", "Friend"].map(
+                      (rel) => (
+                        <TouchableOpacity
+                          key={rel}
+                          style={[
+                            styles.relationChip,
+                            relationship === rel && styles.relationChipActive,
+                          ]}
+                          onPress={() => setRelationship(rel)}
+                        >
+                          <Text
+                            style={[
+                              styles.relationText,
+                              relationship === rel && styles.relationTextActive,
+                            ]}
+                          >
+                            {rel}
+                          </Text>
+                        </TouchableOpacity>
+                      ),
+                    )}
                   </View>
                 </>
               )}
 
-              <Text style={styles.inputLabel}>Describe Symptoms (Optional)</Text>
+              <Text style={styles.inputLabel}>
+                Describe Symptoms (Optional)
+              </Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={symptoms}
@@ -336,6 +517,21 @@ export default function PatientDetailsScreen() {
           </ScrollView>
         )}
 
+        {showAddForm && (
+          <View style={styles.footerContainer}>
+            <TouchableOpacity
+              style={[styles.continueButton, isSaving && { opacity: 0.6 }]}
+              onPress={handleContinue}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <ActivityIndicator color={Colors.background} />
+              ) : (
+                <Text style={styles.continueButtonText}>Continue</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -350,7 +546,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
     backgroundColor: Colors.background,
   },
@@ -598,6 +795,6 @@ const styles = StyleSheet.create({
   continueButtonText: {
     fontSize: 16,
     color: Colors.background,
-    fontWeight: "700"
-  }
+    fontWeight: "700",
+  },
 });

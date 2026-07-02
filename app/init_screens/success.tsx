@@ -8,19 +8,38 @@ import {
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import confettiParticles from "../json_dummy_datas/confettiParticles";
 import { Colors } from "../config/colors";
 
 export default function SuccessScreen() {
   const router = useRouter();
+  const route = useRoute();
+  const redirectTo = (route.params as any)?.redirectTo;
   const { height: screenHeight } = Dimensions.get("window");
   const isSmallScreen = screenHeight < 720;
   const isTinyScreen = screenHeight < 600;
 
   const handleGoToHome = () => {
-    router.replace("/tab_bar_home/HomeScreen");
+    if (redirectTo) {
+      router.replace({
+        pathname: "/tab_bar_home/HomeScreen",
+        params: { redirectTo }
+      });
+    } else {
+      router.replace("/tab_bar_home/HomeScreen");
+    }
   };
+
+  React.useEffect(() => {
+    if (redirectTo) {
+      const timer = setTimeout(() => {
+        handleGoToHome();
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [redirectTo]);
 
 
 
@@ -87,7 +106,9 @@ export default function SuccessScreen() {
           onPress={handleGoToHome}
           activeOpacity={0.8}
         >
-          <Text style={styles.homeBtnText}>Go to Home</Text>
+          <Text style={styles.homeBtnText}>
+            {redirectTo === "Appointment" ? "Go to Appointment" : "Go to Home"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

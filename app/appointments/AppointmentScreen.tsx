@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,11 +12,15 @@ import {
   Alert,
   Platform,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
 const { width } = Dimensions.get("window");
 
@@ -70,10 +74,50 @@ const HISTORY_APPOINTMENTS = [
 export default function AppointmentScreen() {
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<"upcoming" | "history">("upcoming");
-  const [upcomingList, setUpcomingList] = useState(UPCOMING_APPOINTMENTS);
+  const [upcomingList, setUpcomingList] = useState<typeof UPCOMING_APPOINTMENTS>([]);
   const [historyList, setHistoryList] = useState(HISTORY_APPOINTMENTS);
+  const [isLoading, setIsLoading] = useState(false);
 
   const appointments = activeTab === "upcoming" ? upcomingList : historyList;
+
+  useEffect(() => {
+    const fetchUpcoming = async () => {
+      setIsLoading(true);
+      try {
+        const patientId = await fetchDataFromLocalStorage("sg_patientId");
+        const response = await callSuggestusAPI(
+          spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
+          {
+            p_patient_id: patientId ?? "",
+            p_visit_id: null,
+            menu_name: "Wellness",
+            menu_tab_type: "always_patient_specific",
+            maximization_redirection_label: "Make appointment",
+            p_max_offset: 100,
+            p_offset: 0,
+          },
+        );
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const fetched = response.returnData.map((a: any) => ({
+            id: String(a.sch_id ?? a.appointment_id ?? Date.now()),
+            doctorName: a.phy_name ?? a.doctor_name ?? "",
+            specialty: a.dept_name ?? a.speciality_name ?? a.specialty ?? "",
+            avatar: a.phy_photo ?? a.doctor_photo ?? "",
+            date: a.sch_date ?? a.appointment_date ?? "",
+            time: a.sch_time ?? a.appointment_time ?? "",
+            status: a.sch_status ?? a.appointment_status ?? "Confirmed",
+            type: a.appointment_type ?? a.visit_type ?? "In-Clinic",
+          }));
+          setUpcomingList(fetched);
+        }
+      } catch (_) {
+        // keep empty list on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUpcoming();
+  }, []);
 
   const handleCancelAppointment = (id: string, name: string) => {
     Alert.alert(
@@ -149,7 +193,13 @@ export default function AppointmentScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {appointments.length === 0 ? (
+          {isLoading ? (
+            <ActivityIndicator
+              size="large"
+              color={Colors.primary}
+              style={{ marginTop: 60 }}
+            />
+          ) : appointments.length === 0 ? (
             // Empty State UI (Screen 1 & Screen 2)
             <View style={styles.emptyContainer}>
               <Image

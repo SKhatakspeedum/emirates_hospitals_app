@@ -13,12 +13,31 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+
+type Service = {
+  id: string;
+  title: string;
+  description: string;
+  bgColor: string;
+  iconColor: string;
+  icon: string;
+  faIcon?: string | null;
+};
+
+const FA_VARIANTS = ["solid", "regular", "light", "brands", "thin", "duotone"];
+
+const parseFaIconName = (iconClass: string): string | null => {
+  if (!iconClass) return null;
+  const matches = iconClass.match(/fa-[\w-]+/g) ?? [];
+  const icon = matches.find((m) => !FA_VARIANTS.includes(m.replace("fa-", "")));
+  return icon ? icon.replace("fa-", "") : null;
+};
 
 const DEFAULT_SERVICE_STYLES = [
   { bgColor: "#E0F2FE", iconColor: "#0076D6", icon: "chatbubbles-outline" },
@@ -29,25 +48,13 @@ const DEFAULT_SERVICE_STYLES = [
   { bgColor: "#CCFBF1", iconColor: "#0D9488", icon: "flask-outline" },
 ];
 
-const FALLBACK_SERVICES = [
-  { id: "counselling", title: "Counselling", ...DEFAULT_SERVICE_STYLES[0] },
-  {
-    id: "clinical",
-    title: "Clinical assessments",
-    ...DEFAULT_SERVICE_STYLES[1],
-  },
-  { id: "family", title: "Family therapy", ...DEFAULT_SERVICE_STYLES[2] },
-  {
-    id: "cognitive",
-    title: "Cognitive behavioral\ntherapy",
-    ...DEFAULT_SERVICE_STYLES[3],
-  },
-  { id: "psychotherapy", title: "Psychotherapy", ...DEFAULT_SERVICE_STYLES[4] },
-  {
-    id: "diagnostic",
-    title: "Diagnostic\nappointment",
-    ...DEFAULT_SERVICE_STYLES[5],
-  },
+const FALLBACK_SERVICES: Service[] = [
+  { id: "counselling", title: "Counselling", description: "Counselling", ...DEFAULT_SERVICE_STYLES[0] },
+  { id: "clinical", title: "Clinical assessments", description: "Clinical assessments", ...DEFAULT_SERVICE_STYLES[1] },
+  { id: "family", title: "Family therapy", description: "Family therapy", ...DEFAULT_SERVICE_STYLES[2] },
+  { id: "cognitive", title: "Cognitive behavioral\ntherapy", description: "Cognitive behavioral therapy", ...DEFAULT_SERVICE_STYLES[3] },
+  { id: "psychotherapy", title: "Psychotherapy", description: "Psychotherapy", ...DEFAULT_SERVICE_STYLES[4] },
+  { id: "diagnostic", title: "Diagnostic\nappointment", description: "Diagnostic appointment", ...DEFAULT_SERVICE_STYLES[5] },
 ];
 
 export default function AppointmentTypeScreen() {
@@ -78,7 +85,7 @@ export default function AppointmentTypeScreen() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [services, setServices] = useState(FALLBACK_SERVICES);
+  const [services, setServices] = useState<Service[]>(FALLBACK_SERVICES);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -101,12 +108,14 @@ export default function AppointmentTypeScreen() {
         false,
       );
       if (response?.returnCode === true && response.returnData?.length > 0) {
-        const mapped = response.returnData.map((item: any, index: number) => {
-          const style =
-            DEFAULT_SERVICE_STYLES[index % DEFAULT_SERVICE_STYLES.length];
+        const mapped: Service[] = response.returnData.map((item: any, index: number) => {
+          const style = DEFAULT_SERVICE_STYLES[index % DEFAULT_SERVICE_STYLES.length];
+          const name = item.appsubtyp_name ?? item.description ?? item.apptcatg_desc ?? "";
           return {
-            id: String(item.apptcatg_id ?? item.category_id ?? index),
-            title: item.apptcatg_desc ?? item.category_name ?? item.title ?? "",
+            id: String(item.appsubtyp_id ?? item.id ?? index),
+            title: name,
+            description: item.description ?? name,
+            faIcon: parseFaIconName(item.appsubtyp_icon_class ?? ""),
             ...style,
           };
         });
@@ -207,13 +216,21 @@ export default function AppointmentTypeScreen() {
                     { backgroundColor: service.bgColor },
                   ]}
                 >
-                  <Ionicons
-                    name={service.icon as any}
-                    size={32}
-                    color={service.iconColor}
-                  />
+                  {service.faIcon ? (
+                    <FontAwesome5
+                      name={service.faIcon}
+                      size={28}
+                      color={service.iconColor}
+                    />
+                  ) : (
+                    <Ionicons
+                      name={service.icon as any}
+                      size={32}
+                      color={service.iconColor}
+                    />
+                  )}
                 </View>
-                <Text style={styles.serviceLabel}>{service.title}</Text>
+                <Text style={styles.serviceLabel}>{service.description || service.title}</Text>
               </Pressable>
             ))
           )}

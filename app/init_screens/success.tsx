@@ -12,6 +12,7 @@ import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import confettiParticles from "../json_dummy_datas/confettiParticles";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 
 export default function SuccessScreen() {
   const router = useRouter();
@@ -165,14 +166,14 @@ const styles: any = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 16,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 15,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.label,
     textAlign: "center",
     lineHeight: 22,
@@ -199,6 +200,6 @@ const styles: any = StyleSheet.create({
   homeBtnText: {
     color: Colors.lightgray,
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.bold,
   },
 });

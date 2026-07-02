@@ -25,6 +25,7 @@ import {
   setPatientId,
 } from "../suggestus_plugin/suggestusClient";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import { useRoute } from "@react-navigation/native";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
@@ -336,14 +337,14 @@ const styles: any = StyleSheet.create({
   },
   startTitle: {
     fontSize: 24,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 8,
     textAlign: "left",
   },
   startSubtitle: {
     fontSize: 15,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 40,
     textAlign: "left",
@@ -355,7 +356,7 @@ const styles: any = StyleSheet.create({
   },
   phoneLabel: {
     fontSize: 14,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     color: Colors.label,
     marginBottom: 16,
   },
@@ -373,9 +374,9 @@ const styles: any = StyleSheet.create({
     borderColor: Colors.border,
     fontSize: 20,
     textAlign: "center",
-    color: "#1B2130",
+    color: Colors.text,
     backgroundColor: Colors.lightgray,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     // @ts-ignore: outlineStyle is web-only
     outlineStyle: "none",
     outlineWidth: 0,
@@ -391,7 +392,7 @@ const styles: any = StyleSheet.create({
     fontSize: 13,
     marginTop: 8,
     textAlign: "left",
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
   },
   resendRow: {
     flexDirection: "row",
@@ -403,11 +404,11 @@ const styles: any = StyleSheet.create({
   resendText: {
     color: Colors.label,
     fontSize: 14,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
   },
   resendLink: {
     color: Colors.secondary,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     fontSize: 14,
   },
   bottomBtnContainer: {
@@ -442,6 +443,6 @@ const styles: any = StyleSheet.create({
   verifyBtnText: {
     color: Colors.lightgray,
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.bold,
   },
 });

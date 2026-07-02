@@ -25,6 +25,7 @@ import {
   SPD_USER_NAME,
 } from "../config/config";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import {
   setEncryptedID,
   getDecryptedID,
@@ -314,7 +315,7 @@ export default function PersonalDetailsScreen() {
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="123-0000-5505123-1"
-                    placeholderTextColor="#B3B7C6"
+                    placeholderTextColor={Colors.inactive}
                     value={emiratesId}
                     onChangeText={(text) => setEmiratesId(formatEmiratesId(text))}
                     onFocus={() => setFocusedField("emiratesId")}
@@ -337,7 +338,7 @@ export default function PersonalDetailsScreen() {
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="K5012250"
-                    placeholderTextColor="#B3B7C6"
+                    placeholderTextColor={Colors.inactive}
                     value={passportNo}
                     onChangeText={(text) => setPassportNo(formatPassport(text))}
                     onFocus={() => setFocusedField("passportNo")}
@@ -369,7 +370,7 @@ export default function PersonalDetailsScreen() {
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="John"
-                    placeholderTextColor="#B3B7C6"
+                    placeholderTextColor={Colors.inactive}
                     value={firstName}
                     onChangeText={setFirstName}
                     onFocus={() => setFocusedField("firstName")}
@@ -397,7 +398,7 @@ export default function PersonalDetailsScreen() {
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="Doe"
-                    placeholderTextColor="#B3B7C6"
+                    placeholderTextColor={Colors.inactive}
                     value={lastName}
                     onChangeText={setLastName}
                     onFocus={() => setFocusedField("lastName")}
@@ -440,8 +441,8 @@ export default function PersonalDetailsScreen() {
                       border: "none",
                       outline: "none",
                       fontSize: "16px",
-                      fontFamily: "QuicksandMedium",
-                      color: "#1B2130",
+                      fontFamily: FontFamilies.medium,
+                      color: Colors.text,
                       backgroundColor: "transparent",
                       width: "100%",
                       height: "100%",
@@ -592,15 +593,15 @@ const styles: any = StyleSheet.create({
   },
   tabButtonText: {
     fontSize: 14,
-    fontFamily: "QuicksandBold",
-    color: "#7D8A9D",
+    fontFamily: FontFamilies.bold,
+    color: Colors.label,
   },
   activeTabButtonText: {
     color: Colors.secondary,
   },
   subtext: {
     fontSize: 14,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 24,
     lineHeight: 20,
@@ -612,7 +613,7 @@ const styles: any = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     color: Colors.label,
     marginBottom: 8,
     textAlign: "left",
@@ -637,8 +638,8 @@ const styles: any = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#1B2130",
-    fontFamily: "QuicksandMedium",
+    color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
     paddingVertical: 0,
   },
   // @ts-ignore: outlineStyle is web-only
@@ -669,13 +670,13 @@ const styles: any = StyleSheet.create({
   },
   datePickerText: {
     fontSize: 16,
-    color: "#1B2130",
-    fontFamily: "QuicksandMedium",
+    color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
   },
 
   changeLinkText: {
     fontSize: 14,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
   },
   genderBox: {
@@ -701,7 +702,7 @@ const styles: any = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#B3B7C6",
+    borderColor: Colors.inactive,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -717,7 +718,7 @@ const styles: any = StyleSheet.create({
   },
   genderText: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
   },
   bottomBtnContainer: {
@@ -749,7 +750,7 @@ const styles: any = StyleSheet.create({
   continueBtnText: {
     color: Colors.lightgray,
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.bold,
   },
   modalOverlay: {
     flex: 1,
@@ -758,7 +759,7 @@ const styles: any = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderRadius: 24,
     paddingVertical: 24,
     paddingHorizontal: 28,
@@ -785,10 +786,10 @@ const styles: any = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#0076D6",
+    backgroundColor: Colors.secondary,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#0076D6",
+    shadowColor: Colors.secondary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -800,15 +801,15 @@ const styles: any = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontFamily: "QuicksandBold",
-    color: "#1B2130",
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
     marginBottom: 12,
     textAlign: "center",
   },
   modalSubtext: {
     fontSize: 14,
-    fontFamily: "QuicksandMedium",
-    color: "#7D8A9D",
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
     textAlign: "center",
     lineHeight: 22,
     paddingHorizontal: 10,

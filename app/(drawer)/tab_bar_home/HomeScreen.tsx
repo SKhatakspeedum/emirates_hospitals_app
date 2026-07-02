@@ -20,6 +20,8 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Footer from "./Footer";
 import BottomSheetContent from "./BottomSheetContent";
 import Toast from "react-native-toast-message";
+import { Colors } from "../../config/colors";
+import { FontFamilies } from "../../config/fonts";
 // import SleepScreen from "../../sleep_tab/SleepScreen";
 import ExploreScreen from "../../explore_tab/ExploreScreen";
 // import MusicScreen from "../../music_tab/MusicScreen";
@@ -302,7 +304,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff", // White background for whole screen
+    backgroundColor: Colors.background, // Brand background for whole screen
   },
   headerContainer: {
     // position: "sticky",
@@ -371,18 +373,18 @@ const styles = StyleSheet.create({
   greeting: {
     color: "#fff",
     fontSize: 20,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     marginBottom: 4,
   },
   subGreeting: {
-    color: "#B3B7C6",
+    color: Colors.inactive,
     fontSize: 16,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
   },
   scrollContent: {
     paddingHorizontal: 16,
     paddingVertical: 20,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: -25,
@@ -427,7 +429,7 @@ const styles = StyleSheet.create({
   sleepQualityScore: {
     color: "#fff",
     fontSize: 20,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
   },
   sleepQualityTextBlock: {
     flex: 1,
@@ -435,12 +437,12 @@ const styles = StyleSheet.create({
   sleepQualityLabel: {
     color: "#fff",
     fontSize: 18,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     marginBottom: 2,
   },
   sleepQualitySub: {
     color: "#d2d2d2",
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     fontSize: 16,
   },
   sleepCheckRow: {
@@ -475,7 +477,7 @@ const styles = StyleSheet.create({
   checkText: {
     color: "#fff",
     fontSize: 14,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     display: "flex",
     width: "100%",
     marginTop: 6,
@@ -491,14 +493,14 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   sectionTitle: {
-    color: "#181C3A",
+    color: Colors.text,
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
   },
   seeAllText: {
-    color: "#8B4CFC",
+    color: Colors.secondary,
     fontSize: 14,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
   },
   cardListContainer: {
     // paddingRight: 20,
@@ -526,7 +528,7 @@ const styles = StyleSheet.create({
   sleepCardTitle: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     marginTop: 10,
     marginBottom: 10,
     textAlign: "left",
@@ -551,16 +553,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   moodPromptText: {
-    color: "#262626",
+    color: Colors.text,
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     marginBottom: 6,
   },
   moodPromptCTA: {
-    color: "#8B4CFC",
+    color: Colors.secondary,
     marginTop: 8,
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     display: "flex",
     alignItems: "center",
     gap: 4,
@@ -601,7 +603,7 @@ const styles = StyleSheet.create({
   featuredCardTitle: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     textShadowColor: "rgba(0,0,0,0.6)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -610,7 +612,7 @@ const styles = StyleSheet.create({
   featuredCardSession: {
     color: "#fff",
     fontSize: 14,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     textShadowColor: "rgba(0,0,0,0.6)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -634,12 +636,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   carouselText: {
-    color: "#B3B7C6",
+    color: Colors.inactive,
     fontSize: 14,
     marginBottom: 12,
   },
   carouselButton: {
-    backgroundColor: "#7B61FF",
+    backgroundColor: Colors.secondary,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 18,
@@ -660,11 +662,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#B3B7C6",
+    backgroundColor: Colors.inactive,
     marginRight: 6,
   },
   carouselDotActive: {
-    backgroundColor: "#7B61FF",
+    backgroundColor: Colors.secondary,
   },
   quickActionsRow: {
     flexDirection: "row",
@@ -688,7 +690,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   quickActionText: {
-    color: "#7B61FF",
+    color: Colors.secondary,
     fontWeight: "700",
     fontSize: 13,
     marginLeft: 6,
@@ -720,7 +722,7 @@ const styles = StyleSheet.create({
   },
   youtubeCard: {
     width: width * 0.38,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderRadius: 14,
     marginRight: 14,
     overflow: "hidden",
@@ -736,7 +738,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   youtubeCardTitle: {
-    color: "#181C3A",
+    color: Colors.text,
     fontSize: 13,
     fontWeight: "600",
     marginTop: 10,
@@ -749,7 +751,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     position: "absolute",
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     shadowColor: "#000",
@@ -771,13 +773,13 @@ const styles = StyleSheet.create({
   },
   sleepPlansTitle: {
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
-    color: "#000",
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
   },
   sleepPlansButton: {
-    color: "#8B4CFC",
+    color: Colors.secondary,
     fontSize: 14,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
   },
   sleepPlansCardContainer: {
     paddingRight: 16,
@@ -803,7 +805,7 @@ const styles = StyleSheet.create({
   sleepPlansCardTitle: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     padding: 12,
     textAlign: "left",
     textShadowColor: "rgba(0,0,0,0.5)",

@@ -10,6 +10,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../config/colors';
+import { FontFamilies } from '../config/fonts';
 
 interface CustomHeaderProps {
   title: string;
@@ -56,6 +57,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     color: Colors.text,
-    fontFamily: 'QuicksandBold',
+    fontFamily: FontFamilies.bold,
   },
 });

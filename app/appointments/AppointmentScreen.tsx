@@ -16,6 +16,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 
 const { width } = Dimensions.get("window");
@@ -267,7 +268,7 @@ export default function AppointmentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   safeArea: {
     flex: 1,
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   backButton: {
     marginRight: 12,
@@ -289,6 +290,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     color: Colors.text,
+    fontFamily: FontFamilies.bold,
     marginLeft: 5,
   },
 
@@ -310,7 +312,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabSegmentButtonActive: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -319,12 +321,12 @@ const styles = StyleSheet.create({
   },
   tabSegmentText: {
     fontSize: 14,
-    color: "#757575",
-    fontWeight: "600",
+    color: Colors.label,
+    fontFamily: FontFamilies.semiBold,
   },
   tabSegmentTextActive: {
-    color: "#232323",
-    fontWeight: "700",
+    color: Colors.text,
+    fontFamily: FontFamilies.bold,
   },
   scrollContent: {
     paddingBottom: 100,
@@ -343,10 +345,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    color: "#555",
+    color: Colors.label,
     textAlign: "center",
     lineHeight: 22,
-    fontWeight: "500",
+    fontFamily: FontFamilies.medium,
   },
   outlineBookButton: {
     marginTop: 36,
@@ -362,7 +364,7 @@ const styles = StyleSheet.create({
   outlineBookButtonText: {
     fontSize: 15,
     color: Colors.primary,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
   appointmentRow: {
     flexDirection: "row",
@@ -403,12 +405,12 @@ const styles = StyleSheet.create({
   dateMonthText: {
     color: Colors.background,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
   dateNumText: {
     color: Colors.text,
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: FontFamilies.bold,
   },
   detailsCol: {
     flex: 1,
@@ -416,7 +418,7 @@ const styles = StyleSheet.create({
   },
   appointmentTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 6,
   },
@@ -428,7 +430,8 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 13,
-    color: "#555",
+    color: Colors.label,
+    fontFamily: FontFamilies.medium,
   },
   menuButton: {
     padding: 8,

@@ -16,6 +16,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 
 export default function ConfirmScreen() {
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.text,
     marginLeft: 5,
-    fontFamily: "Quicksand",
+    fontFamily: FontFamilies.bold,
   },
   scrollContent: {
     paddingBottom: 120,
@@ -258,14 +259,14 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 16,
-    fontWeight: "700",
     color: Colors.primary,
+    fontFamily: FontFamilies.bold,
   },
   itemValue: {
     fontSize: 15,
-    fontWeight: "600",
     color: Colors.text,
     lineHeight: 20,
+    fontFamily: FontFamilies.semiBold,
   },
   textColumn: {
     flexDirection: "column",
@@ -283,8 +284,8 @@ const styles = StyleSheet.create({
   },
   changeButtonText: {
     fontSize: 14,
-    fontWeight: "700",
     color: Colors.primary,
+    fontFamily: FontFamilies.bold,
   },
   addButton: {
     paddingVertical: 6,
@@ -292,8 +293,8 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 15,
-    fontWeight: "600",
     color: Colors.label,
+    fontFamily: FontFamilies.semiBold,
   },
   footerContainer: {
     position: "absolute",
@@ -322,6 +323,6 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     fontSize: 16,
     color: Colors.background,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
 });

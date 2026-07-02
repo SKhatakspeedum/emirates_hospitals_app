@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { USER_FULL_DATA } from "../config/config";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
 import { setPatientId } from "../suggestus_plugin/suggestusClient";
 import dayjs from "dayjs";
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
     marginBottom: 16,
     marginTop: 10,
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F1F9",
+    borderBottomColor: Colors.border,
   },
   avatarCircle: {
     width: 44,
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 15,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: "#2C5D9E",
   },
   patientInfoCol: {
@@ -203,13 +204,13 @@ const styles = StyleSheet.create({
   },
   patientName: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
-    color: "#1B2130",
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
   },
   patientMeta: {
     fontSize: 14,
-    fontFamily: "QuicksandMedium",
-    color: "#7D8A9D",
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
   },
   footer: {
     paddingHorizontal: 24,
@@ -225,14 +226,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: Colors.background,
   },
   btnIcon: {
     marginRight: 8,
   },
   addNewPatientBtnText: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
   },
   skipBtn: {
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
   },
   skipBtnText: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
   },
 });

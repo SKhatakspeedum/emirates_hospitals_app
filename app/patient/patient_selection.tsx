@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { USER_FULL_DATA } from "../config/config";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
 import { setPatientId } from "../suggestus_plugin/suggestusClient";
 import dayjs from "dayjs";
@@ -128,7 +129,7 @@ export default function PatientSelectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFF",
+    backgroundColor: Colors.background,
   },
   header: {
     alignItems: "center",
@@ -171,16 +172,16 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontFamily: "QuicksandBold",
-    color: "#1B2130",
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
   },
   userMeta: {
     fontSize: 13,
-    fontFamily: "QuicksandMedium",
-    color: "#7D8A9D",
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
   },
   registerInnerBtn: {
-    backgroundColor: "#FFF",
+    backgroundColor: Colors.background,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
   },
   registerInnerBtnText: {
     fontSize: 15,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
     marginRight: 6,
   },
@@ -214,14 +215,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: Colors.background,
   },
   btnIcon: {
     marginRight: 8,
   },
   addNewPatientBtnText: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
   },
   skipBtn: {
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
   },
   skipBtnText: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
   },
 });

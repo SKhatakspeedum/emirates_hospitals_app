@@ -17,6 +17,8 @@ import {
 import { IS_LOGGED_IN } from "../config/config";
 import "react-native-get-random-values";
 import Toast from "react-native-toast-message";
+import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 
 export default function SplashScreen() {
   const router = useRouter();
@@ -88,7 +90,7 @@ export default function SplashScreen() {
         {/* <Text style={styles.title}>Emirates Hospital</Text> */}
         {loading && (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color="#0177C8" />
+            <ActivityIndicator size="large" color={Colors.secondary} />
             <Text style={styles.loadingText}>{loadingText}</Text>
           </View>
         )}
@@ -111,7 +113,7 @@ const bgSize = screenWidth * 0.9;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   topBg: {
     position: "absolute",
@@ -143,8 +145,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#232323",
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
     textAlign: "center",
   },
   loaderContainer: {
@@ -152,7 +154,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,
-    backgroundColor: "#F0F6FC",
+    backgroundColor: Colors.pressed,
     flexDirection: "row",
     alignItems: "center",
     shadowColor: "#000",
@@ -164,8 +166,8 @@ const styles = StyleSheet.create({
   loadingText: {
     marginLeft: 10,
     fontSize: 13,
-    color: "#0177C8",
-    fontWeight: "600",
+    color: Colors.secondary,
+    fontFamily: FontFamilies.bold,
     letterSpacing: 0.5,
   },
   errorContainer: {
@@ -176,18 +178,18 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 13,
     color: "#D9534F",
-    fontWeight: "500",
+    fontFamily: FontFamilies.medium,
     textAlign: "center",
   },
   retryButton: {
     paddingVertical: 8,
     paddingHorizontal: 28,
     borderRadius: 20,
-    backgroundColor: "#0177C8",
+    backgroundColor: Colors.secondary,
   },
   retryText: {
     fontSize: 13,
-    color: "#fff",
-    fontWeight: "600",
+    color: Colors.lightgray,
+    fontFamily: FontFamilies.bold,
   },
 });

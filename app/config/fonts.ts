@@ -8,9 +8,9 @@ export const Fonts = {
 };
 
 export const FontFamilies = {
-  bold: "Quicksand-Bold",
-  semiBold: "Quicksand-SemiBold",
-  medium: "Quicksand-Medium",
-  regular: "Quicksand-Regular",
-  light: "Quicksand-Light",
+  bold: "QuicksandBold",
+  semiBold: "QuicksandSemiBold",
+  medium: "QuicksandMedium",
+  regular: "QuicksandRegular",
+  light: "QuicksandLight",
 };

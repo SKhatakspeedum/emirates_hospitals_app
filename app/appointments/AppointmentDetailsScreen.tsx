@@ -15,6 +15,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 
 export default function AppointmentDetailsScreen() {
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.text,
     marginLeft: 5,
-    fontFamily: "Quicksand",
+    fontFamily: FontFamilies.bold,
   },
   scrollContent: {
     paddingBottom: 40,
@@ -255,12 +256,11 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 22,
-    fontWeight: "700",
     color: Colors.primary,
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 12,
-    fontFamily: "Quicksand",
+    fontFamily: FontFamilies.bold,
   },
   listItem: {
     flexDirection: "row",
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   },
   itemValue: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: FontFamilies.semiBold,
     color: Colors.text,
     lineHeight: 20,
   },
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontSize: 16,
     color: Colors.primary,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
   primaryButton: {
     flex: 1,
@@ -320,6 +320,6 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 16,
     color: Colors.background,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
 });

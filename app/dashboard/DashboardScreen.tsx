@@ -15,6 +15,7 @@ import {
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { SPD_USER_NAME } from "@/app/config/config";
 import { Colors } from "../config/colors";
 
@@ -196,7 +197,27 @@ export default function DashboardScreen() {
                 borderBottomLeftRadius: 16,
               }
             ]}
-            onPress={() => navigation.navigate("Appointment")}
+            onPress={async () => {
+              const patientId = await AsyncStorage.getItem("sg_patientId");
+              if (!patientId || patientId === "null") {
+                let phone = "";
+                try {
+                  const fullDataStr = await AsyncStorage.getItem("sg_user_full_data");
+                  if (fullDataStr) {
+                    const parsed = JSON.parse(fullDataStr);
+                    phone = parsed.contact || "";
+                  }
+                } catch (e) {
+                  console.log("Error fetching contact from USER_FULL_DATA", e);
+                }
+                router.push({
+                  pathname: "/init_screens/register_new_patient",
+                  params: { phone_number: phone },
+                });
+              } else {
+                navigation.navigate("Appointment");
+              }
+            }}
           >
             <Ionicons name="calendar-outline" size={32} color={Colors.secondary} />
             <Text style={styles.actionCardText}>Appointments</Text>

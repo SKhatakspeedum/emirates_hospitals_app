@@ -82,12 +82,16 @@ export default function PatientDetailsScreen() {
       );
       if (response?.returnCode === true && response.returnData?.length > 0) {
         const fetched = response.returnData.map((p: any) => ({
-          id: String(p.patient_id ?? p.p_patient_id ?? Date.now()),
-          name: [p.p_name, p.p_middle_name, p.p_last_name]
-            .filter(Boolean)
-            .join(" "),
-          age: String(p.p_age ?? ""),
-          gender: p.p_gender === "1" ? "Male" : "Female",
+          id: String(p.p_patient_id ?? p.patient_id ?? Date.now()),
+          name:
+            p.p_patient_name ??
+            p.ptm_name ??
+            [p.p_patient_first_name, p.p_patient_middle_name, p.p_patient_last_name]
+              .filter(Boolean)
+              .join(" ") ??
+            "",
+          age: String(p.ptm_age ?? p.p_age ?? ""),
+          gender: p.ptm_gender ?? (p.p_gender === "1" ? "Male" : "Female"),
           relationship: "Self",
         }));
         setPatients(fetched);

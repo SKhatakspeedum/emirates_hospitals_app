@@ -81,7 +81,13 @@ const PROVIDERS = [
   },
 ];
 
-const CATEGORIES = ["All", "Dermatologist", "Family Medicine", "Internal Medicine", "Pediatrician"];
+const CATEGORIES = [
+  "All",
+  "Dermatologist",
+  "Family Medicine",
+  "Internal Medicine",
+  "Pediatrician",
+];
 
 export default function NearbyProvidersScreen() {
   const navigation = useNavigation<any>();
@@ -89,8 +95,10 @@ export default function NearbyProvidersScreen() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredProviders = PROVIDERS.filter((provider) => {
-    const matchesCategory = selectedCategory === "All" || provider.specialty === selectedCategory;
-    const matchesSearch = provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesCategory =
+      selectedCategory === "All" || provider.specialty === selectedCategory;
+    const matchesSearch =
+      provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       provider.hospital.toLowerCase().includes(searchQuery.toLowerCase()) ||
       provider.specialty.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -98,13 +106,16 @@ export default function NearbyProvidersScreen() {
 
   return (
     <View style={styles.container}>
-
       {/* Title Header */}
       <CustomHeader title="Nearby providers" />
 
       {/* Categories Horizontal Scroll */}
       <View style={styles.categoriesContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesScroll}
+        >
           {CATEGORIES.map((category) => (
             <TouchableOpacity
               key={category}
@@ -128,43 +139,79 @@ export default function NearbyProvidersScreen() {
       </View>
 
       {/* Providers List */}
-      <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {filteredProviders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="people-outline" size={64} color="#B3B7C6" />
-            <Text style={styles.emptyText}>No providers found matching search</Text>
+            <Text style={styles.emptyText}>
+              No providers found matching search
+            </Text>
           </View>
         ) : (
           filteredProviders.map((provider) => (
-            <View key={provider.id} style={styles.card}>
+            <View
+              key={provider.id}
+              style={styles.card}
+              onTouchEnd={() =>
+                navigation.navigate("PatientDetails", {
+                  doctorId: provider.id,
+                  doctorName: provider.name,
+                  specialty: provider.specialty,
+                  avatar: provider.avatar,
+                })
+              }
+            >
               <View style={styles.cardContent}>
                 <View style={styles.avatarContainer}>
-                  <Image source={{ uri: provider.avatar }} style={styles.avatar} />
+                  <Image
+                    source={{ uri: provider.avatar }}
+                    style={styles.avatar}
+                  />
                 </View>
                 <View style={styles.infoCol}>
                   <Text style={styles.name}>{provider.name}</Text>
-                  <Text style={styles.qualification}>{provider.qualification}</Text>
+                  <Text style={styles.qualification}>
+                    {provider.qualification}
+                  </Text>
 
                   {/* Actions Row */}
                   <View style={styles.actionsRow}>
-                    <TouchableOpacity style={styles.actionIconButton} activeOpacity={0.7}>
+                    <TouchableOpacity
+                      style={styles.actionIconButton}
+                      activeOpacity={0.7}
+                    >
                       <Ionicons name="call" size={14} color={Colors.primary} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionIconButton} activeOpacity={0.7}>
-                      <Ionicons name="chatbubble" size={14} color={Colors.primary} />
+                    <TouchableOpacity
+                      style={styles.actionIconButton}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="chatbubble"
+                        size={14}
+                        color={Colors.primary}
+                      />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionIconButton} activeOpacity={0.7}>
+                    <TouchableOpacity
+                      style={styles.actionIconButton}
+                      activeOpacity={0.7}
+                    >
                       <Text style={styles.infoText}>i</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               </View>
 
-              <Pressable
+              {/* <Pressable
                 style={({ pressed }) => [
                   styles.bookButton,
                   {
-                    backgroundColor: pressed ? Colors.primary : Colors.background,
+                    backgroundColor: pressed
+                      ? Colors.primary
+                      : Colors.background,
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
                 ]}
@@ -185,19 +232,23 @@ export default function NearbyProvidersScreen() {
                         { color: pressed ? Colors.background : Colors.primary },
                       ]}
                     >
-                      Book an appointment
+                      Book an appointment test
                     </Text>
                     <Text
                       style={[
                         styles.bookButtonSubtext,
-                        { color: pressed ? "rgba(255, 255, 255, 0.8)" : Colors.label },
+                        {
+                          color: pressed
+                            ? "rgba(255, 255, 255, 0.8)"
+                            : Colors.label,
+                        },
                       ]}
                     >
                       {provider.nextAvailable}
                     </Text>
                   </>
                 )}
-              </Pressable>
+              </Pressable> */}
             </View>
           ))
         )}
@@ -218,7 +269,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
     backgroundColor: Colors.background,
   },
@@ -305,7 +357,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
-
   },
   avatar: {
     width: 60,

@@ -76,16 +76,40 @@ export default function OTPVerificationScreen() {
   }, []);
 
   const handleChange = (text: string, idx: number) => {
-    if (/[^0-9]/.test(text)) return;
+    if (text.length === 6 && /^[0-9]+$/.test(text)) {
+      const newOtp = text.split("");
+      setOtp(newOtp);
+      inputRefs.current[5]?.focus();
+      setError("");
+      return;
+    }
+
+    const lastChar = text.length > 0 ? text[text.length - 1] : "";
+    if (lastChar && /[^0-9]/.test(lastChar)) return;
+
     const newOtp = [...otp];
-    newOtp[idx] = text;
+    newOtp[idx] = lastChar;
     setOtp(newOtp);
     setError("");
-    if (text && idx < 5) {
+
+    if (lastChar && idx < 5) {
       inputRefs.current[idx + 1]?.focus();
     }
-    if (!text && idx > 0) {
-      inputRefs.current[idx - 1]?.focus();
+  };
+
+  const handleKeyPress = (e: any, idx: number) => {
+    if (e.nativeEvent.key === "Backspace") {
+      const newOtp = [...otp];
+      if (otp[idx] === "") {
+        if (idx > 0) {
+          newOtp[idx - 1] = "";
+          setOtp(newOtp);
+          inputRefs.current[idx - 1]?.focus();
+        }
+      } else {
+        newOtp[idx] = "";
+        setOtp(newOtp);
+      }
     }
   };
 
@@ -150,12 +174,11 @@ export default function OTPVerificationScreen() {
               ? setPatientId(String(u.usr_patient_id))
               : Promise.resolve(),
           ]);
-          // router.replace("/(drawer)/tab_bar_home/HomeScreen");
-          router.replace({
-            pathname: "/init_screens/personal_details",
-          });
+          router.replace("/(drawer)/tab_bar_home/HomeScreen");
+          // router.replace({
+          //   pathname: "/init_screens/personal_details",
+          // });
         } else {
-          // router.replace("/init_screens/signup");
           router.replace({
             pathname: "/init_screens/personal_details",
             params: { phone_number: rawPhone },
@@ -255,9 +278,10 @@ export default function OTPVerificationScreen() {
                       error && !digit ? styles.otpInputError : null,
                     ]}
                     keyboardType="number-pad"
-                    maxLength={1}
+                    maxLength={6}
                     value={digit}
                     onChangeText={(text) => handleChange(text, idx)}
+                    onKeyPress={(e) => handleKeyPress(e, idx)}
                     onFocus={() => setFocusedIdx(idx)}
                     onBlur={() => setFocusedIdx(null)}
                     returnKeyType={idx === 5 ? "done" : "next"}

@@ -279,22 +279,23 @@ export default function RootLayout() {
     handleInitialRedirect();
   }, []);
 
-  useEffect(() => {
-    if (Platform.OS !== "web") return;
-    const handleBack = (e: PopStateEvent) => {
-      e.preventDefault();
+  //to force redirect to home screen on web
+  // useEffect(() => {
+  //   if (Platform.OS !== "web") return;
+  //   const handleBack = (e: PopStateEvent) => {
+  //     e.preventDefault();
 
-      // Force user to stay on current route or redirect to home
+  //     // Force user to stay on current route or redirect to home
 
-      router.replace("/tab_bar_home/HomeScreen"); // or any route
-    };
+  //     router.replace("/tab_bar_home/HomeScreen"); // or any route
+  //   };
 
-    window.addEventListener("popstate", handleBack);
+  //   window.addEventListener("popstate", handleBack);
 
-    return () => {
-      window.removeEventListener("popstate", handleBack);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener("popstate", handleBack);
+  //   };
+  // }, []);
 
   if (!loaded || !isReady) {
     console.log(

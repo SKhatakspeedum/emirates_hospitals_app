@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,11 +11,15 @@ import {
   Image,
   Platform,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
 const getDynamicScheduleData = () => {
   const today = new Date();
@@ -60,32 +64,44 @@ const getDynamicScheduleData = () => {
     return `${dayNum} ${monthStr} ${year}`;
   };
 
+  const formatAPIDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   return [
     {
       dateId: "1",
       dateStr: formatDateStr(today),
       dayLabel: days[today.getDay()],
       fullDate: formatFullDate(today),
+      apiDate: formatAPIDate(today),
       showDoctor: true,
-      slots: [
-        "09:30 AM",
-        "10:00 AM",
-        "10:30 AM",
-        "11:00 AM",
-        "11:30 AM",
-        "12:00 PM",
-        "12:30 PM",
-      ],
+      slots: [] as string[],
     },
     {
       dateId: "2",
-      dateStr: formatDateStr(tomorrow).toUpperCase(),
+      dateStr: formatDateStr(tomorrow),
       dayLabel: days[tomorrow.getDay()],
       fullDate: formatFullDate(tomorrow),
+      apiDate: formatAPIDate(tomorrow),
       showDoctor: false,
-      slots: ["09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM"],
+      slots: [] as string[],
     },
   ];
+};
+
+const formatTimeSlot = (time: string): string => {
+  if (!time) return "";
+  const parts = time.split(":");
+  let hours = parseInt(parts[0] ?? "0", 10);
+  const minutes = parts[1] ?? "00";
+  const ampm = hours >= 12 ? "PM" : "AM";
+  if (hours > 12) hours -= 12;
+  if (hours === 0) hours = 12;
+  return `${String(hours).padStart(2, "0")}:${minutes} ${ampm}`;
 };
 
 const SCHEDULE_DATA = getDynamicScheduleData();
@@ -104,6 +120,7 @@ export default function ScheduleBookScreen() {
     relationship,
     symptoms,
     type,
+    appSubtypeId,
   } = route.params || {
     doctorId: "1",
     doctorName: "Dr. Harry Dewson",
@@ -115,10 +132,55 @@ export default function ScheduleBookScreen() {
     relationship: "Self",
     symptoms: "",
     type: "Virtual urgent care",
+    appSubtypeId: "",
   };
 
+  const [scheduleData, setScheduleData] = useState(SCHEDULE_DATA);
   const [selectedDate, setSelectedDate] = useState(SCHEDULE_DATA[0]);
-  const [selectedSlot, setSelectedSlot] = useState("09:30 AM");
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      setIsLoading(true);
+      try {
+        const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "3";
+        const results = await Promise.all(
+          SCHEDULE_DATA.map((item) =>
+            callSuggestusAPI(
+              spd_processId_config.hospapp_get_doctor_schedule,
+              {
+                p_resource_id: doctorId ?? "",
+                p_date: item.apiDate,
+                p_org_id: orgId,
+                p_appt_subtype: appSubtypeId ?? "",
+              },
+            ).then((res) => {
+              if (res?.returnCode === true && res.returnData?.length > 0) {
+                const slots = res.returnData
+                  .map((s: any) =>
+                    formatTimeSlot(
+                      s.from_time ?? s.slot_time ?? s.appt_time ?? s.time ?? "",
+                    ),
+                  )
+                  .filter(Boolean);
+                return { ...item, slots };
+              }
+              return item;
+            }),
+          ),
+        );
+        setScheduleData(results);
+        setSelectedDate(results[0]);
+        if (results[0].slots.length > 0) setSelectedSlot(results[0].slots[0]);
+      } catch (_) {
+        // keep empty slots on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSchedule();
+  }, []);
 
   const handleConfirm = () => {
     if (!selectedSlot) {
@@ -197,7 +259,7 @@ export default function ScheduleBookScreen() {
         </View>
 
         {/* Date and Slots Sections */}
-        {SCHEDULE_DATA.map((item) => (
+        {scheduleData.map((item) => (
           <View key={item.dateId} style={styles.dateSection}>
             {/* Date Header Row */}
             <View style={styles.dateHeaderRow}>
@@ -217,31 +279,41 @@ export default function ScheduleBookScreen() {
             )}
 
             {/* Slots Grid */}
-            <View style={styles.slotsGrid}>
-              {item.slots.map((slot) => {
-                const active = isSlotActive(item.dateId, slot);
-                return (
-                  <Pressable
-                    key={slot}
-                    style={({ pressed }) => [
-                      styles.slotButton,
-                      active && styles.slotButtonActive,
-                      {
-                        transform: [{ scale: pressed ? 0.95 : 1 }],
-                        opacity: pressed ? 0.8 : 1,
-                      },
-                    ]}
-                    onPress={() => handleSlotSelect(item, slot)}
-                  >
-                    <Text
-                      style={[styles.slotText, active && styles.slotTextActive]}
+            {isLoading ? (
+              <ActivityIndicator
+                size="small"
+                color={Colors.primary}
+                style={{ marginVertical: 16 }}
+              />
+            ) : item.slots.length === 0 ? (
+              <Text style={styles.noSlotsText}>No slots available</Text>
+            ) : (
+              <View style={styles.slotsGrid}>
+                {item.slots.map((slot) => {
+                  const active = isSlotActive(item.dateId, slot);
+                  return (
+                    <Pressable
+                      key={slot}
+                      style={({ pressed }) => [
+                        styles.slotButton,
+                        active && styles.slotButtonActive,
+                        {
+                          transform: [{ scale: pressed ? 0.95 : 1 }],
+                          opacity: pressed ? 0.8 : 1,
+                        },
+                      ]}
+                      onPress={() => handleSlotSelect(item, slot)}
                     >
-                      {slot}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <Text
+                        style={[styles.slotText, active && styles.slotTextActive]}
+                      >
+                        {slot}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
           </View>
         ))}
       </ScrollView>
@@ -376,6 +448,11 @@ const styles = StyleSheet.create({
   },
   slotButtonActive: {
     backgroundColor: Colors.primary,
+  },
+  noSlotsText: {
+    fontSize: 13,
+    color: Colors.label,
+    marginVertical: 12,
   },
   slotText: {
     fontSize: 14,

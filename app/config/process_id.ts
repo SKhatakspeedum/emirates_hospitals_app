@@ -12,6 +12,7 @@ export const spd_processId_config = {
   hospapp_get_patient_appointment_category:
     "hospapp_get_patient_appointment_category",
   hospapp_get_resources: "hospapp_get_resources",
+  hospapp_get_doctor_schedule: "hospapp_get_doctor_schedule",
 
   spdonmood9_get_md_user_accounts_login:
     "spdonmood9_get_md_user_accounts_login",

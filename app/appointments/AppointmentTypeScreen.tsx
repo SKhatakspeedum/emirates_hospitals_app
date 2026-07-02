@@ -128,7 +128,7 @@ export default function AppointmentTypeScreen() {
     }
   };
 
-  const handleSelectServiceAndContinue = (serviceTitle: string) => {
+  const handleSelectServiceAndContinue = (service: Service) => {
     navigation.navigate("ScheduleBook", {
       doctorId,
       doctorName,
@@ -140,7 +140,8 @@ export default function AppointmentTypeScreen() {
       patientGender,
       relationship,
       symptoms,
-      type: serviceTitle.replace("\n", " "),
+      appSubtypeId: service.id,
+      type: (service.description || service.title).replace("\n", " "),
     });
   };
 
@@ -208,7 +209,7 @@ export default function AppointmentTypeScreen() {
                     opacity: pressed ? 0.7 : 1,
                   },
                 ]}
-                onPress={() => handleSelectServiceAndContinue(service.title)}
+                onPress={() => handleSelectServiceAndContinue(service)}
               >
                 <View
                   style={[

@@ -93,16 +93,6 @@ const getDynamicScheduleData = () => {
   ];
 };
 
-const formatTimeSlot = (time: string): string => {
-  if (!time) return "";
-  const parts = time.split(":");
-  let hours = parseInt(parts[0] ?? "0", 10);
-  const minutes = parts[1] ?? "00";
-  const ampm = hours >= 12 ? "PM" : "AM";
-  if (hours > 12) hours -= 12;
-  if (hours === 0) hours = 12;
-  return `${String(hours).padStart(2, "0")}:${minutes} ${ampm}`;
-};
 
 const SCHEDULE_DATA = getDynamicScheduleData();
 
@@ -158,11 +148,8 @@ export default function ScheduleBookScreen() {
             ).then((res) => {
               if (res?.returnCode === true && res.returnData?.length > 0) {
                 const slots = res.returnData
-                  .map((s: any) =>
-                    formatTimeSlot(
-                      s.from_time ?? s.slot_time ?? s.appt_time ?? s.time ?? "",
-                    ),
-                  )
+                  .filter((s: any) => s.valid_flag === "Y")
+                  .map((s: any) => s.appt_start_time ?? "")
                   .filter(Boolean);
                 return { ...item, slots };
               }

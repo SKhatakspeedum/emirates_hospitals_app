@@ -79,7 +79,7 @@ const getDynamicScheduleData = () => {
       fullDate: formatFullDate(today),
       apiDate: formatAPIDate(today),
       showDoctor: true,
-      slots: [] as string[],
+      slots: [] as { display: string; id: string }[],
     },
     {
       dateId: "2",
@@ -88,11 +88,10 @@ const getDynamicScheduleData = () => {
       fullDate: formatFullDate(tomorrow),
       apiDate: formatAPIDate(tomorrow),
       showDoctor: false,
-      slots: [] as string[],
+      slots: [] as { display: string; id: string }[],
     },
   ];
 };
-
 
 const SCHEDULE_DATA = getDynamicScheduleData();
 
@@ -100,6 +99,7 @@ export default function ScheduleBookScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const {
+    apptId,
     doctorId,
     doctorName,
     specialty,
@@ -131,7 +131,10 @@ export default function ScheduleBookScreen() {
 
   const [scheduleData, setScheduleData] = useState(SCHEDULE_DATA);
   const [selectedDate, setSelectedDate] = useState(SCHEDULE_DATA[0]);
-  const [selectedSlot, setSelectedSlot] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState<{
+    display: string;
+    id: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -141,20 +144,20 @@ export default function ScheduleBookScreen() {
         const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "3";
         const results = await Promise.all(
           SCHEDULE_DATA.map((item) =>
-            callSuggestusAPI(
-              spd_processId_config.hospapp_get_doctor_schedule,
-              {
-                p_resource_id: doctorId ?? "",
-                p_date: item.apiDate,
-                p_org_id: orgId,
-                p_appt_subtype: appSubtypeId ?? "",
-              },
-            ).then((res) => {
+            callSuggestusAPI(spd_processId_config.hospapp_get_doctor_schedule, {
+              p_resource_id: doctorId ?? "",
+              p_date: item.apiDate,
+              p_org_id: orgId,
+              p_appt_subtype: appSubtypeId ?? "",
+            }).then((res) => {
               if (res?.returnCode === true && res.returnData?.length > 0) {
                 const slots = res.returnData
                   .filter((s: any) => s.valid_flag === "Y")
-                  .map((s: any) => s.appt_start_time ?? "")
-                  .filter(Boolean);
+                  .map((s: any) => ({
+                    display: s.appt_start_time ?? "",
+                    id: s.id ?? "",
+                  }))
+                  .filter((s: { display: string; id: string }) => s.display);
                 return { ...item, slots };
               }
               return item;
@@ -179,7 +182,9 @@ export default function ScheduleBookScreen() {
       return;
     }
 
+    console.log("apptId 1111:>>", apptId);
     navigation.navigate("ConfirmScreen", {
+      apptId,
       doctorId,
       doctorName,
       specialty,
@@ -194,17 +199,21 @@ export default function ScheduleBookScreen() {
       appSubtypeId,
       type,
       date: selectedDate.fullDate,
-      time: selectedSlot,
+      time: selectedSlot.display,
+      slotId: selectedSlot.id,
     });
   };
 
-  const isSlotActive = (dateId: string, slot: string) => {
-    return selectedDate.dateId === dateId && selectedSlot === slot;
+  const isSlotActive = (
+    dateId: string,
+    slot: { display: string; id: string },
+  ) => {
+    return selectedDate.dateId === dateId && selectedSlot?.id === slot.id;
   };
 
   const handleSlotSelect = (
     dateItem: (typeof SCHEDULE_DATA)[0],
-    slot: string,
+    slot: { display: string; id: string },
   ) => {
     setSelectedDate(dateItem);
     setSelectedSlot(slot);
@@ -287,7 +296,7 @@ export default function ScheduleBookScreen() {
                   const active = isSlotActive(item.dateId, slot);
                   return (
                     <Pressable
-                      key={slot}
+                      key={slot.id || slot.display}
                       style={({ pressed }) => [
                         styles.slotButton,
                         active && styles.slotButtonActive,
@@ -299,9 +308,12 @@ export default function ScheduleBookScreen() {
                       onPress={() => handleSlotSelect(item, slot)}
                     >
                       <Text
-                        style={[styles.slotText, active && styles.slotTextActive]}
+                        style={[
+                          styles.slotText,
+                          active && styles.slotTextActive,
+                        ]}
                       >
-                        {slot}
+                        {slot.display}
                       </Text>
                     </Pressable>
                   );

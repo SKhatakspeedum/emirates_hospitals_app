@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
@@ -23,6 +25,7 @@ export default function ConfirmScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const {
+    apptId,
     doctorId,
     doctorName,
     specialty,
@@ -33,11 +36,11 @@ export default function ConfirmScreen() {
     patientAge,
     patientGender,
     relationship,
-    symptoms,
     appSubtypeId,
     type,
     date,
     time,
+    slotId,
   } = route.params || {
     doctorId: "1",
     doctorName: "Dr. Harry Dewson",
@@ -49,14 +52,15 @@ export default function ConfirmScreen() {
     patientAge: "",
     patientGender: "",
     relationship: "Self",
-    symptoms: "",
     appSubtypeId: "",
     type: "Video Consult",
     date: "02 Mar 2026",
     time: "09:30 AM",
+    slotId: "",
   };
 
   const [locationText, setLocationText] = useState<string>(hospital ?? "");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (hospital) return;
@@ -65,33 +69,66 @@ export default function ConfirmScreen() {
     });
   }, []);
 
-  const handleDone = () => {
-    Alert.alert(
-      "Success",
-      "Your appointment has been successfully scheduled.",
-      [
+  // Converts "2026-07-03-07:45:00-08:30:00" → "2026-07-03~07:45:00~08:30:00"
+  const buildSlotsList = (id: string): string => {
+    if (!id) return "";
+    const datePart = id.slice(0, 10);
+    const startPart = id.slice(11, 19);
+    const endPart = id.slice(20, 28);
+    return `${datePart}~${startPart}~${endPart}`;
+  };
+
+  const handleDone = async () => {
+    console.log("apptId Final:>>", apptId);
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "";
+      const pid =
+        patientId || (await fetchDataFromLocalStorage("sg_patientId")) || "";
+      const pSlotsList = buildSlotsList(slotId ?? "");
+
+      const res = await callSuggestusAPI(
+        spd_processId_config.hospapp_save_patient_appointment_hv,
         {
-          text: "OK",
-          onPress: () =>
-            navigation.navigate("AppointmentDetails", {
-              doctorId,
-              doctorName,
-              specialty,
-              avatar,
-              patientId,
-              patientName,
-              patientAge,
-              patientGender,
-              relationship,
-              symptoms,
-              appSubtypeId,
-              type,
-              date,
-              time,
-            }),
+          p_doctor_id: doctorId ?? "",
+          p_patient_id: pid,
+          p_slots_list: pSlotsList,
+          p_appt_id: apptId ?? "",
+          p_org_id: orgId,
+          p_online_appointment_flag: "Y",
+          p_appt_subtype: appSubtypeId ?? "",
+          p_reschedule_appointment: "",
+          p_remarks: "",
         },
-      ],
-    );
+      );
+
+      if (res?.returnCode === true) {
+        Alert.alert(
+          "Success",
+          "Your appointment has been successfully scheduled.",
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.navigate("Appointment"),
+            },
+          ],
+        );
+
+        setTimeout(() => {
+          navigation.navigate("Appointment");
+        }, 1000);
+      } else {
+        Alert.alert(
+          "Error",
+          res?.returnMessage ?? "Failed to save appointment. Please try again.",
+        );
+      }
+    } catch (_) {
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getFormattedDateDisplay = (dateStr: string) => {
@@ -266,7 +303,7 @@ export default function ConfirmScreen() {
             <View style={styles.divider} />
 
             {/* Location / Address */}
-            <View style={styles.listItem}>
+            {/* <View style={styles.listItem}>
               <Ionicons
                 name="location-outline"
                 size={22}
@@ -276,7 +313,7 @@ export default function ConfirmScreen() {
               <Text style={styles.itemValue}>
                 P.O Box 28973, Dubai,{"\n"}Emirates - 28973
               </Text>
-            </View>
+            </View> */}
 
             <View style={styles.divider} />
 
@@ -311,14 +348,18 @@ export default function ConfirmScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.confirmButton,
-              {
+              isSaving && { opacity: 0.6 },
+              !isSaving && {
                 transform: [{ scale: pressed ? 0.95 : 1 }],
                 opacity: pressed ? 0.85 : 1,
               },
             ]}
             onPress={handleDone}
+            disabled={isSaving}
           >
-            <Text style={styles.confirmButtonText}>Continue</Text>
+            <Text style={styles.confirmButtonText}>
+              {isSaving ? "Saving..." : "Continue"}
+            </Text>
             <Ionicons
               name="arrow-forward"
               size={18}

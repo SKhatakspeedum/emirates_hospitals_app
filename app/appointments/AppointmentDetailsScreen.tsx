@@ -25,12 +25,16 @@ export default function AppointmentDetailsScreen() {
   const doctorId = params.doctorId || "1";
   const doctorName = params.doctorName || "Dr. Harry Dewson";
   const specialty = params.specialty || "Dermatologist";
-  const avatar = params.avatar || "https://randomuser.me/api/portraits/men/1.jpg";
-  const patientName = params.patientName || "John Doe";
+  const avatar =
+    params.avatar || "https://randomuser.me/api/portraits/men/1.jpg";
+  const patientDet = params.patientDet || params.patientName || "John Doe";
   const type = params.type || "Primary care visit";
+  const apptypName = params.apptypName || "";
+  const appSubtypeId = params.appSubtypeId || "";
   const date = params.date || "02 Mar 2026";
   const time = params.time || "09:30 AM";
   const isHistory = params.isHistory === true || params.isHistory === "true";
+  const apptId = params.apptId || "";
 
   const getFormattedDateDisplay = (dateStr: string) => {
     try {
@@ -40,7 +44,20 @@ export default function AppointmentDetailsScreen() {
         const monthStr = parts[1];
         const year = parseInt(parts[2], 10);
 
-        const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(monthStr);
+        const monthIndex = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ].indexOf(monthStr);
         if (monthIndex !== -1) {
           const d = new Date(year, monthIndex, day);
           const daysShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -59,12 +76,14 @@ export default function AppointmentDetailsScreen() {
       navigation.navigate("HealthPackageSchedule", { pkg: params.pkg });
     } else {
       navigation.navigate("ScheduleBook", {
+        apptId,
         doctorId,
         doctorName,
         specialty,
         avatar,
-        patientName,
+        patientName: patientDet,
         type,
+        appSubtypeId,
       });
     }
   };
@@ -97,32 +116,68 @@ export default function AppointmentDetailsScreen() {
         {/* Title Header matching NearbyProviders styling */}
         <CustomHeader title="Appointment details" />
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Banner Image */}
           <Image
-            source={{ uri: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800" }}
+            source={{
+              uri: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800",
+            }}
             style={styles.bannerImage}
             resizeMode="cover"
           />
 
           {/* Details Content */}
           <View style={styles.detailsContainer}>
-            {/* Title / Appointment Type */}
+            {/* appsubtyp_name */}
             <Text style={styles.mainTitle}>{type || "Primary care visit"}</Text>
 
-            {/* Patient Name */}
+            {/* dpt_description */}
+            {!!specialty && <Text style={styles.subTitle}>{specialty}</Text>}
+
+            {/* patient_det */}
             <View style={styles.listItem}>
-              <Ionicons name="person-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
-              <Text style={styles.itemValue}>{patientName || "John Doe"}</Text>
+              <Ionicons
+                name="person-outline"
+                size={22}
+                color={Colors.primary}
+                style={styles.itemIcon}
+              />
+              <Text style={styles.itemValue}>{patientDet}</Text>
             </View>
 
             <View style={styles.divider} />
 
+            {/* apptyp_name */}
+            {!!apptypName && (
+              <>
+                <View style={styles.listItem}>
+                  <Ionicons
+                    name="medical-outline"
+                    size={22}
+                    color={Colors.primary}
+                    style={styles.itemIcon}
+                  />
+                  <Text style={styles.itemValue}>{apptypName}</Text>
+                </View>
+                <View style={styles.divider} />
+              </>
+            )}
+
             {/* Date and Time */}
             <View style={styles.listItem}>
-              <Ionicons name="time-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+              <Ionicons
+                name="time-outline"
+                size={22}
+                color={Colors.primary}
+                style={styles.itemIcon}
+              />
               <View style={styles.textColumn}>
-                <Text style={styles.itemValue}>{getFormattedDateDisplay(date)}</Text>
+                <Text style={styles.itemValue}>
+                  {getFormattedDateDisplay(date)}
+                </Text>
                 <Text style={[styles.itemValue, { marginTop: 2 }]}>{time}</Text>
               </View>
             </View>
@@ -130,12 +185,17 @@ export default function AppointmentDetailsScreen() {
             <View style={styles.divider} />
 
             {/* Location / Address */}
-            <View style={styles.listItem}>
-              <Ionicons name="location-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+            {/* <View style={styles.listItem}>
+              <Ionicons
+                name="location-outline"
+                size={22}
+                color={Colors.primary}
+                style={styles.itemIcon}
+              />
               <Text style={styles.itemValue}>
                 P.O Box 28973, Dubai,{"\n"}Emirates - 28973
               </Text>
-            </View>
+            </View> */}
           </View>
         </ScrollView>
 
@@ -147,9 +207,11 @@ export default function AppointmentDetailsScreen() {
                 style={({ pressed }) => [
                   styles.secondaryButton,
                   {
-                    backgroundColor: pressed ? Colors.primary : Colors.background,
+                    backgroundColor: pressed
+                      ? Colors.primary
+                      : Colors.background,
                     transform: [{ scale: pressed ? 0.95 : 1 }],
-                  }
+                  },
                 ]}
                 onPress={() => navigation.goBack()}
               >
@@ -157,7 +219,7 @@ export default function AppointmentDetailsScreen() {
                   <Text
                     style={[
                       styles.secondaryButtonText,
-                      { color: pressed ? Colors.background : Colors.primary }
+                      { color: pressed ? Colors.background : Colors.primary },
                     ]}
                   >
                     Back
@@ -171,12 +233,16 @@ export default function AppointmentDetailsScreen() {
                   {
                     transform: [{ scale: pressed ? 0.95 : 1 }],
                     opacity: pressed ? 0.85 : 1,
-                  }
+                  },
                 ]}
                 onPress={handleBookAgain}
               >
                 <Text style={styles.primaryButtonText}>Book Again</Text>
-                <Ionicons name="arrow-forward" size={18} color={Colors.background} />
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={Colors.background}
+                />
               </Pressable>
             </>
           ) : (
@@ -185,9 +251,11 @@ export default function AppointmentDetailsScreen() {
                 style={({ pressed }) => [
                   styles.secondaryButton,
                   {
-                    backgroundColor: pressed ? Colors.primary : Colors.background,
+                    backgroundColor: pressed
+                      ? Colors.primary
+                      : Colors.background,
                     transform: [{ scale: pressed ? 0.95 : 1 }],
-                  }
+                  },
                 ]}
                 onPress={handleReschedule}
               >
@@ -195,7 +263,7 @@ export default function AppointmentDetailsScreen() {
                   <Text
                     style={[
                       styles.secondaryButtonText,
-                      { color: pressed ? Colors.background : Colors.primary }
+                      { color: pressed ? Colors.background : Colors.primary },
                     ]}
                   >
                     Reschedule
@@ -209,12 +277,18 @@ export default function AppointmentDetailsScreen() {
                   {
                     transform: [{ scale: pressed ? 0.95 : 1 }],
                     opacity: pressed ? 0.85 : 1,
-                  }
+                  },
                 ]}
                 onPress={handleGoToAppointments}
               >
-                <Text style={styles.primaryButtonText}>{isPackage ? "Home" : "Appointments"}</Text>
-                <Ionicons name="arrow-forward" size={18} color={Colors.background} />
+                <Text style={styles.primaryButtonText}>
+                  {isPackage ? "Home" : "Appointments"}
+                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={Colors.background}
+                />
               </Pressable>
             </>
           )}
@@ -233,7 +307,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
     backgroundColor: Colors.background,
   },
@@ -259,8 +334,14 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     paddingHorizontal: 20,
     paddingTop: 24,
-    paddingBottom: 12,
+    paddingBottom: 4,
     fontFamily: "Quicksand",
+  },
+  subTitle: {
+    fontSize: 14,
+    color: Colors.label,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
   },
   listItem: {
     flexDirection: "row",

@@ -11,6 +11,7 @@ export const spd_processId_config = {
     "xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard",
   hospapp_get_patient_appointment_category:
     "hospapp_get_patient_appointment_category",
+  hospapp_get_resources: "hospapp_get_resources",
 
   spdonmood9_get_md_user_accounts_login:
     "spdonmood9_get_md_user_accounts_login",

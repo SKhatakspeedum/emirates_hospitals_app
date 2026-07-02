@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,11 +11,15 @@ import {
   TextInput,
   Platform,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
 // Static Doctor Mock Data
 const PROVIDERS = [
@@ -89,12 +93,91 @@ const CATEGORIES = [
   "Pediatrician",
 ];
 
+function DoctorAvatar({ uri, name }: { uri: string; name: string }) {
+  const [hasError, setHasError] = useState(false);
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+
+  return (
+    <View style={styles.avatarContainer}>
+      {uri && !hasError ? (
+        <Image
+          source={{ uri }}
+          style={styles.avatar}
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <View style={[styles.avatar, styles.avatarFallback]}>
+          <Text style={styles.avatarInitialsText}>{initials || "DR"}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function NearbyProvidersScreen() {
   const navigation = useNavigation<any>();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [providers, setProviders] = useState(PROVIDERS);
+  const [categories, setCategories] = useState(CATEGORIES);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const filteredProviders = PROVIDERS.filter((provider) => {
+  useEffect(() => {
+    const fetchProviders = async () => {
+      setIsLoading(true);
+      try {
+        const patientId = await fetchDataFromLocalStorage("sg_patientId");
+        const now = new Date();
+        const response = await callSuggestusAPI(
+          spd_processId_config.hospapp_get_resources,
+          {
+            p_patient_id: patientId ?? "",
+            p_resource_code: "",
+            p_month: now.getMonth() + 1,
+            p_year: now.getFullYear(),
+            p_process_type: "",
+            p_visit_id: null,
+            p_category_code: "CAT005",
+          },
+        );
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const fetched = response.returnData.map((r: any) => ({
+            id: String(r.resource_id ?? r.id ?? Math.random()),
+            name: r.resource_name ?? r.name ?? "",
+            specialty: r.dpt_description ?? r.dept_name ?? "",
+            qualification: r.doctor_education ?? r.doctor_short_description ?? "",
+            hospital: r.org_name ?? "",
+            distance: r.distance ?? "",
+            rating: String(r.rating ?? ""),
+            reviews: String(r.reviews ?? ""),
+            avatar: r.resource_image_url ?? "",
+            nextAvailable: r.next_available ?? r.next_slot ?? "",
+          }));
+          setProviders(fetched);
+
+          const uniqueSpecialties: string[] = [
+            "All",
+            ...Array.from(
+              new Set<string>(fetched.map((p: any) => p.specialty).filter(Boolean)),
+            ),
+          ];
+          setCategories(uniqueSpecialties);
+        }
+      } catch (_) {
+        // keep fallback data on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProviders();
+  }, []);
+
+  const filteredProviders = providers.filter((provider) => {
     const matchesCategory =
       selectedCategory === "All" || provider.specialty === selectedCategory;
     const matchesSearch =
@@ -116,7 +199,7 @@ export default function NearbyProvidersScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesScroll}
         >
-          {CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <TouchableOpacity
               key={category}
               style={[
@@ -143,7 +226,13 @@ export default function NearbyProvidersScreen() {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       >
-        {filteredProviders.length === 0 ? (
+        {isLoading ? (
+          <ActivityIndicator
+            size="large"
+            color={Colors.primary}
+            style={{ marginTop: 60 }}
+          />
+        ) : filteredProviders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="people-outline" size={64} color="#B3B7C6" />
             <Text style={styles.emptyText}>
@@ -165,17 +254,15 @@ export default function NearbyProvidersScreen() {
               }
             >
               <View style={styles.cardContent}>
-                <View style={styles.avatarContainer}>
-                  <Image
-                    source={{ uri: provider.avatar }}
-                    style={styles.avatar}
-                  />
-                </View>
+                <DoctorAvatar uri={provider.avatar} name={provider.name} />
                 <View style={styles.infoCol}>
                   <Text style={styles.name}>{provider.name}</Text>
-                  <Text style={styles.qualification}>
-                    {provider.qualification}
-                  </Text>
+                  {!!provider.specialty && (
+                    <Text style={styles.specialty}>{provider.specialty}</Text>
+                  )}
+                  {!!provider.qualification && (
+                    <Text style={styles.qualification}>{provider.qualification}</Text>
+                  )}
 
                   {/* Actions Row */}
                   <View style={styles.actionsRow}>
@@ -363,8 +450,24 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
   },
+  avatarFallback: {
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarInitialsText: {
+    color: Colors.background,
+    fontSize: 20,
+    fontWeight: "700",
+  },
   infoCol: {
     flex: 1,
+  },
+  specialty: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: "600",
+    marginBottom: 2,
   },
   name: {
     fontSize: 17,

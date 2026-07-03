@@ -16,6 +16,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
@@ -562,18 +563,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.text,
     marginLeft: 5,
-    fontFamily: "Quicksand",
+    fontFamily: FontFamilies.bold,
   },
   listScrollContent: {
     paddingBottom: 40,
   },
   mainQuestionText: {
     fontSize: 22,
-    fontWeight: "700",
     color: Colors.primary,
     textAlign: "center",
     marginVertical: 28,
-    fontFamily: "Quicksand",
+    fontFamily: FontFamilies.bold,
   },
   patientCard: {
     flexDirection: "row",
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
   initialsText: {
     color: Colors.background,
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: FontFamilies.bold,
   },
   patientInfo: {
     flex: 1,
@@ -605,12 +605,13 @@ const styles = StyleSheet.create({
   },
   patientCardName: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
   },
   patientMeta: {
     fontSize: 13,
     color: Colors.label,
+    fontFamily: FontFamilies.medium,
     marginTop: 2,
   },
   addPatientButton: {
@@ -623,7 +624,7 @@ const styles = StyleSheet.create({
   addPatientText: {
     fontSize: 16,
     color: Colors.secondary,
-    fontWeight: "600",
+    fontFamily: FontFamilies.semiBold,
   },
   scrollContent: {
     padding: 16,
@@ -650,17 +651,18 @@ const styles = StyleSheet.create({
   },
   doctorName: {
     fontSize: 15,
-    fontWeight: "bold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
   },
   doctorSpecialty: {
     fontSize: 13,
     color: Colors.secondary,
+    fontFamily: FontFamilies.medium,
     marginTop: 2,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 12,
   },
@@ -688,11 +690,11 @@ const styles = StyleSheet.create({
   patientTabText: {
     fontSize: 14,
     color: Colors.text,
-    fontWeight: "600",
+    fontFamily: FontFamilies.semiBold,
   },
   patientTabTextActive: {
     color: Colors.background,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
   form: {
     backgroundColor: Colors.background,
@@ -703,7 +705,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: FontFamilies.semiBold,
     color: Colors.text,
     marginBottom: 8,
   },
@@ -716,6 +718,7 @@ const styles = StyleSheet.create({
     height: 48,
     fontSize: 15,
     color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
     marginBottom: 16,
   },
   disabledInput: {
@@ -751,11 +754,11 @@ const styles = StyleSheet.create({
   genderChipText: {
     fontSize: 14,
     color: Colors.text,
-    fontWeight: "600",
+    fontFamily: FontFamilies.semiBold,
   },
   genderChipTextActive: {
     color: Colors.secondary,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
   relationRow: {
     flexDirection: "row",
@@ -778,10 +781,11 @@ const styles = StyleSheet.create({
   relationText: {
     fontSize: 13,
     color: Colors.text,
+    fontFamily: FontFamilies.medium,
   },
   relationTextActive: {
     color: Colors.secondary,
-    fontWeight: "600",
+    fontFamily: FontFamilies.bold,
   },
   textArea: {
     height: 100,
@@ -802,6 +806,6 @@ const styles = StyleSheet.create({
   continueButtonText: {
     fontSize: 16,
     color: Colors.background,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
 });

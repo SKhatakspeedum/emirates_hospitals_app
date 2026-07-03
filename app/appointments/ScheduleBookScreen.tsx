@@ -16,6 +16,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.text,
     marginLeft: 5,
-    fontFamily: "Quicksand",
+    fontFamily: FontFamilies.bold,
   },
   scrollContent: {
     paddingBottom: 120,
@@ -377,6 +378,7 @@ const styles = StyleSheet.create({
     color: Colors.label,
     textAlign: "center",
     lineHeight: 18,
+    fontFamily: FontFamilies.medium,
   },
   serviceRow: {
     flexDirection: "row",
@@ -387,8 +389,8 @@ const styles = StyleSheet.create({
   },
   serviceText: {
     fontSize: 18,
-    fontWeight: "700",
     color: Colors.primary,
+    fontFamily: FontFamilies.bold,
   },
   dateSection: {
     marginBottom: 28,
@@ -413,14 +415,14 @@ const styles = StyleSheet.create({
   },
   dateStrText: {
     fontSize: 15,
-    fontWeight: "700",
     color: Colors.primary,
+    fontFamily: FontFamilies.bold,
   },
   dayLabelText: {
     fontSize: 13,
-    fontWeight: "700",
     color: Colors.primary,
     letterSpacing: 0.5,
+    fontFamily: FontFamilies.bold,
   },
   doctorRow: {
     flexDirection: "row",
@@ -435,8 +437,8 @@ const styles = StyleSheet.create({
   },
   doctorNameText: {
     fontSize: 14,
-    fontWeight: "600",
     color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
   },
   slotsGrid: {
     flexDirection: "row",
@@ -462,8 +464,8 @@ const styles = StyleSheet.create({
   },
   slotText: {
     fontSize: 14,
-    fontWeight: "700",
     color: Colors.primary,
+    fontFamily: FontFamilies.bold,
   },
   slotTextActive: {
     color: Colors.background,
@@ -495,6 +497,6 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     fontSize: 16,
     color: Colors.background,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
 });

@@ -15,8 +15,10 @@ import {
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { SPD_USER_NAME } from "@/app/config/config";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 
 const { width } = Dimensions.get("window");
 
@@ -196,7 +198,27 @@ export default function DashboardScreen() {
                 borderBottomLeftRadius: 16,
               }
             ]}
-            onPress={() => navigation.navigate("Appointment")}
+            onPress={async () => {
+              const patientId = await AsyncStorage.getItem("sg_patientId");
+              if (!patientId || patientId === "null") {
+                let phone = "";
+                try {
+                  const fullDataStr = await AsyncStorage.getItem("sg_user_full_data");
+                  if (fullDataStr) {
+                    const parsed = JSON.parse(fullDataStr);
+                    phone = parsed.contact || "";
+                  }
+                } catch (e) {
+                  console.log("Error fetching contact from USER_FULL_DATA", e);
+                }
+                router.push({
+                  pathname: "/patient/register_new_patient",
+                  params: { phone_number: phone },
+                });
+              } else {
+                navigation.navigate("Appointment");
+              }
+            }}
           >
             <Ionicons name="calendar-outline" size={32} color={Colors.secondary} />
             <Text style={styles.actionCardText}>Appointments</Text>
@@ -447,13 +469,13 @@ const styles = StyleSheet.create({
   },
   greetingText: {
     fontSize: 24,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: "#fff",
     marginBottom: 6,
   },
   subGreetingText: {
     fontSize: 14,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: "rgba(255, 255, 255, 0.7)",
   },
   bgCircleLarge: {
@@ -516,7 +538,7 @@ const styles = StyleSheet.create({
   },
   actionCardText: {
     fontSize: 14,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.text,
     marginTop: 8,
   },
@@ -534,7 +556,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 14,
   },
@@ -549,7 +571,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#ccc",
+    backgroundColor: Colors.inactive,
   },
   upcomingDetails: {
     flex: 1,
@@ -557,13 +579,13 @@ const styles = StyleSheet.create({
   },
   upcomingDocName: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 3,
   },
   upcomingDocSpecialty: {
     fontSize: 13,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 8,
   },
@@ -576,7 +598,7 @@ const styles = StyleSheet.create({
   },
   upcomingTimeText: {
     fontSize: 13,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.primary,
   },
   dateBadgeContainer: {
@@ -591,13 +613,13 @@ const styles = StyleSheet.create({
   },
   dateBadgeDay: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
     lineHeight: 18,
   },
   dateBadgeMonth: {
     fontSize: 11,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     color: Colors.secondary,
   },
   sectionHeaderRow: {
@@ -615,7 +637,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 13,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
   },
   providersScrollList: {
@@ -646,19 +668,19 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#ccc",
+    backgroundColor: Colors.inactive,
     marginBottom: 10,
   },
   providerName: {
     fontSize: 13,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     textAlign: "center",
     marginBottom: 4,
   },
   providerSpecialty: {
     fontSize: 11,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.label,
     textAlign: "center",
     lineHeight: 14,
@@ -681,7 +703,7 @@ const styles = StyleSheet.create({
   },
   specialtyLabel: {
     fontSize: 12,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     textAlign: "center",
   },

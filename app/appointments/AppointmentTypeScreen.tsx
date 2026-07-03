@@ -15,6 +15,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
@@ -262,18 +263,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.text,
     marginLeft: 5,
-    fontFamily: "Quicksand",
+    fontFamily: FontFamilies.bold,
   },
   scrollContent: {
     paddingBottom: 40,
   },
   mainTitle: {
     fontSize: 22,
-    fontWeight: "700",
     color: Colors.primary,
     textAlign: "center",
     marginVertical: 24,
-    fontFamily: "Quicksand",
+    fontFamily: FontFamilies.bold,
   },
   searchBarContainer: {
     flexDirection: "row",
@@ -297,6 +297,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
   },
   gridContainer: {
     flexDirection: "row",
@@ -319,10 +320,10 @@ const styles = StyleSheet.create({
   },
   serviceLabel: {
     fontSize: 13,
-    fontWeight: "500",
     color: Colors.text,
     textAlign: "center",
     lineHeight: 18,
+    fontFamily: FontFamilies.bold,
   },
   emptyContainer: {
     width: "100%",
@@ -333,5 +334,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: Colors.label,
+    fontFamily: FontFamilies.medium,
   },
 });

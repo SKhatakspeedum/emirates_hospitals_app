@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { USER_FULL_DATA } from "../config/config";
+import { USER_FULL_DATA, SPD_SELECTED_PATIENT } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import {
@@ -107,6 +107,10 @@ export default function PatientSelectionScreen() {
       const patientId = String(saveRes?.returnData?.[0]?.p_patient_id ?? "");
       if (patientId) {
         await setPatientId(patientId);
+        await AsyncStorage.setItem(
+          SPD_SELECTED_PATIENT,
+          JSON.stringify({ name, age, gender }),
+        );
 
         let userId = await fetchDataFromLocalStorage("sg_userId");
         if (!userId) {
@@ -150,7 +154,7 @@ export default function PatientSelectionScreen() {
   };
 
   const handleSkip = () => {
-    router.push("/patient/registered_patients");
+    router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 
   return (

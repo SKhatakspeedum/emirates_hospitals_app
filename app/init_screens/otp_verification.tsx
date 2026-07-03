@@ -176,10 +176,7 @@ export default function OTPVerificationScreen() {
               ? setPatientId(String(u.usr_patient_id))
               : Promise.resolve(),
           ]);
-          router.replace("/(drawer)/tab_bar_home/HomeScreen");
-          // router.replace({
-          //   pathname: "/init_screens/personal_details",
-          // });
+          router.replace("/patient/registered_patients");
         } else {
           router.replace({
             pathname: "/init_screens/personal_details",

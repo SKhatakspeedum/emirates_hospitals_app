@@ -37,3 +37,4 @@ export const SPD_ORG_LOGO = "sg_org_logo";
 export const SPD_ORG_WEBSITE_URL = "sg_org_website_url";
 export const SPD_INITPAGE_STEPS = "Initpage_Steps";
 export const SPD_ORG_LANGUAGE_CODE = "orglanguage";
+export const SPD_SELECTED_PATIENT = "sg_selected_patient";

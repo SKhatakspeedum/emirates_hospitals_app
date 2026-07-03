@@ -20,7 +20,7 @@ import {
 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { SPD_USER_NAME } from "@/app/config/config";
+import { SPD_USER_NAME, SPD_SELECTED_PATIENT } from "@/app/config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 
@@ -29,13 +29,23 @@ const { width } = Dimensions.get("window");
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const [userProfileName, setUserProfileName] = useState<string>("John Doe");
+  const [patientMeta, setPatientMeta] = useState<{ age: number; gender: string } | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem(SPD_USER_NAME).then((value) => {
-      if (value) {
-        setUserProfileName(value);
+    const loadPatientData = async () => {
+      const patientStr = await AsyncStorage.getItem(SPD_SELECTED_PATIENT);
+      if (patientStr) {
+        try {
+          const p = JSON.parse(patientStr);
+          if (p.name) setUserProfileName(p.name);
+          if (p.age || p.gender) setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
+          return;
+        } catch (_) {}
       }
-    });
+      const name = await AsyncStorage.getItem(SPD_USER_NAME);
+      if (name) setUserProfileName(name);
+    };
+    loadPatientData();
   }, []);
 
   const handleSeeAllProviders = () => {
@@ -195,9 +205,24 @@ export default function DashboardScreen() {
 
           <View style={styles.greetingContainer}>
             <Text style={styles.greetingText}>Morning, {userProfileName}</Text>
-            <Text style={styles.subGreetingText}>
-              You have 4 upcoming appointments.
-            </Text>
+            {patientMeta ? (
+              <View style={styles.patientMetaRow}>
+                <View style={styles.patientMetaBadge}>
+                  <Text style={styles.patientMetaText}>
+                    {patientMeta.age} Yrs
+                  </Text>
+                </View>
+                <View style={styles.patientMetaBadge}>
+                  <Text style={styles.patientMetaText}>
+                    {patientMeta.gender}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.subGreetingText}>
+                You have 4 upcoming appointments.
+              </Text>
+            )}
           </View>
         </View>
 
@@ -775,5 +800,22 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 35,
+  },
+  patientMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    gap: 8,
+  },
+  patientMetaBadge: {
+    backgroundColor: "rgba(255, 255, 255, 0.18)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  patientMetaText: {
+    fontSize: 13,
+    fontFamily: FontFamilies.semiBold,
+    color: "rgba(255, 255, 255, 0.9)",
   },
 });

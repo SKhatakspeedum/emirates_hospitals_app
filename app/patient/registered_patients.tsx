@@ -10,15 +10,23 @@ import {
   StatusBar,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { USER_FULL_DATA } from "../config/config";
+import dayjs from "dayjs";
+import { USER_FULL_DATA, SPD_SELECTED_PATIENT } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
-import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
-import { setPatientId } from "../suggestus_plugin/suggestusClient";
-import dayjs from "dayjs";
+import {
+  callSuggestusAPI,
+  setPatientId,
+} from "../suggestus_plugin/suggestusClient";
+import {
+  fetchDataFromLocalStorage,
+  getDecryptedID,
+} from "../suggestus_plugin/util/util_functions";
+import { spd_processId_config } from "../config/process_id";
 
 interface Patient {
   id: string;
@@ -29,78 +37,194 @@ interface Patient {
   bgColor: string;
 }
 
+const AVATAR_COLORS = ["#E3EEF9", "#F9EAF2", "#EBF7EC", "#FFF3E0", "#F3E5F5"];
+
 export default function RegisteredPatientsScreen() {
   const router = useRouter();
-  const [patients, setPatients] = useState<Patient[]>([
-    {
-      id: "345",
-      name: "John Doe",
-      age: 48,
-      gender: "Male",
-      initials: "JD",
-      bgColor: "#E3EEF9",
-    },
-    {
-      id: "346",
-      name: "Olive Yew",
-      age: 42,
-      gender: "Female",
-      initials: "OY",
-      bgColor: "#F9EAF2",
-    },
-    {
-      id: "347",
-      name: "Jack Slive",
-      age: 20,
-      gender: "Male",
-      initials: "JS",
-      bgColor: "#EBF7EC",
-    },
-  ]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState<{
+    name: string;
+    age: number;
+    gender: string;
+  } | null>(null);
+  const [isAlreadyPatient, setIsAlreadyPatient] = useState(false);
+  const [registeringAsSelf, setRegisteringAsSelf] = useState(false);
 
   useEffect(() => {
-    const loadUserData = async () => {
+    const init = async () => {
       try {
+        const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+
+        // Load user profile to check if already registered as patient
         const fullDataStr = await getDecryptedID(USER_FULL_DATA);
         if (fullDataStr) {
           const parsed = JSON.parse(fullDataStr);
-          const name =
-            parsed.fname ||
-            `${parsed.firstName || "John"} ${parsed.lastName || "Doe"}`;
-          const dob = parsed.dob ? dayjs(parsed.dob) : dayjs("1978-08-10");
-          const age = dayjs().diff(dob, "year");
-          const gender = parsed.gender || "Male";
+          const name = parsed.usr_name ?? "";
+          const dob = parsed.usr_dob;
+          const age = dob ? dayjs().diff(dob, "year") : 0;
+          const gender = parsed.usr_gender ?? "Male";
+          setUserData({ name, age, gender });
+          // If usr_patient_id is already set, user is already registered as a patient
+          if (parsed.usr_patient_id) {
+            setIsAlreadyPatient(true);
+          }
+        }
 
-          setPatients((prev) => [
-            {
-              ...prev[0],
-              name,
-              age,
-              gender,
-              initials: name
-                .split(" ")
-                .map((n: string) => n[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2),
+        // Fetch mapped patients
+        const response = await callSuggestusAPI(
+          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          {
+            p_user_id: userId,
+            p_search_text: "",
+            p_search_additional_attributes: "",
+            p_process_flag: "user_patients",
+          },
+        );
+
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const mapped: Patient[] = response.returnData.map(
+            (p: any, idx: number) => {
+              const name =
+                p.p_patient_name ??
+                p.ptm_name ??
+                [
+                  p.p_patient_first_name,
+                  p.p_patient_middle_name,
+                  p.p_patient_last_name,
+                ]
+                  .filter(Boolean)
+                  .join(" ") ??
+                "Unknown";
+              const age =
+                parseInt(String(p.ptm_age ?? p.p_age ?? "0"), 10) || 0;
+              const gender =
+                p.ptm_gender ?? (p.p_gender === "2" ? "Female" : "Male");
+              return {
+                id: String(p.p_patient_id ?? p.patient_id ?? idx),
+                name,
+                age,
+                gender,
+                initials: name
+                  .split(" ")
+                  .map((n: string) => n[0] ?? "")
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2),
+                bgColor: AVATAR_COLORS[idx % AVATAR_COLORS.length],
+              };
             },
-            prev[1],
-            prev[2],
-          ]);
+          );
+          setPatients(mapped);
         }
       } catch (e) {
-        console.error(
-          "Error loading user data in RegisteredPatientsScreen:",
-          e,
-        );
+        console.error("Error loading registered patients screen:", e);
+      } finally {
+        setLoading(false);
       }
     };
-    loadUserData();
+    init();
   }, []);
 
-  const handleSelectPatient = async (patientId: string) => {
+  const handleRegisterAsPatient = async () => {
+    setRegisteringAsSelf(true);
     try {
-      await setPatientId(patientId);
+      const fullDataStr = await getDecryptedID(USER_FULL_DATA);
+      if (!fullDataStr) {
+        router.replace("/(drawer)/tab_bar_home/HomeScreen");
+        return;
+      }
+
+      const parsed = JSON.parse(fullDataStr);
+      const name: string = parsed.usr_name ?? "";
+      const dob = parsed.usr_dob;
+      const age = dayjs().diff(dob, "year");
+      const gender: string = parsed.usr_gender ?? "Male";
+
+      const nameParts = name.trim().split(" ");
+      const firstName = nameParts[0] ?? "";
+      const lastName = nameParts.slice(1).join(" ");
+      const genderCode = gender === "Female" ? "2" : "1";
+      const formattedDob = dob ? dayjs(dob).format("YYYY-MM-DD") : "";
+
+      const saveRes = await callSuggestusAPI(
+        spd_processId_config.xcelpat_save_trn_patient_master,
+        {
+          p_patient_id: null,
+          p_patient_title: genderCode,
+          p_name: firstName,
+          p_middle_name: "",
+          p_last_name: lastName,
+          p_gender: genderCode,
+          p_dob: formattedDob,
+          p_age: String(age),
+          p_marital_status: "",
+          p_mobile_no: "",
+          "p_mobile_no~CTN": "",
+          p_email: "",
+          ptd_home_phone: "",
+          "ptd_home_phone~CTN": "",
+          p_additional_attribute: {
+            p_father_name: "",
+            p_emirates_id: "",
+            p_identification_type: "",
+            p_identification_num: "",
+          },
+          p_additional_attributes: {},
+        },
+      );
+
+      const patientId = String(saveRes?.returnData?.[0]?.p_patient_id ?? "");
+      if (patientId) {
+        await setPatientId(patientId);
+        await AsyncStorage.setItem(
+          SPD_SELECTED_PATIENT,
+          JSON.stringify({ name, age, gender }),
+        );
+
+        let userId = await fetchDataFromLocalStorage("sg_userId");
+        if (!userId) {
+          userId = parsed?.usr_id ?? "";
+        }
+
+        await callSuggestusAPI(
+          spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
+          {
+            p_patient_id: patientId,
+            p_user_id: userId ?? "",
+            p_additional_attribites: {},
+          },
+        );
+
+        await callSuggestusAPI(
+          spd_processId_config.xcelpat_save_mst_user_entity_mapping_common,
+          {
+            p_patient_id: patientId,
+            p_user_id: userId ?? "",
+            p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_entity_reference_id: patientId,
+            p_entity_reference_code: "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_active_status: "Y",
+            p_process_flag: "Y",
+            p_additional_attribites: {},
+            p_internal_flag: "N",
+          },
+        );
+      }
+    } catch (e) {
+      console.error("Error registering as patient:", e);
+    }
+    setRegisteringAsSelf(false);
+    router.replace("/(drawer)/tab_bar_home/HomeScreen");
+  };
+
+  const handleSelectPatient = async (patient: Patient) => {
+    try {
+      await setPatientId(patient.id);
+      await AsyncStorage.setItem(
+        SPD_SELECTED_PATIENT,
+        JSON.stringify({ name: patient.name, age: patient.age, gender: patient.gender }),
+      );
     } catch (e) {
       console.error("Error setting patient ID:", e);
     }
@@ -112,13 +236,13 @@ export default function RegisteredPatientsScreen() {
   };
 
   const handleSkip = () => {
-    router.push("/init_screens/success");
+    router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Centered Brand Logo */}
         <View style={styles.logoContainer}>
           <Image
             source={require("@/assets/images/logo.png")}
@@ -129,40 +253,92 @@ export default function RegisteredPatientsScreen() {
 
         <Text style={styles.sectionTitle}>Registered patients</Text>
 
-        <View style={styles.patientsList}>
-          {patients.map((patient) => (
-            <TouchableOpacity
-              key={patient.id}
-              style={styles.patientRow}
-              onPress={() => handleSelectPatient(patient.id)}
-              activeOpacity={0.7}
-            >
-              <View
-                style={[
-                  styles.avatarCircle,
-                  { backgroundColor: patient.bgColor },
-                ]}
-              >
-                <Text style={styles.avatarText}>{patient.initials}</Text>
-              </View>
+        {loading ? (
+          <ActivityIndicator
+            color={Colors.primary}
+            style={{ marginTop: 40 }}
+          />
+        ) : (
+          <>
+            {/* Self-registration card — shown only if not already a patient */}
+            {!isAlreadyPatient && userData && (
+              <View style={styles.userCard}>
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.avatarContainer}>
+                    <Ionicons name="person" size={24} color="#FFF" />
+                  </View>
+                  <View style={styles.userInfoCol}>
+                    <Text style={styles.userName}>{userData.name}</Text>
+                    <Text style={styles.userMeta}>
+                      {userData.age} Yrs / {userData.gender}
+                    </Text>
+                  </View>
+                </View>
 
-              <View style={styles.patientInfoCol}>
-                <Text style={styles.patientName}>
-                  {patient.name}{" "}
-                  <Text style={styles.patientMeta}>
-                    {patient.age} Yrs / {patient.gender}
-                  </Text>
-                </Text>
+                <TouchableOpacity
+                  style={styles.registerInnerBtn}
+                  onPress={handleRegisterAsPatient}
+                  disabled={registeringAsSelf}
+                  activeOpacity={0.8}
+                >
+                  {registeringAsSelf ? (
+                    <ActivityIndicator
+                      color={Colors.secondary}
+                      size="small"
+                    />
+                  ) : (
+                    <>
+                      <Text style={styles.registerInnerBtnText}>
+                        Register as a patient
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={Colors.secondary}
+                      />
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
+            )}
 
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={Colors.secondary}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
+            {/* Mapped patients list */}
+            <View style={styles.patientsList}>
+              {patients.map((patient) => (
+                <TouchableOpacity
+                  key={patient.id}
+                  style={styles.patientRow}
+                  onPress={() => handleSelectPatient(patient)}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.avatarCircle,
+                      { backgroundColor: patient.bgColor },
+                    ]}
+                  >
+                    <Text style={styles.avatarText}>{patient.initials}</Text>
+                  </View>
+
+                  <View style={styles.patientInfoCol}>
+                    <Text style={styles.patientName}>
+                      {patient.name}{" "}
+                      <Text style={styles.patientMeta}>
+                        {patient.age} Yrs / {patient.gender}
+                      </Text>
+                    </Text>
+                  </View>
+
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={Colors.secondary}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -219,6 +395,62 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     marginBottom: 16,
     marginTop: 10,
+  },
+  userCard: {
+    backgroundColor: "#F2F7FC",
+    borderRadius: 16,
+    padding: 16,
+    width: "100%",
+    marginBottom: 16,
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+  },
+  avatarContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#A8BFDC",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  userInfoCol: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  userName: {
+    fontSize: 16,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+  },
+  userMeta: {
+    fontSize: 13,
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
+    marginTop: 2,
+  },
+  registerInnerBtn: {
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  registerInnerBtnText: {
+    fontSize: 15,
+    fontFamily: FontFamilies.bold,
+    color: Colors.secondary,
+    marginRight: 6,
   },
   patientsList: {
     width: "100%",

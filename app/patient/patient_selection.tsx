@@ -26,6 +26,15 @@ import {
 import { spd_processId_config } from "../config/process_id";
 import dayjs from "dayjs";
 
+const parseAdditionalAttributes = (raw: any): Record<string, string> => {
+  if (!raw) return {};
+  try {
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch (_) {
+    return {};
+  }
+};
+
 export default function PatientSelectionScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState<{
@@ -40,10 +49,11 @@ export default function PatientSelectionScreen() {
         const fullDataStr = await getDecryptedID(USER_FULL_DATA);
         if (fullDataStr) {
           const parsed = JSON.parse(fullDataStr);
-          const name = parsed.usr_name;
-          const dob = parsed.usr_dob;
-          const age = dayjs().diff(dob, "year");
-          const gender = parsed.usr_gender;
+          const attrs = parseAdditionalAttributes(parsed.additional_attributes);
+          const name = parsed.usr_name ?? "";
+          const dob = attrs.user_dob ?? parsed.usr_dob;
+          const age = dob ? dayjs().diff(dob, "year") : 0;
+          const gender = attrs.user_gender ?? parsed.usr_gender ?? "Male";
           setUserData({ name, age, gender });
         } else {
           setUserData({ name: "John Doe", age: 48, gender: "Male" });
@@ -65,10 +75,11 @@ export default function PatientSelectionScreen() {
       }
 
       const parsed = JSON.parse(fullDataStr);
+      const attrs = parseAdditionalAttributes(parsed.additional_attributes);
       const name: string = parsed.usr_name ?? "";
-      const dob = parsed.usr_dob;
-      const age = dayjs().diff(dob, "year");
-      const gender: string = parsed.usr_gender ?? "Male";
+      const dob = attrs.user_dob ?? parsed.usr_dob;
+      const age = dob ? dayjs().diff(dob, "year") : 0;
+      const gender: string = attrs.user_gender ?? parsed.usr_gender ?? "Male";
       setUserData({ name, age, gender });
 
       const nameParts = name.trim().split(" ");

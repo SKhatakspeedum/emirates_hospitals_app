@@ -39,6 +39,15 @@ interface Patient {
 
 const AVATAR_COLORS = ["#E3EEF9", "#F9EAF2", "#EBF7EC", "#FFF3E0", "#F3E5F5"];
 
+const parseAdditionalAttributes = (raw: any): Record<string, string> => {
+  if (!raw) return {};
+  try {
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch (_) {
+    return {};
+  }
+};
+
 export default function RegisteredPatientsScreen() {
   const router = useRouter();
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -60,10 +69,11 @@ export default function RegisteredPatientsScreen() {
         const fullDataStr = await getDecryptedID(USER_FULL_DATA);
         if (fullDataStr) {
           const parsed = JSON.parse(fullDataStr);
+          const attrs = parseAdditionalAttributes(parsed.additional_attributes);
           const name = parsed.usr_name ?? "";
-          const dob = parsed.usr_dob;
+          const dob = attrs.user_dob ?? parsed.usr_dob;
           const age = dob ? dayjs().diff(dob, "year") : 0;
-          const gender = parsed.usr_gender ?? "Male";
+          const gender = attrs.user_gender ?? parsed.usr_gender ?? "Male";
           setUserData({ name, age, gender });
           // If usr_patient_id is already set, user is already registered as a patient
           if (parsed.usr_patient_id) {
@@ -136,10 +146,11 @@ export default function RegisteredPatientsScreen() {
       }
 
       const parsed = JSON.parse(fullDataStr);
+      const attrs = parseAdditionalAttributes(parsed.additional_attributes);
       const name: string = parsed.usr_name ?? "";
-      const dob = parsed.usr_dob;
-      const age = dayjs().diff(dob, "year");
-      const gender: string = parsed.usr_gender ?? "Male";
+      const dob = attrs.user_dob ?? parsed.usr_dob;
+      const age = dob ? dayjs().diff(dob, "year") : 0;
+      const gender: string = attrs.user_gender ?? parsed.usr_gender ?? "Male";
 
       const nameParts = name.trim().split(" ");
       const firstName = nameParts[0] ?? "";

@@ -10,6 +10,7 @@ import {
   StatusBar,
   Platform,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -31,6 +32,9 @@ interface Patient {
 
 export default function RegisteredPatientsScreen() {
   const router = useRouter();
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 680;
+
   const [patients, setPatients] = useState<Patient[]>([
     {
       id: "345",
@@ -116,13 +120,18 @@ export default function RegisteredPatientsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: isSmallScreen ? 40 : 80 }
+        ]}
+      >
         {/* Centered Brand Logo */}
-        <View style={styles.logoContainer}>
+        <View style={[styles.logoContainer, { marginVertical: isSmallScreen ? 15 : 50 }]}>
           <Image
             source={require("@/assets/images/logo.png")}
-            style={styles.logoImg}
+            style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
             resizeMode="contain"
           />
         </View>
@@ -188,7 +197,7 @@ export default function RegisteredPatientsScreen() {
           <Text style={styles.skipBtnText}>Skip &gt;</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -199,18 +208,15 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginVertical: 50,
     width: "100%",
   },
   logoImg: {
     width: "80%",
     maxWidth: 280,
     aspectRatio: 4,
-    height: 70,
   },
   content: {
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === "ios" ? 40 : 60,
     paddingBottom: 24,
   },
   sectionTitle: {

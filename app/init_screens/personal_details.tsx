@@ -462,11 +462,42 @@ export default function PersonalDetailsScreen() {
                     max={dayjs().format("YYYY-MM-DD")}
                     onChange={(e) => {
                       if (e.target.value) {
-                        setDob(new Date(e.target.value));
+                        const dateStr = e.target.value;
+                        const selectedDate = new Date(dateStr);
+                        const year = selectedDate.getFullYear();
+                        const today = new Date();
+                        const minDate = new Date(1900, 0, 1);
+
+                        // Only clamp if the year is >= 1000 (meaning they finished typing 4 digits)
+                        // This prevents wiping out intermediate typing like year "0020"
+                        if (year >= 1000) {
+                          if (selectedDate < minDate) {
+                            // Prevent years before 1900
+                            setDob(minDate);
+                          } else if (year > today.getFullYear()) {
+                            // Prevent future years, but allow future months in the current year temporarily
+                            // so users can edit the Month before editing the Year!
+                            setDob(today);
+                          } else {
+                            // Allow valid years (onBlur will handle exact future date clamping)
+                            setDob(selectedDate);
+                          }
+                        } else {
+                          setDob(selectedDate);
+                        }
                       }
                     }}
                     onFocus={() => setFocusedField("dob")}
-                    onBlur={() => setFocusedField("")}
+                    onBlur={() => {
+                      setFocusedField("");
+                      const today = new Date();
+                      const minDate = new Date(1900, 0, 1);
+                      if (dob > today) {
+                        setDob(today);
+                      } else if (dob < minDate) {
+                        setDob(minDate);
+                      }
+                    }}
                     style={{
                       flex: 1,
                       border: "none",
@@ -592,7 +623,16 @@ export default function PersonalDetailsScreen() {
         minimumDate={new Date(1900, 0, 1)}
         maximumDate={new Date()}
         onConfirm={(date) => {
-          setDob(date);
+          const today = new Date();
+          const minDate = new Date(1900, 0, 1);
+
+          if (date > today) {
+            setDob(today);
+          } else if (date < minDate) {
+            setDob(minDate);
+          } else {
+            setDob(date);
+          }
           setShowDatePicker(false);
         }}
         onCancel={() => setShowDatePicker(false)}

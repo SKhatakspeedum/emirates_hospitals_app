@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,6 +29,9 @@ import dayjs from "dayjs";
 
 export default function PatientSelectionScreen() {
   const router = useRouter();
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 680;
+
   const [userData, setUserData] = useState<{
     name: string;
     age: number;
@@ -112,7 +116,7 @@ export default function PatientSelectionScreen() {
         if (!userId) {
           try {
             userId = parsed?.usr_id ?? "";
-          } catch (_) {}
+          } catch (_) { }
         }
 
         await callSuggestusAPI(
@@ -154,12 +158,20 @@ export default function PatientSelectionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: isSmallScreen ? 55 : 130, // 80 (content) + 50 (logo margin)
+            paddingBottom: isSmallScreen ? 15 : 50,
+          },
+        ]}
+      >
         <Image
           source={require("@/assets/images/logo.png")}
-          style={styles.logoImg}
+          style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
           resizeMode="contain"
         />
       </View>
@@ -220,7 +232,7 @@ export default function PatientSelectionScreen() {
           <Text style={styles.skipBtnText}>Skip &gt;</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -231,13 +243,10 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    paddingTop: Platform.OS === "android" ? 40 : 20,
-    paddingBottom: 20,
     width: "100%",
   },
   logoImg: {
-    width: 260,
-    height: 60,
+    width: 280,
   },
   content: {
     flex: 1,

@@ -142,10 +142,6 @@ export default function OTPVerificationScreen() {
       );
 
       if (res?.returnCode === true) {
-        Toast.show({
-          type: "success",
-          text1: "Phone verified successfully.",
-        });
 
         const validateRes = await callSuggestusAPI(
           spd_processId_config.sgconf_util_validate_user_v2,
@@ -176,11 +172,21 @@ export default function OTPVerificationScreen() {
               ? setPatientId(String(u.usr_patient_id))
               : Promise.resolve(),
           ]);
+          Toast.show({
+            type: "success",
+            text1: "Phone verified successfully.",
+            visibilityTime: 3000,
+          });
           router.replace("/(drawer)/tab_bar_home/HomeScreen");
           // router.replace({
           //   pathname: "/init_screens/personal_details",
           // });
         } else {
+          Toast.show({
+            type: "success",
+            text1: "Phone verified successfully.",
+            visibilityTime: 3000,
+          });
           router.replace({
             pathname: "/init_screens/personal_details",
             params: { phone_number: rawPhone },
@@ -343,7 +349,7 @@ export default function OTPVerificationScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-      <Toast />
+      {/* <Toast /> */}
     </View>
   );
 }

@@ -19,11 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import {
-  IS_LOGGED_IN,
-  USER_FULL_DATA,
-  SPD_USER_NAME,
-} from "../config/config";
+import { IS_LOGGED_IN, USER_FULL_DATA, SPD_USER_NAME } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import {
@@ -85,7 +81,12 @@ export default function PersonalDetailsScreen() {
   const isFirstNameValid = firstName.trim().length > 0;
   const isLastNameValid = lastName.trim().length > 0;
   const isGenderValid = gender !== "";
-  const isFormValid = isEmiratesIdValid && isPassportNoValid && isFirstNameValid && isLastNameValid && isGenderValid;
+  const isFormValid =
+    isEmiratesIdValid &&
+    isPassportNoValid &&
+    isFirstNameValid &&
+    isLastNameValid &&
+    isGenderValid;
 
   const handleContinue = async () => {
     if (isResident && !emiratesId.trim()) {
@@ -250,7 +251,8 @@ export default function PersonalDetailsScreen() {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Something went wrong while saving your details. Please try again.",
+        text2:
+          "Something went wrong while saving your details. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -272,15 +274,13 @@ export default function PersonalDetailsScreen() {
           showsHorizontalScrollIndicator={false}
           bounces={false}
         >
-          <View style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}>
-
+          <View
+            style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}
+          >
             {/* Resident / Non-Resident Segmented Control */}
             <View style={styles.tabContainer}>
               <TouchableOpacity
-                style={[
-                  styles.tabButton,
-                  isResident && styles.activeTabButton,
-                ]}
+                style={[styles.tabButton, isResident && styles.activeTabButton]}
                 onPress={() => setIsResident(true)}
                 activeOpacity={0.8}
               >
@@ -329,10 +329,12 @@ export default function PersonalDetailsScreen() {
                 >
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="123-0000-5505123-1"
+                    placeholder="000-0000-0000000-0"
                     placeholderTextColor={Colors.inactive}
                     value={emiratesId}
-                    onChangeText={(text) => setEmiratesId(formatEmiratesId(text))}
+                    onChangeText={(text) =>
+                      setEmiratesId(formatEmiratesId(text))
+                    }
                     onFocus={() => setFocusedField("emiratesId")}
                     onBlur={() => setFocusedField("")}
                     keyboardType="numeric"
@@ -352,7 +354,7 @@ export default function PersonalDetailsScreen() {
                 >
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="K5012250"
+                    placeholder="A1234567"
                     placeholderTextColor={Colors.inactive}
                     value={passportNo}
                     onChangeText={(text) => setPassportNo(formatPassport(text))}
@@ -368,7 +370,9 @@ export default function PersonalDetailsScreen() {
 
             {/* First Name & Last Name row */}
             <View style={styles.rowContainer}>
-              <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
+              <View
+                style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
+              >
                 <Text style={styles.inputLabel}>First name</Text>
                 <View
                   style={[
@@ -379,12 +383,16 @@ export default function PersonalDetailsScreen() {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={focusedField === "firstName" ? Colors.secondary : Colors.label}
+                    color={
+                      focusedField === "firstName"
+                        ? Colors.secondary
+                        : Colors.label
+                    }
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="John"
+                    // placeholder="John"
                     placeholderTextColor={Colors.inactive}
                     value={firstName}
                     onChangeText={setFirstName}
@@ -407,12 +415,16 @@ export default function PersonalDetailsScreen() {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={focusedField === "lastName" ? Colors.secondary : Colors.label}
+                    color={
+                      focusedField === "lastName"
+                        ? Colors.secondary
+                        : Colors.label
+                    }
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="Doe"
+                    // placeholder="Doe"
                     placeholderTextColor={Colors.inactive}
                     value={lastName}
                     onChangeText={setLastName}
@@ -438,7 +450,9 @@ export default function PersonalDetailsScreen() {
                   <Ionicons
                     name="calendar-outline"
                     size={20}
-                    color={focusedField === "dob" ? Colors.secondary : Colors.label}
+                    color={
+                      focusedField === "dob" ? Colors.secondary : Colors.label
+                    }
                     style={styles.inputIcon}
                   />
                   <input
@@ -530,22 +544,33 @@ export default function PersonalDetailsScreen() {
                         gender === "Female" && styles.radioOuterActive,
                       ]}
                     >
-                      {gender === "Female" && <View style={styles.radioInner} />}
+                      {gender === "Female" && (
+                        <View style={styles.radioInner} />
+                      )}
                     </View>
                     <Text style={styles.genderText}>Female</Text>
                   </View>
                 </TouchableOpacity>
               </View>
             </View>
-
           </View>
         </ScrollView>
 
-        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
+        <View
+          style={[
+            styles.bottomBtnContainer,
+            {
+              paddingBottom:
+                Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24,
+            },
+          ]}
+        >
           <TouchableOpacity
             style={[
               styles.continueBtn,
-              isFormValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
+              isFormValid
+                ? styles.continueBtnEnabled
+                : styles.continueBtnDisabled,
             ]}
             disabled={loading || !isFormValid}
             onPress={handleContinue}
@@ -571,11 +596,8 @@ export default function PersonalDetailsScreen() {
           setShowDatePicker(false);
         }}
         onCancel={() => setShowDatePicker(false)}
-
       />
       <Toast />
-
-
     </View>
   );
 }
@@ -830,5 +852,4 @@ const styles: any = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 10,
   },
-
 });

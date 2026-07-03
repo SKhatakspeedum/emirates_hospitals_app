@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -60,6 +61,8 @@ export default function RegisteredPatientsScreen() {
   } | null>(null);
   const [isAlreadyPatient, setIsAlreadyPatient] = useState(false);
   const [registeringAsSelf, setRegisteringAsSelf] = useState(false);
+  const { height: screenHeight } = Dimensions.get("window");
+  const isSmallScreen = screenHeight < 680;
 
   useEffect(() => {
     const init = async () => {
@@ -196,9 +199,14 @@ export default function RegisteredPatientsScreen() {
 
         // Mark user as self-registered patient so the card hides on reload
         try {
-          const stored = JSON.parse(await getDecryptedID(USER_FULL_DATA) ?? "{}");
+          const stored = JSON.parse(
+            (await getDecryptedID(USER_FULL_DATA)) ?? "{}",
+          );
           stored.usr_patient_id = patientId;
-          await saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(stored));
+          await saveDataFromLocalStorage(
+            USER_FULL_DATA,
+            JSON.stringify(stored),
+          );
         } catch (_) {}
 
         let userId = await fetchDataFromLocalStorage("sg_userId");
@@ -242,7 +250,11 @@ export default function RegisteredPatientsScreen() {
       await setPatientId(patient.id);
       await AsyncStorage.setItem(
         SPD_SELECTED_PATIENT,
-        JSON.stringify({ name: patient.name, age: patient.age, gender: patient.gender }),
+        JSON.stringify({
+          name: patient.name,
+          age: patient.age,
+          gender: patient.gender,
+        }),
       );
     } catch (e) {
       console.error("Error setting patient ID:", e);
@@ -275,13 +287,23 @@ export default function RegisteredPatientsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.logoContainer}>
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: isSmallScreen ? 40 : 80 },
+        ]}
+      >
+        {/* Centered Brand Logo */}
+        <View
+          style={[
+            styles.logoContainer,
+            { marginVertical: isSmallScreen ? 15 : 50 },
+          ]}
+        >
           <Image
             source={require("@/assets/images/logo.png")}
-            style={styles.logoImg}
+            style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
             resizeMode="contain"
           />
         </View>
@@ -331,10 +353,7 @@ export default function RegisteredPatientsScreen() {
         )}
 
         {loading ? (
-          <ActivityIndicator
-            color={Colors.primary}
-            style={{ marginTop: 40 }}
-          />
+          <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
         ) : (
           <>
             {/* Mapped patients list */}
@@ -399,7 +418,7 @@ export default function RegisteredPatientsScreen() {
           <Text style={styles.skipBtnText}>Skip &gt;</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -410,18 +429,15 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginVertical: 50,
     width: "100%",
   },
   logoImg: {
     width: "80%",
     maxWidth: 280,
     aspectRatio: 4,
-    height: 70,
   },
   content: {
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === "ios" ? 40 : 60,
     paddingBottom: 24,
   },
   sectionTitle: {

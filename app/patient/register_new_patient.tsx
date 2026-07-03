@@ -157,7 +157,7 @@ export default function RegisterNewPatient() {
       if (!userId) {
         const fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
         if (fullDataStr) {
-          try { userId = JSON.parse(fullDataStr)?.usr_id ?? ""; } catch (_) {}
+          try { userId = JSON.parse(fullDataStr)?.usr_id ?? ""; } catch (_) { }
         }
       }
 
@@ -224,7 +224,7 @@ export default function RegisterNewPatient() {
           bounces={false}
         >
           <View
-            style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}
+            style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}
           >
             {/* Subheading instruction text */}
             <Text style={styles.subtext}>
@@ -386,11 +386,36 @@ export default function RegisterNewPatient() {
                     max={dayjs().format("YYYY-MM-DD")}
                     onChange={(e) => {
                       if (e.target.value) {
-                        setDob(new Date(e.target.value));
+                        const dateStr = e.target.value;
+                        const selectedDate = new Date(dateStr);
+                        const year = selectedDate.getFullYear();
+                        const today = new Date();
+                        const minDate = new Date(1900, 0, 1);
+
+                        if (year >= 1000) {
+                          if (selectedDate < minDate) {
+                            setDob(minDate);
+                          } else if (year > today.getFullYear()) {
+                            setDob(today);
+                          } else {
+                            setDob(selectedDate);
+                          }
+                        } else {
+                          setDob(selectedDate);
+                        }
                       }
                     }}
                     onFocus={() => setFocusedField("dob")}
-                    onBlur={() => setFocusedField("")}
+                    onBlur={() => {
+                      setFocusedField("");
+                      const today = new Date();
+                      const minDate = new Date(1900, 0, 1);
+                      if (dob > today) {
+                        setDob(today);
+                      } else if (dob < minDate) {
+                        setDob(minDate);
+                      }
+                    }}
                     style={{
                       flex: 1,
                       border: "none",
@@ -514,7 +539,16 @@ export default function RegisterNewPatient() {
         minimumDate={new Date(1900, 0, 1)}
         maximumDate={new Date()}
         onConfirm={(date) => {
-          setDob(date);
+          const today = new Date();
+          const minDate = new Date(1900, 0, 1);
+
+          if (date > today) {
+            setDob(today);
+          } else if (date < minDate) {
+            setDob(minDate);
+          } else {
+            setDob(date);
+          }
           setShowDatePicker(false);
         }}
         onCancel={() => setShowDatePicker(false)}
@@ -571,7 +605,7 @@ const styles: any = StyleSheet.create({
   subtext: {
     fontSize: 14,
     fontFamily: FontFamilies.medium,
-    color: Colors.label,
+    color: Colors.text,
     marginBottom: 24,
     lineHeight: 20,
     textAlign: "left",

@@ -22,17 +22,19 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 import { USER_FULL_DATA } from "../config/config";
+import { router } from "expo-router";
 
 export default function PatientDetailsScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { doctorId, doctorName, specialty, avatar, hospital } = route.params || {
-    doctorId: "1",
-    doctorName: "Dr. Harry Dewson",
-    specialty: "Dermatologist",
-    avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-    hospital: "",
-  };
+  const { doctorId, doctorName, specialty, avatar, hospital } =
+    route.params || {
+      doctorId: "1",
+      doctorName: "Dr. Harry Dewson",
+      specialty: "Dermatologist",
+      avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+      hospital: "",
+    };
 
   const [patients, setPatients] = useState([
     {
@@ -66,14 +68,17 @@ export default function PatientDetailsScreen() {
   }, []);
 
   const fetchPatientData = async (p_patient_id?: string) => {
+    const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
     setIsLoading(true);
     try {
       const response = await callSuggestusAPI(
         spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
         {
-          p_patient_id: p_patient_id,
+          p_user_id: userId,
+          // p_patient_id: p_patient_id,
           p_search_text: "",
           p_search_additional_attributes: "",
+          p_process_flag: "user_patients",
         },
         "",
         "",
@@ -88,7 +93,11 @@ export default function PatientDetailsScreen() {
           name:
             p.p_patient_name ??
             p.ptm_name ??
-            [p.p_patient_first_name, p.p_patient_middle_name, p.p_patient_last_name]
+            [
+              p.p_patient_first_name,
+              p.p_patient_middle_name,
+              p.p_patient_last_name,
+            ]
               .filter(Boolean)
               .join(" ") ??
             "",
@@ -205,7 +214,9 @@ export default function PatientDetailsScreen() {
       if (!userId) {
         const fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
         if (fullDataStr) {
-          try { userId = JSON.parse(fullDataStr)?.usr_id ?? ""; } catch (_) {}
+          try {
+            userId = JSON.parse(fullDataStr)?.usr_id ?? "";
+          } catch (_) {}
         }
       }
       await callSuggestusAPI(
@@ -325,7 +336,9 @@ export default function PatientDetailsScreen() {
                   opacity: pressed ? 0.5 : 1,
                 },
               ]}
-              onPress={() => setShowAddForm(true)}
+              onPress={() => {
+                router.replace("/patient/register_new_patient");
+              }}
             >
               <Ionicons
                 name="person-add-outline"

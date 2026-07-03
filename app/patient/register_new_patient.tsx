@@ -22,10 +22,7 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { IS_LOGGED_IN, USER_FULL_DATA, SPD_USER_NAME } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
-import {
-  setEncryptedID,
-  getDecryptedID,
-} from "../suggestus_plugin/util/util_functions";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 import {
   callSuggestusAPI,
   setPatientId,
@@ -58,7 +55,8 @@ const formatPassport = (text: string) => {
 
 export default function RegisterNewPatient() {
   const router = useRouter();
-  const route = useRoute();
+  const route = useRoute<any>();
+  const isSelf = (route.params as any)?.isSelf === true || (route.params as any)?.isSelf === "true";
   const [emiratesId, setEmiratesId] = useState("");
   const [passportNo, setPassportNo] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -105,10 +103,83 @@ export default function RegisterNewPatient() {
 
     setLoading(true);
     try {
-      // 3. Statically set patient ID to 345
-      await setPatientId("345");
+      const genderCode = gender === "Male" ? "1" : "2";
+      const formattedDob = dayjs(dob).format("YYYY-MM-DD");
+      const emiratesIdClean = emiratesId.replace(/-/g, "");
 
-      // 4. Mark the user as logged in
+      const saveRes = await callSuggestusAPI(
+        spd_processId_config.xcelpat_save_trn_patient_master,
+        {
+          p_patient_id: null,
+          p_patient_title: genderCode,
+          p_name: firstName.trim(),
+          p_middle_name: "",
+          p_last_name: lastName.trim(),
+          p_gender: genderCode,
+          p_dob: formattedDob,
+          p_age: "",
+          p_marital_status: "",
+          p_mobile_no: "",
+          "p_mobile_no~CTN": "",
+          p_email: "",
+          ptd_home_phone: "",
+          "ptd_home_phone~CTN": "",
+          p_additional_attribute: {
+            p_father_name: "",
+            p_emirates_id: emiratesIdClean,
+            p_identification_type: passportNo ? "Passport Number" : "",
+            p_identification_num: passportNo,
+          },
+          p_additional_attributes: {},
+        },
+      );
+
+      const patientId = String(saveRes?.returnData?.[0]?.p_patient_id ?? "");
+      if (!patientId) {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: saveRes?.returnMessage ?? "Failed to save patient. Please try again.",
+        });
+        return;
+      }
+
+      await setPatientId(patientId);
+
+      let userId = await fetchDataFromLocalStorage("sg_userId");
+      if (!userId) {
+        const fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
+        if (fullDataStr) {
+          try { userId = JSON.parse(fullDataStr)?.usr_id ?? ""; } catch (_) {}
+        }
+      }
+
+      if (isSelf) {
+        await callSuggestusAPI(
+          spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
+          {
+            p_patient_id: patientId,
+            p_user_id: userId ?? "",
+            p_additional_attribites: {},
+          },
+        );
+      } else {
+        await callSuggestusAPI(
+          spd_processId_config.xcelpat_save_mst_user_entity_mapping_common,
+          {
+            p_patient_id: patientId,
+            p_user_id: userId ?? "",
+            p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_entity_reference_id: patientId,
+            p_entity_reference_code: "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_active_status: "Y",
+            p_process_flag: "Y",
+            p_additional_attribites: {},
+            p_internal_flag: "N",
+          },
+        );
+      }
+
       await AsyncStorage.setItem(IS_LOGGED_IN, "true");
 
       Toast.show({
@@ -123,8 +194,7 @@ export default function RegisterNewPatient() {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2:
-          "Something went wrong while saving your details. Please try again.",
+        text2: "Something went wrong while saving your details. Please try again.",
       });
     } finally {
       setLoading(false);

@@ -216,6 +216,7 @@ export default function DashboardScreen() {
             ]}
             onPress={async () => {
               const patientId = await AsyncStorage.getItem("sg_patientId");
+
               if (!patientId || patientId === "null") {
                 let phone = "";
                 try {
@@ -228,6 +229,7 @@ export default function DashboardScreen() {
                 } catch (e) {
                   console.log("Error fetching contact from USER_FULL_DATA", e);
                 }
+                console.log(":>>", 11111111111);
                 router.push({
                   pathname: "/patient/register_new_patient",
                   params: { phone_number: phone },

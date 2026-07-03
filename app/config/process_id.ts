@@ -91,6 +91,8 @@ export const spd_processId_config = {
     "xcelpat_get_trn_patient_details_ehg_pntapp",
   xcelpat_update_trn_patient_user_mapping_ehg_pntapp:
     "xcelpat_update_trn_patient_user_mapping_ehg_pntapp",
+  xcelpat_save_mst_user_entity_mapping_common:
+    "xcelpat_save_mst_user_entity_mapping_common",
   spdonmood9_get_md_category_group_module_recent_played_wrapper:
     "spdonmood9_get_md_category_group_module_recent_played_wrapper",
   spdonmood9_save_md_user_played_sessions:

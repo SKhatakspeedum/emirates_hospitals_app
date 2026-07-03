@@ -15,8 +15,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { USER_FULL_DATA } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
-import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
-import { setPatientId } from "../suggestus_plugin/suggestusClient";
+import {
+  getDecryptedID,
+  fetchDataFromLocalStorage,
+} from "../suggestus_plugin/util/util_functions";
+import {
+  callSuggestusAPI,
+  setPatientId,
+} from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
 import dayjs from "dayjs";
 
 export default function PatientSelectionScreen() {
@@ -52,17 +59,88 @@ export default function PatientSelectionScreen() {
   const handleRegisterAsPatient = async () => {
     try {
       const fullDataStr = await getDecryptedID(USER_FULL_DATA);
-      if (fullDataStr) {
-        const parsed = JSON.parse(fullDataStr);
-        const name = parsed.usr_name;
-        const dob = parsed.usr_dob;
-        const age = dayjs().diff(dob, "year");
-        const gender = parsed.usr_gender;
-        setUserData({ name, age, gender });
-        await setPatientId(parsed.usr_patient_id);
+      if (!fullDataStr) {
+        router.replace("/(drawer)/tab_bar_home/HomeScreen");
+        return;
+      }
+
+      const parsed = JSON.parse(fullDataStr);
+      const name: string = parsed.usr_name ?? "";
+      const dob = parsed.usr_dob;
+      const age = dayjs().diff(dob, "year");
+      const gender: string = parsed.usr_gender ?? "Male";
+      setUserData({ name, age, gender });
+
+      const nameParts = name.trim().split(" ");
+      const firstName = nameParts[0] ?? "";
+      const lastName = nameParts.slice(1).join(" ");
+      const genderCode = gender === "Female" ? "2" : "1";
+      const formattedDob = dob ? dayjs(dob).format("YYYY-MM-DD") : "";
+
+      const saveRes = await callSuggestusAPI(
+        spd_processId_config.xcelpat_save_trn_patient_master,
+        {
+          p_patient_id: null,
+          p_patient_title: genderCode,
+          p_name: firstName,
+          p_middle_name: "",
+          p_last_name: lastName,
+          p_gender: genderCode,
+          p_dob: formattedDob,
+          p_age: String(age),
+          p_marital_status: "",
+          p_mobile_no: "",
+          "p_mobile_no~CTN": "",
+          p_email: "",
+          ptd_home_phone: "",
+          "ptd_home_phone~CTN": "",
+          p_additional_attribute: {
+            p_father_name: "",
+            p_emirates_id: "",
+            p_identification_type: "",
+            p_identification_num: "",
+          },
+          p_additional_attributes: {},
+        },
+      );
+
+      const patientId = String(saveRes?.returnData?.[0]?.p_patient_id ?? "");
+      if (patientId) {
+        await setPatientId(patientId);
+
+        let userId = await fetchDataFromLocalStorage("sg_userId");
+        if (!userId) {
+          try {
+            userId = parsed?.usr_id ?? "";
+          } catch (_) {}
+        }
+
+        await callSuggestusAPI(
+          spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
+          {
+            p_patient_id: patientId,
+            p_user_id: userId ?? "",
+            p_additional_attribites: {},
+          },
+        );
+
+        await callSuggestusAPI(
+          spd_processId_config.xcelpat_save_mst_user_entity_mapping_common,
+          {
+            p_patient_id: patientId,
+            p_user_id: userId ?? "",
+            p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_entity_reference_id: patientId,
+            p_entity_reference_code: "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_active_status: "Y",
+            p_process_flag: "Y",
+            p_additional_attribites: {},
+            p_internal_flag: "N",
+          },
+        );
       }
     } catch (e) {
-      console.error("Error setting static patient ID:", e);
+      console.error("Error registering as patient:", e);
     }
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };

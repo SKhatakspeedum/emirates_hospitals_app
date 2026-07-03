@@ -164,7 +164,10 @@ export default function PatientSelectionScreen() {
     router.push("/patient/register_new_patient");
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    try {
+      await AsyncStorage.removeItem("sg_patientId");
+    } catch (_) {}
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 

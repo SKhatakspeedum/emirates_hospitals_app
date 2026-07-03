@@ -246,7 +246,23 @@ export default function RegisteredPatientsScreen() {
     router.push("/patient/register_new_patient");
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    try {
+      await AsyncStorage.removeItem("sg_patientId");
+      const fullDataStr = await getDecryptedID(USER_FULL_DATA);
+      if (fullDataStr) {
+        const parsed = JSON.parse(fullDataStr);
+        const attrs = parseAdditionalAttributes(parsed.additional_attributes);
+        const name = parsed.usr_name ?? "";
+        const dob = attrs.user_dob ?? parsed.usr_dob;
+        const age = dob ? dayjs().diff(dob, "year") : 0;
+        const gender = attrs.user_gender ?? parsed.usr_gender ?? "Male";
+        await AsyncStorage.setItem(
+          SPD_SELECTED_PATIENT,
+          JSON.stringify({ name, age, gender }),
+        );
+      }
+    } catch (_) {}
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 

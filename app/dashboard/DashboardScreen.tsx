@@ -251,10 +251,7 @@ export default function DashboardScreen() {
                     const parsed = JSON.parse(fullDataStr);
                     phone = parsed.contact || "";
                   }
-                } catch (e) {
-                  console.log("Error fetching contact from USER_FULL_DATA", e);
-                }
-                console.log(":>>", 11111111111);
+                } catch (e) {}
                 router.push({
                   pathname: "/patient/register_new_patient",
                   params: { phone_number: phone },

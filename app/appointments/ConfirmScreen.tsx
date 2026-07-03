@@ -80,7 +80,6 @@ export default function ConfirmScreen() {
   };
 
   const handleDone = async () => {
-    console.log("apptId Final:>>", apptId);
     if (isSaving) return;
     setIsSaving(true);
     try {

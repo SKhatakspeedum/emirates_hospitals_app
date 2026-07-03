@@ -183,7 +183,6 @@ export default function ScheduleBookScreen() {
       return;
     }
 
-    console.log("apptId 1111:>>", apptId);
     navigation.navigate("ConfirmScreen", {
       apptId,
       doctorId,

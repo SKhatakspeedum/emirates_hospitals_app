@@ -123,7 +123,6 @@ export default function PersonalDetailsScreen() {
       const lName = lastName.trim();
       const name = `${fName} ${lName}`;
       const rawPhone = (route.params as any)?.phone_number ?? "";
-
       // 1. Save Full Name encrypted
       await setEncryptedID(SPD_USER_NAME, name);
 
@@ -154,7 +153,6 @@ export default function PersonalDetailsScreen() {
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
 
-      /*
       // 3. Register user via signup wrapper (p_register_new_patient_flag is 'N' for normal signup)
       const signupRes = await callSuggestusAPI(
         spd_processId_config.sgconf_save_mst_user_from_signup_wrapper,
@@ -200,7 +198,10 @@ export default function PersonalDetailsScreen() {
           },
         );
 
-        if (validateRes?.returnCode === true && validateRes?.returnData?.length > 0) {
+        if (
+          validateRes?.returnCode === true &&
+          validateRes?.returnData?.length > 0
+        ) {
           const u = validateRes.returnData[0];
           await Promise.all([
             setUserId(String(u.usr_id ?? "")),
@@ -210,13 +211,17 @@ export default function PersonalDetailsScreen() {
             saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
             saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
             saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(u)),
-            u.usr_patient_id ? setPatientId(String(u.usr_patient_id)) : Promise.resolve(),
+            u.usr_patient_id
+              ? setPatientId(String(u.usr_patient_id))
+              : Promise.resolve(),
           ]);
         }
       } catch (validateErr) {
-        console.error("Error validation/fetching user profile in personal_details:", validateErr);
+        console.error(
+          "Error validation/fetching user profile in personal_details:",
+          validateErr,
+        );
       }
-      */
 
       // 3. Statically set session variables
       await AsyncStorage.setItem(IS_LOGGED_IN, "true");

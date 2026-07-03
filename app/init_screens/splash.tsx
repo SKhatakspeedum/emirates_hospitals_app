@@ -34,7 +34,6 @@ export default function SplashScreen() {
       // Step 1: Create Suggestus session (footprint + session token)
       setLoadingText("Creating session...");
       const sessionResult = await initializeSuggestus();
-      console.log("sessionResult:>>", sessionResult);
       if (!sessionResult?.returnCode) {
         // Retry once with session-only call (footprint may already exist)
         setLoadingText("Retrying session...");
@@ -65,7 +64,6 @@ export default function SplashScreen() {
   };
 
   useEffect(() => {
-    console.log(":>>", 111111);
     init();
   }, []);
 

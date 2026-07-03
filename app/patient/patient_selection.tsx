@@ -33,12 +33,10 @@ export default function PatientSelectionScreen() {
         const fullDataStr = await getDecryptedID(USER_FULL_DATA);
         if (fullDataStr) {
           const parsed = JSON.parse(fullDataStr);
-          const name =
-            parsed.fname ||
-            `${parsed.firstName || "John"} ${parsed.lastName || "Doe"}`;
-          const dob = parsed.dob ? dayjs(parsed.dob) : dayjs("1978-08-10");
+          const name = parsed.usr_name;
+          const dob = parsed.usr_dob;
           const age = dayjs().diff(dob, "year");
-          const gender = parsed.gender || "Male";
+          const gender = parsed.usr_gender;
           setUserData({ name, age, gender });
         } else {
           setUserData({ name: "John Doe", age: 48, gender: "Male" });
@@ -53,7 +51,16 @@ export default function PatientSelectionScreen() {
 
   const handleRegisterAsPatient = async () => {
     try {
-      await setPatientId("345");
+      const fullDataStr = await getDecryptedID(USER_FULL_DATA);
+      if (fullDataStr) {
+        const parsed = JSON.parse(fullDataStr);
+        const name = parsed.usr_name;
+        const dob = parsed.usr_dob;
+        const age = dayjs().diff(dob, "year");
+        const gender = parsed.usr_gender;
+        setUserData({ name, age, gender });
+        await setPatientId(parsed.usr_patient_id);
+      }
     } catch (e) {
       console.error("Error setting static patient ID:", e);
     }

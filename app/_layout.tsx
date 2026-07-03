@@ -144,7 +144,6 @@ export default function RootLayout() {
   const init = async () => {
     try {
       const sessionResult = await initializeSuggestus();
-      console.log("sessionResult:>>", sessionResult);
       if (!sessionResult?.returnCode) {
         // Retry once with session-only call (footprint may already exist)
 

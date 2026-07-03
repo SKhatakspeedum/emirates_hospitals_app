@@ -50,12 +50,42 @@ const DEFAULT_SERVICE_STYLES = [
 ];
 
 const FALLBACK_SERVICES: Service[] = [
-  { id: "counselling", title: "Counselling", description: "Counselling", ...DEFAULT_SERVICE_STYLES[0] },
-  { id: "clinical", title: "Clinical assessments", description: "Clinical assessments", ...DEFAULT_SERVICE_STYLES[1] },
-  { id: "family", title: "Family therapy", description: "Family therapy", ...DEFAULT_SERVICE_STYLES[2] },
-  { id: "cognitive", title: "Cognitive behavioral\ntherapy", description: "Cognitive behavioral therapy", ...DEFAULT_SERVICE_STYLES[3] },
-  { id: "psychotherapy", title: "Psychotherapy", description: "Psychotherapy", ...DEFAULT_SERVICE_STYLES[4] },
-  { id: "diagnostic", title: "Diagnostic\nappointment", description: "Diagnostic appointment", ...DEFAULT_SERVICE_STYLES[5] },
+  {
+    id: "counselling",
+    title: "Counselling",
+    description: "Counselling",
+    ...DEFAULT_SERVICE_STYLES[0],
+  },
+  {
+    id: "clinical",
+    title: "Clinical assessments",
+    description: "Clinical assessments",
+    ...DEFAULT_SERVICE_STYLES[1],
+  },
+  {
+    id: "family",
+    title: "Family therapy",
+    description: "Family therapy",
+    ...DEFAULT_SERVICE_STYLES[2],
+  },
+  {
+    id: "cognitive",
+    title: "Cognitive behavioral\ntherapy",
+    description: "Cognitive behavioral therapy",
+    ...DEFAULT_SERVICE_STYLES[3],
+  },
+  {
+    id: "psychotherapy",
+    title: "Psychotherapy",
+    description: "Psychotherapy",
+    ...DEFAULT_SERVICE_STYLES[4],
+  },
+  {
+    id: "diagnostic",
+    title: "Diagnostic\nappointment",
+    description: "Diagnostic appointment",
+    ...DEFAULT_SERVICE_STYLES[5],
+  },
 ];
 
 export default function AppointmentTypeScreen() {
@@ -92,7 +122,6 @@ export default function AppointmentTypeScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    console.log("services :>>", services);
     fetchServices();
   }, []);
 
@@ -111,17 +140,24 @@ export default function AppointmentTypeScreen() {
         false,
       );
       if (response?.returnCode === true && response.returnData?.length > 0) {
-        const mapped: Service[] = response.returnData.map((item: any, index: number) => {
-          const style = DEFAULT_SERVICE_STYLES[index % DEFAULT_SERVICE_STYLES.length];
-          const name = item.appsubtyp_name ?? item.description ?? item.apptcatg_desc ?? "";
-          return {
-            id: String(item.appsubtyp_id ?? item.id ?? index),
-            title: name,
-            description: item.description ?? name,
-            faIcon: parseFaIconName(item.appsubtyp_icon_class ?? ""),
-            ...style,
-          };
-        });
+        const mapped: Service[] = response.returnData.map(
+          (item: any, index: number) => {
+            const style =
+              DEFAULT_SERVICE_STYLES[index % DEFAULT_SERVICE_STYLES.length];
+            const name =
+              item.appsubtyp_name ??
+              item.description ??
+              item.apptcatg_desc ??
+              "";
+            return {
+              id: String(item.appsubtyp_id ?? item.id ?? index),
+              title: name,
+              description: item.description ?? name,
+              faIcon: parseFaIconName(item.appsubtyp_icon_class ?? ""),
+              ...style,
+            };
+          },
+        );
         setServices(mapped);
       }
     } catch (_) {
@@ -235,7 +271,9 @@ export default function AppointmentTypeScreen() {
                     />
                   )}
                 </View>
-                <Text style={styles.serviceLabel}>{service.description || service.title}</Text>
+                <Text style={styles.serviceLabel}>
+                  {service.description || service.title}
+                </Text>
               </Pressable>
             ))
           )}

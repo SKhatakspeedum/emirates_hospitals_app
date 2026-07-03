@@ -107,14 +107,7 @@ export async function createSuggestusFootPrint() {
       },
     };
 
-    console.log(
-      "url, foot_print_body, axiosConfig :>> ",
-      url,
-      foot_print_body,
-      axiosConfig,
-    );
     const response = await axios.post(url, foot_print_body, axiosConfig);
-    console.log("response :>> ", response.data);
 
     if (response.status === 200) {
       const { return_AppIdentifier, return_LicenseIdentifier } = response.data;

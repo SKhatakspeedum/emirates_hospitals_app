@@ -195,7 +195,7 @@ export default function RegisterNewPatient() {
         text2: "Welcome to Emirates Hospitals Group",
       });
 
-      router.replace("/init_screens/success");
+      router.replace("/patient/registered_patients");
     } catch (error) {
       console.error("Error saving personal details:", error);
       Toast.show({

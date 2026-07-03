@@ -25,6 +25,7 @@ import {
 import {
   fetchDataFromLocalStorage,
   getDecryptedID,
+  saveDataFromLocalStorage,
 } from "../suggestus_plugin/util/util_functions";
 import { spd_processId_config } from "../config/process_id";
 
@@ -193,6 +194,13 @@ export default function RegisteredPatientsScreen() {
           JSON.stringify({ name, age, gender }),
         );
 
+        // Mark user as self-registered patient so the card hides on reload
+        try {
+          const stored = JSON.parse(await getDecryptedID(USER_FULL_DATA) ?? "{}");
+          stored.usr_patient_id = patientId;
+          await saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(stored));
+        } catch (_) {}
+
         let userId = await fetchDataFromLocalStorage("sg_userId");
         if (!userId) {
           userId = parsed?.usr_id ?? "";
@@ -226,7 +234,7 @@ export default function RegisteredPatientsScreen() {
       console.error("Error registering as patient:", e);
     }
     setRegisteringAsSelf(false);
-    router.replace("/(drawer)/tab_bar_home/HomeScreen");
+    router.replace("/patient/registered_patients");
   };
 
   const handleSelectPatient = async (patient: Patient) => {
@@ -278,7 +286,49 @@ export default function RegisteredPatientsScreen() {
           />
         </View>
 
-        <Text style={styles.sectionTitle}>Registered patients</Text>
+        {/* Self-registration card — above the title, only if not already a patient */}
+        {!loading && !isAlreadyPatient && userData && (
+          <View style={styles.userCard}>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.avatarContainer}>
+                <Ionicons name="person" size={24} color="#FFF" />
+              </View>
+              <View style={styles.userInfoCol}>
+                <Text style={styles.userName}>{userData.name}</Text>
+                <Text style={styles.userMeta}>
+                  {userData.age} Yrs / {userData.gender}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.registerInnerBtn}
+              onPress={handleRegisterAsPatient}
+              disabled={registeringAsSelf}
+              activeOpacity={0.8}
+            >
+              {registeringAsSelf ? (
+                <ActivityIndicator color={Colors.secondary} size="small" />
+              ) : (
+                <>
+                  <Text style={styles.registerInnerBtnText}>
+                    Register as a patient
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={Colors.secondary}
+                  />
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Registered patients title — only shown when mapped patients exist */}
+        {!loading && patients.length > 0 && (
+          <Text style={styles.sectionTitle}>Registered patients</Text>
+        )}
 
         {loading ? (
           <ActivityIndicator
@@ -287,48 +337,6 @@ export default function RegisteredPatientsScreen() {
           />
         ) : (
           <>
-            {/* Self-registration card — shown only if not already a patient */}
-            {!isAlreadyPatient && userData && (
-              <View style={styles.userCard}>
-                <View style={styles.cardHeaderRow}>
-                  <View style={styles.avatarContainer}>
-                    <Ionicons name="person" size={24} color="#FFF" />
-                  </View>
-                  <View style={styles.userInfoCol}>
-                    <Text style={styles.userName}>{userData.name}</Text>
-                    <Text style={styles.userMeta}>
-                      {userData.age} Yrs / {userData.gender}
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.registerInnerBtn}
-                  onPress={handleRegisterAsPatient}
-                  disabled={registeringAsSelf}
-                  activeOpacity={0.8}
-                >
-                  {registeringAsSelf ? (
-                    <ActivityIndicator
-                      color={Colors.secondary}
-                      size="small"
-                    />
-                  ) : (
-                    <>
-                      <Text style={styles.registerInnerBtnText}>
-                        Register as a patient
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={16}
-                        color={Colors.secondary}
-                      />
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-
             {/* Mapped patients list */}
             <View style={styles.patientsList}>
               {patients.map((patient) => (

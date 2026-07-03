@@ -18,10 +18,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
-import { USER_FULL_DATA } from "../config/config";
+import { USER_FULL_DATA, SPD_SELECTED_PATIENT } from "../config/config";
 import { router } from "expo-router";
 
 export default function PatientDetailsScreen() {
@@ -62,6 +63,27 @@ export default function PatientDetailsScreen() {
   useEffect(() => {
     const init = async () => {
       const patientId = await fetchDataFromLocalStorage("sg_patientId");
+
+      if (patientId && route.params?.doctorId) {
+        try {
+          const selectedStr = await AsyncStorage.getItem(SPD_SELECTED_PATIENT);
+          const selected = selectedStr ? JSON.parse(selectedStr) : {};
+          navigation.navigate("AppointmentType", {
+            doctorId,
+            doctorName,
+            specialty,
+            avatar,
+            hospital,
+            patientName: selected.name ?? "",
+            patientAge: String(selected.age ?? ""),
+            patientGender: selected.gender ?? "Male",
+            relationship: "Self",
+            symptoms: "",
+          });
+          return;
+        } catch (_) {}
+      }
+
       fetchPatientData(patientId ?? undefined);
     };
     init();

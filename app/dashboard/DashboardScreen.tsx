@@ -257,7 +257,7 @@ export default function DashboardScreen() {
                   params: { phone_number: phone },
                 });
               } else {
-                navigation.navigate("Appointment");
+                navigation.navigate("PatientDetails");
               }
             }}
           >

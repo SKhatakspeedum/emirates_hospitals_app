@@ -19,6 +19,7 @@ import { Colors } from "../config/colors";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
+import CountryFlag from "react-native-country-flag";
 
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -37,6 +38,11 @@ export default function LoginScreen() {
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Check if phone number length matches the selected country's placeholder length
+  const expectedLength = selectedCountry.placeholder.replace(/[^0-9]/g, "").length;
+  const isLengthMatching = phoneDigits.length === expectedLength;
 
   // Clear query on modal toggle
   useEffect(() => {
@@ -45,17 +51,25 @@ export default function LoginScreen() {
     }
   }, [showCountryModal]);
 
+  // Truncate phone digits if they exceed the selected country's maximum length
+  useEffect(() => {
+    const maxLen = selectedCountry.placeholder.replace(/[^0-9]/g, "").length;
+    if (phoneDigits.length > maxLen) {
+      setPhoneDigits(phoneDigits.slice(0, maxLen));
+    }
+  }, [selectedCountry]);
+
   const handlePhoneChange = (text: string) => {
     const digits = text.replace(/[^0-9]/g, "");
     setPhoneDigits(digits);
   };
 
   const handlePhoneContinue = async () => {
-    if (phoneDigits.length < 6) {
+    if (!isLengthMatching) {
       Toast.show({
         type: "error",
         text1: "Invalid Number",
-        text2: "Phone number is invalid.",
+        text2: `Phone number must be ${expectedLength} digits.`,
       });
       return;
     }
@@ -115,7 +129,7 @@ export default function LoginScreen() {
       }}
       activeOpacity={0.6}
     >
-      <Text style={styles.countryFlagEmoji}>{item.flag}</Text>
+      <CountryFlag isoCode={item.flag.toLowerCase()} size={18} />
       <Text style={styles.countryName}>{item.name}</Text>
       <Text style={styles.countryDialCode}>{item.code}</Text>
     </TouchableOpacity>
@@ -151,7 +165,7 @@ export default function LoginScreen() {
                   onPress={() => setShowCountryModal(true)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.selectedFlagEmoji}>{selectedCountry.flag}</Text>
+                  <CountryFlag isoCode={selectedCountry.flag.toLowerCase()} size={18} />
                   <MaterialIcons name="keyboard-arrow-down" size={16} color={Colors.label} style={styles.chevron} />
                 </TouchableOpacity>
                 <View style={styles.separator} />
@@ -169,6 +183,7 @@ export default function LoginScreen() {
                   onBlur={() => setIsFocused(false)}
                   onSubmitEditing={handlePhoneContinue}
                   returnKeyType="done"
+                  maxLength={expectedLength}
                 />
               </View>
             </View>
@@ -180,9 +195,9 @@ export default function LoginScreen() {
           <TouchableOpacity
             style={[
               styles.continueBtn,
-              styles.continueBtnEnabled,
+              isLengthMatching ? styles.continueBtnEnabled : styles.continueBtnDisabled,
             ]}
-            disabled={phoneLoading}
+            disabled={phoneLoading || !isLengthMatching}
             onPress={handlePhoneContinue}
             activeOpacity={0.8}
           >
@@ -202,11 +217,12 @@ export default function LoginScreen() {
         transparent={true}
         onRequestClose={() => setShowCountryModal(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCountryModal(false)}
-        >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setShowCountryModal(false)}
+          />
           <View style={styles.modalContent}>
             {/* Sheet grab handle */}
             <View style={styles.modalHandle} />
@@ -219,7 +235,10 @@ export default function LoginScreen() {
             </View>
 
             {/* Premium Search Bar */}
-            <View style={styles.searchBarContainer}>
+            <View style={[
+              styles.searchBarContainer,
+              isSearchFocused && styles.searchBarContainerFocused
+            ]}>
               <MaterialIcons name="search" size={20} color={Colors.label} style={styles.searchIcon} />
               <TextInput
                 style={styles.searchBarInput}
@@ -229,6 +248,8 @@ export default function LoginScreen() {
                 onChangeText={setSearchQuery}
                 autoCorrect={false}
                 clearButtonMode="while-editing"
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
               />
             </View>
 
@@ -245,7 +266,7 @@ export default function LoginScreen() {
               }
             />
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
       <Toast />
     </View>
@@ -433,21 +454,29 @@ const styles: any = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.lightgray,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
     marginHorizontal: 20,
     marginVertical: 12,
-    height: 44,
+    height: 56,
+  },
+  searchBarContainerFocused: {
+    borderColor: Colors.secondary,
   },
   searchIcon: {
     marginRight: 8,
   },
   searchBarInput: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: FontFamilies.bold,
+    fontSize: 16,
+    fontFamily: FontFamilies.semiBold,
     color: Colors.text,
     paddingVertical: 0,
+    // @ts-ignore: outlineStyle is web-only
+    outlineStyle: "none",
+    outlineWidth: 0,
   },
 
   listContainer: {
@@ -470,6 +499,7 @@ const styles: any = StyleSheet.create({
     fontSize: 16,
     fontFamily: FontFamilies.semiBold,
     color: Colors.text,
+    marginLeft: 8,
   },
   countryDialCode: {
     fontSize: 16,

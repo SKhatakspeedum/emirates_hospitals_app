@@ -15,6 +15,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "../../config/colors";
+import { FontFamilies } from "../../config/fonts";
 
 interface MenuItem {
   icon: React.ReactNode;
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
   },
   myHealthTitle: {
     fontSize: 24,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.primary,
     marginTop: 10,
     marginBottom: 20,
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontSize: 18,
     color: Colors.text,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
   },
   menuItemRight: {
     flexDirection: "row",
@@ -271,7 +272,7 @@ const styles = StyleSheet.create({
   },
   menuCount: {
     fontSize: 16,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginRight: 10,
   },
@@ -287,12 +288,12 @@ const styles = StyleSheet.create({
   },
   doctorBannerText: {
     fontSize: 16,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.text,
   },
   seeAllLink: {
     fontSize: 16,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.secondary,
   },
   sunContainer: {
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: Colors.label,
     fontSize: 16,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
   },
 });
 

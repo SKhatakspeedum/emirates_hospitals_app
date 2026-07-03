@@ -61,11 +61,18 @@ export default function RegisterNewPatient() {
   const [passportNo, setPassportNo] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [dob, setDob] = useState<Date>(new Date(2020, 7, 10)); // Aug 10, 1978
+  const [dob, setDob] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [gender, setGender] = useState<"Male" | "Female" | "">("Male");
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
+
+  // Form validity check to enable/disable Continue button
+  const isIdProvided = emiratesId.trim().length > 0 || passportNo.trim().length > 0;
+  const isFirstNameValid = firstName.trim().length > 0;
+  const isLastNameValid = lastName.trim().length > 0;
+  const isGenderValid = gender !== "";
+  const isFormValid = isIdProvided && isFirstNameValid && isLastNameValid && isGenderValid;
 
   const handleContinue = async () => {
     if (!emiratesId.trim() && !passportNo.trim()) {
@@ -213,6 +220,8 @@ export default function RegisterNewPatient() {
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
         >
           <View
             style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}
@@ -373,6 +382,8 @@ export default function RegisterNewPatient() {
                   <input
                     type="date"
                     value={dayjs(dob).format("YYYY-MM-DD")}
+                    min="1900-01-01"
+                    max={dayjs().format("YYYY-MM-DD")}
                     onChange={(e) => {
                       if (e.target.value) {
                         setDob(new Date(e.target.value));
@@ -388,7 +399,6 @@ export default function RegisterNewPatient() {
                       fontFamily: FontFamilies.medium,
                       color: Colors.text,
                       backgroundColor: "transparent",
-                      width: "100%",
                       height: "100%",
                     }}
                   />
@@ -480,8 +490,11 @@ export default function RegisterNewPatient() {
           ]}
         >
           <TouchableOpacity
-            style={[styles.continueBtn, styles.continueBtnEnabled]}
-            disabled={loading}
+            style={[
+              styles.continueBtn,
+              isFormValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
+            ]}
+            disabled={loading || !isFormValid}
             onPress={handleContinue}
             activeOpacity={0.8}
           >
@@ -498,6 +511,7 @@ export default function RegisterNewPatient() {
         isVisible={showDatePicker}
         mode="date"
         date={dob}
+        minimumDate={new Date(1900, 0, 1)}
         maximumDate={new Date()}
         onConfirm={(date) => {
           setDob(date);
@@ -525,7 +539,6 @@ const styles: any = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
-    width: "100%",
   },
   cardInputWrapper: {
     flexDirection: "row",
@@ -536,13 +549,11 @@ const styles: any = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
-    width: "100%",
   },
   orDividerRow: {
     flexDirection: "row",
     alignItems: "center",
     marginVertical: 16,
-    width: "100%",
   },
   dottedLine: {
     flex: 1,
@@ -566,7 +577,6 @@ const styles: any = StyleSheet.create({
     textAlign: "left",
   },
   inputContainer: {
-    width: "100%",
     marginBottom: 20,
   },
   inputLabel: {
@@ -585,7 +595,6 @@ const styles: any = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
-    width: "100%",
   },
   inputWrapperFocused: {
     borderColor: Colors.secondary,
@@ -599,6 +608,7 @@ const styles: any = StyleSheet.create({
     color: Colors.text,
     fontFamily: FontFamilies.semiBold,
     paddingVertical: 0,
+    minWidth: 0,
   },
   // @ts-ignore: outlineStyle is web-only
   inputNoOutline: {
@@ -607,7 +617,6 @@ const styles: any = StyleSheet.create({
   } as any,
   rowContainer: {
     flexDirection: "row",
-    width: "100%",
     justifyContent: "space-between",
   },
   datePickerTrigger: {
@@ -620,7 +629,6 @@ const styles: any = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
-    width: "100%",
   },
   datePickerLeft: {
     flexDirection: "row",
@@ -704,6 +712,9 @@ const styles: any = StyleSheet.create({
         elevation: 4,
       },
     }),
+  },
+  continueBtnDisabled: {
+    backgroundColor: Colors.inactive,
   },
   continueBtnText: {
     color: Colors.lightgray,

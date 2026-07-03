@@ -44,6 +44,8 @@ export default function OTPVerificationScreen() {
   const [phoneDisplay, setPhoneDisplay] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number | null>(null);
 
+  const isOtpComplete = otp.join("").length === 6;
+
   useEffect(() => {
     const fetchEmailAndPhone = async () => {
       // Fetch email id
@@ -195,6 +197,11 @@ export default function OTPVerificationScreen() {
   };
 
   const handleResendOtp = async () => {
+    // Clear OTP inputs, focus the first field, and clear errors
+    setOtp(["", "", "", "", "", ""]);
+    setError("");
+    inputRefs.current[0]?.focus();
+
     const rawPhone = (route.params as any)?.phone_number ?? phoneDisplay;
     const fullPhoneNumber = rawPhone.replace(/\s+/g, " ").trim();
 
@@ -320,9 +327,12 @@ export default function OTPVerificationScreen() {
           ]}
         >
           <TouchableOpacity
-            style={[styles.verifyBtn, styles.verifyBtnEnabled]}
+            style={[
+              styles.verifyBtn,
+              isOtpComplete ? styles.verifyBtnEnabled : styles.verifyBtnDisabled,
+            ]}
             onPress={handleVerifyOtp}
-            disabled={loading}
+            disabled={loading || !isOtpComplete}
             activeOpacity={0.8}
           >
             {loading ? (

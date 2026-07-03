@@ -19,7 +19,11 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { IS_LOGGED_IN, USER_FULL_DATA, SPD_USER_NAME } from "../config/config";
+import {
+  IS_LOGGED_IN,
+  USER_FULL_DATA,
+  SPD_USER_NAME,
+} from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import {
@@ -68,12 +72,20 @@ export default function PersonalDetailsScreen() {
   const [passportNo, setPassportNo] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [dob, setDob] = useState<Date>(new Date(1978, 7, 10)); // Aug 10, 1978
+  const [dob, setDob] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [gender, setGender] = useState<"Male" | "Female" | "">("Male");
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Form validity check to enable/disable Register button
+  const isEmiratesIdValid = !isResident || emiratesId.trim().length > 0;
+  const isPassportNoValid = isResident || passportNo.trim().length > 0;
+  const isFirstNameValid = firstName.trim().length > 0;
+  const isLastNameValid = lastName.trim().length > 0;
+  const isGenderValid = gender !== "";
+  const isFormValid = isEmiratesIdValid && isPassportNoValid && isFirstNameValid && isLastNameValid && isGenderValid;
 
   const handleContinue = async () => {
     if (isResident && !emiratesId.trim()) {
@@ -238,8 +250,7 @@ export default function PersonalDetailsScreen() {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2:
-          "Something went wrong while saving your details. Please try again.",
+        text2: "Something went wrong while saving your details. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -258,14 +269,18 @@ export default function PersonalDetailsScreen() {
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
         >
-          <View
-            style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}
-          >
+          <View style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}>
+
             {/* Resident / Non-Resident Segmented Control */}
             <View style={styles.tabContainer}>
               <TouchableOpacity
-                style={[styles.tabButton, isResident && styles.activeTabButton]}
+                style={[
+                  styles.tabButton,
+                  isResident && styles.activeTabButton,
+                ]}
                 onPress={() => setIsResident(true)}
                 activeOpacity={0.8}
               >
@@ -317,9 +332,7 @@ export default function PersonalDetailsScreen() {
                     placeholder="123-0000-5505123-1"
                     placeholderTextColor={Colors.inactive}
                     value={emiratesId}
-                    onChangeText={(text) =>
-                      setEmiratesId(formatEmiratesId(text))
-                    }
+                    onChangeText={(text) => setEmiratesId(formatEmiratesId(text))}
                     onFocus={() => setFocusedField("emiratesId")}
                     onBlur={() => setFocusedField("")}
                     keyboardType="numeric"
@@ -355,9 +368,7 @@ export default function PersonalDetailsScreen() {
 
             {/* First Name & Last Name row */}
             <View style={styles.rowContainer}>
-              <View
-                style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
-              >
+              <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
                 <Text style={styles.inputLabel}>First name</Text>
                 <View
                   style={[
@@ -368,11 +379,7 @@ export default function PersonalDetailsScreen() {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={
-                      focusedField === "firstName"
-                        ? Colors.secondary
-                        : Colors.label
-                    }
+                    color={focusedField === "firstName" ? Colors.secondary : Colors.label}
                     style={styles.inputIcon}
                   />
                   <TextInput
@@ -400,11 +407,7 @@ export default function PersonalDetailsScreen() {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={
-                      focusedField === "lastName"
-                        ? Colors.secondary
-                        : Colors.label
-                    }
+                    color={focusedField === "lastName" ? Colors.secondary : Colors.label}
                     style={styles.inputIcon}
                   />
                   <TextInput
@@ -435,14 +438,14 @@ export default function PersonalDetailsScreen() {
                   <Ionicons
                     name="calendar-outline"
                     size={20}
-                    color={
-                      focusedField === "dob" ? Colors.secondary : Colors.label
-                    }
+                    color={focusedField === "dob" ? Colors.secondary : Colors.label}
                     style={styles.inputIcon}
                   />
                   <input
                     type="date"
                     value={dayjs(dob).format("YYYY-MM-DD")}
+                    min="1900-01-01"
+                    max={dayjs().format("YYYY-MM-DD")}
                     onChange={(e) => {
                       if (e.target.value) {
                         setDob(new Date(e.target.value));
@@ -458,7 +461,6 @@ export default function PersonalDetailsScreen() {
                       fontFamily: FontFamilies.medium,
                       color: Colors.text,
                       backgroundColor: "transparent",
-                      width: "100%",
                       height: "100%",
                     }}
                   />
@@ -528,30 +530,24 @@ export default function PersonalDetailsScreen() {
                         gender === "Female" && styles.radioOuterActive,
                       ]}
                     >
-                      {gender === "Female" && (
-                        <View style={styles.radioInner} />
-                      )}
+                      {gender === "Female" && <View style={styles.radioInner} />}
                     </View>
                     <Text style={styles.genderText}>Female</Text>
                   </View>
                 </TouchableOpacity>
               </View>
             </View>
+
           </View>
         </ScrollView>
 
-        <View
-          style={[
-            styles.bottomBtnContainer,
-            {
-              paddingBottom:
-                Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24,
-            },
-          ]}
-        >
+        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
           <TouchableOpacity
-            style={[styles.continueBtn, styles.continueBtnEnabled]}
-            disabled={loading}
+            style={[
+              styles.continueBtn,
+              isFormValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
+            ]}
+            disabled={loading || !isFormValid}
             onPress={handleContinue}
             activeOpacity={0.8}
           >
@@ -568,14 +564,18 @@ export default function PersonalDetailsScreen() {
         isVisible={showDatePicker}
         mode="date"
         date={dob}
+        minimumDate={new Date(1900, 0, 1)}
         maximumDate={new Date()}
         onConfirm={(date) => {
           setDob(date);
           setShowDatePicker(false);
         }}
         onCancel={() => setShowDatePicker(false)}
+
       />
       <Toast />
+
+
     </View>
   );
 }
@@ -598,7 +598,6 @@ const styles: any = StyleSheet.create({
     padding: 4,
     backgroundColor: Colors.background,
     marginVertical: 16,
-    width: "100%",
   },
   tabButton: {
     flex: 1,
@@ -626,7 +625,6 @@ const styles: any = StyleSheet.create({
     textAlign: "left",
   },
   inputContainer: {
-    width: "100%",
     marginBottom: 20,
   },
   inputLabel: {
@@ -645,7 +643,6 @@ const styles: any = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
-    width: "100%",
   },
   inputWrapperFocused: {
     borderColor: Colors.secondary,
@@ -659,15 +656,14 @@ const styles: any = StyleSheet.create({
     color: Colors.text,
     fontFamily: FontFamilies.semiBold,
     paddingVertical: 0,
+    minWidth: 0,
   },
-  // @ts-ignore: outlineStyle is web-only
   inputNoOutline: {
     outlineStyle: "none",
     outlineWidth: 0,
   } as any,
   rowContainer: {
     flexDirection: "row",
-    width: "100%",
     justifyContent: "space-between",
   },
   datePickerTrigger: {
@@ -680,7 +676,6 @@ const styles: any = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
-    width: "100%",
   },
   datePickerLeft: {
     flexDirection: "row",
@@ -765,6 +760,9 @@ const styles: any = StyleSheet.create({
       },
     }),
   },
+  continueBtnDisabled: {
+    backgroundColor: Colors.inactive,
+  },
   continueBtnText: {
     color: Colors.lightgray,
     fontSize: 16,
@@ -832,4 +830,5 @@ const styles: any = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 10,
   },
+
 });

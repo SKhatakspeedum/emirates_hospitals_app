@@ -25,36 +25,39 @@ import {
   USER_FULL_DATA,
 } from "@/app/config/config";
 import Toast from "react-native-toast-message";
+import { Colors } from "@/app/config/colors";
+import { FontFamilies } from "@/app/config/fonts";
+import { initializeSuggestus } from "@/app/suggestus_plugin/suggestusClient";
 
 const drawerItems = [
   {
     label: "PHR",
-    icon: <Ionicons name="id-card-outline" size={22} color="#001871" />,
+    icon: <Ionicons name="id-card-outline" size={22} color={Colors.primary} />,
     screen: "phr",
   },
   {
     label: "Explore",
-    icon: <MaterialCommunityIcons name="compass-outline" size={22} color="#001871" />,
+    icon: <MaterialCommunityIcons name="compass-outline" size={22} color={Colors.primary} />,
     screen: "explore",
   },
   {
     label: "Orders",
-    icon: <Ionicons name="bag-handle-outline" size={22} color="#001871" />,
+    icon: <Ionicons name="bag-handle-outline" size={22} color={Colors.primary} />,
     screen: "OrderScreen",
   },
   {
     label: "Medicines",
-    icon: <MaterialCommunityIcons name="prescription" size={22} color="#001871" />,
+    icon: <MaterialCommunityIcons name="prescription" size={22} color={Colors.primary} />,
     screen: "MedicinesScreen",
   },
   {
     label: "Health Packages",
-    icon: <MaterialCommunityIcons name="briefcase-plus-outline" size={22} color="#001871" />,
+    icon: <MaterialCommunityIcons name="briefcase-plus-outline" size={22} color={Colors.primary} />,
     screen: "HealthPackages",
   },
   {
     label: "Bills",
-    icon: <Ionicons name="receipt-outline" size={22} color="#001871" />,
+    icon: <Ionicons name="receipt-outline" size={22} color={Colors.primary} />,
     screen: "Bills",
   },
 ];
@@ -79,12 +82,12 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const handleNav = async (screen: string) => {
     console.log(screen);
     if (screen === "SignOut") {
-      await AsyncStorage.setItem(IS_LOGGED_IN, "false");
-      await AsyncStorage.setItem(SPD_USER_EMAIL, "");
-      await AsyncStorage.setItem(SPD_USER_ID, "");
-      await AsyncStorage.setItem(SPD_USER_NAME, "");
-      await AsyncStorage.setItem(USER_FULL_DATA, "");
-      await AsyncStorage.setItem(SPD_USER_SUBSCRIPTION, "false");
+      await AsyncStorage.clear();
+      try {
+        await initializeSuggestus();
+      } catch (err) {
+        console.log("Error initializing suggestus session after logout:", err);
+      }
       Toast.show({
         type: "success",
         text1: "You have been signed out.",
@@ -136,7 +139,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             <Text style={styles.userName} numberOfLines={1}>{userProfileName}</Text>
             <Text style={styles.userLocation}>Dubai</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#002075" style={styles.headerChevron} />
+          <Ionicons name="chevron-forward" size={18} color={Colors.primary} style={styles.headerChevron} />
         </TouchableOpacity>
 
         {/* Separator */}
@@ -158,7 +161,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
                 {item.icon}
               </View>
               <Text style={styles.linkLabel}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={16} color="#B3B7C6" />
+              <Ionicons name="chevron-forward" size={16} color={Colors.inactive} />
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -171,10 +174,10 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             activeOpacity={0.7}
           >
             <View style={styles.linkIconWrapper}>
-              <Ionicons name="log-out-outline" size={22} color="#001871" style={styles.logoutIcon} />
+              <Ionicons name="log-out-outline" size={22} color={Colors.primary} style={styles.logoutIcon} />
             </View>
             <Text style={styles.logoutLabel}>Log out</Text>
-            <Ionicons name="chevron-forward" size={16} color="#B3B7C6" />
+            <Ionicons name="chevron-forward" size={16} color={Colors.inactive} />
           </TouchableOpacity>
         </View>
       </View>
@@ -185,11 +188,11 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   drawerContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderTopRightRadius: 24,
     borderBottomRightRadius: 24,
     overflow: "hidden",
@@ -206,7 +209,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#f3f3f3",
+    backgroundColor: Colors.lightgray,
   },
   headerTextContainer: {
     flex: 1,
@@ -214,21 +217,21 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    color: "#1A1D24",
-    fontFamily: "QuicksandBold",
+    color: Colors.text,
+    fontFamily: FontFamilies.bold,
     marginBottom: 2,
   },
   userLocation: {
     fontSize: 12,
-    color: "#001871",
-    fontFamily: "QuicksandMedium",
+    color: Colors.primary,
+    fontFamily: FontFamilies.medium,
   },
   headerChevron: {
     marginLeft: 8,
   },
   headerSeparator: {
     height: 1,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: Colors.border,
     marginVertical: 12,
     marginHorizontal: 8,
   },
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 8,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   linkIconWrapper: {
     width: 28,
@@ -249,14 +252,14 @@ const styles = StyleSheet.create({
   },
   linkLabel: {
     fontSize: 15,
-    color: "#696970ff",
+    color: Colors.label,
     marginLeft: 14,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     flex: 1,
   },
   logoutContainer: {
     borderTopWidth: 1,
-    borderTopColor: "#F2F3F7",
+    borderTopColor: Colors.border,
     paddingTop: 12,
     marginBottom: Platform.OS === "ios" ? 10 : 0,
   },
@@ -265,16 +268,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 8,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
   logoutIcon: {
     // Arrow icon points to the right
   },
   logoutLabel: {
     fontSize: 15,
-    color: "#696970ff",
+    color: Colors.label,
     marginLeft: 14,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     flex: 1,
   },
 });

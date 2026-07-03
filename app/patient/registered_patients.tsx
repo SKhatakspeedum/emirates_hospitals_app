@@ -32,9 +32,30 @@ interface Patient {
 export default function RegisteredPatientsScreen() {
   const router = useRouter();
   const [patients, setPatients] = useState<Patient[]>([
-    { id: "345", name: "John Doe", age: 48, gender: "Male", initials: "JD", bgColor: "#E3EEF9" },
-    { id: "346", name: "Olive Yew", age: 42, gender: "Female", initials: "OY", bgColor: "#F9EAF2" },
-    { id: "347", name: "Jack Slive", age: 20, gender: "Male", initials: "JS", bgColor: "#EBF7EC" },
+    {
+      id: "345",
+      name: "John Doe",
+      age: 48,
+      gender: "Male",
+      initials: "JD",
+      bgColor: "#E3EEF9",
+    },
+    {
+      id: "346",
+      name: "Olive Yew",
+      age: 42,
+      gender: "Female",
+      initials: "OY",
+      bgColor: "#F9EAF2",
+    },
+    {
+      id: "347",
+      name: "Jack Slive",
+      age: 20,
+      gender: "Male",
+      initials: "JS",
+      bgColor: "#EBF7EC",
+    },
   ]);
 
   useEffect(() => {
@@ -43,25 +64,35 @@ export default function RegisteredPatientsScreen() {
         const fullDataStr = await getDecryptedID(USER_FULL_DATA);
         if (fullDataStr) {
           const parsed = JSON.parse(fullDataStr);
-          const name = parsed.fname || `${parsed.firstName || "John"} ${parsed.lastName || "Doe"}`;
+          const name =
+            parsed.fname ||
+            `${parsed.firstName || "John"} ${parsed.lastName || "Doe"}`;
           const dob = parsed.dob ? dayjs(parsed.dob) : dayjs("1978-08-10");
           const age = dayjs().diff(dob, "year");
           const gender = parsed.gender || "Male";
 
-          setPatients(prev => [
+          setPatients((prev) => [
             {
               ...prev[0],
               name,
               age,
               gender,
-              initials: name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2),
+              initials: name
+                .split(" ")
+                .map((n: string) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2),
             },
             prev[1],
             prev[2],
           ]);
         }
       } catch (e) {
-        console.error("Error loading user data in RegisteredPatientsScreen:", e);
+        console.error(
+          "Error loading user data in RegisteredPatientsScreen:",
+          e,
+        );
       }
     };
     loadUserData();
@@ -86,7 +117,6 @@ export default function RegisteredPatientsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-
       <ScrollView contentContainerStyle={styles.content}>
         {/* Centered Brand Logo */}
         <View style={styles.logoContainer}>
@@ -107,7 +137,12 @@ export default function RegisteredPatientsScreen() {
               onPress={() => handleSelectPatient(patient.id)}
               activeOpacity={0.7}
             >
-              <View style={[styles.avatarCircle, { backgroundColor: patient.bgColor }]}>
+              <View
+                style={[
+                  styles.avatarCircle,
+                  { backgroundColor: patient.bgColor },
+                ]}
+              >
                 <Text style={styles.avatarText}>{patient.initials}</Text>
               </View>
 
@@ -120,7 +155,11 @@ export default function RegisteredPatientsScreen() {
                 </Text>
               </View>
 
-              <Ionicons name="chevron-forward" size={20} color={Colors.secondary} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Colors.secondary}
+              />
             </TouchableOpacity>
           ))}
         </View>
@@ -132,7 +171,12 @@ export default function RegisteredPatientsScreen() {
           onPress={handleAddNewPatient}
           activeOpacity={0.8}
         >
-          <Ionicons name="person-add-outline" size={20} color={Colors.secondary} style={styles.btnIcon} />
+          <Ionicons
+            name="person-add-outline"
+            size={20}
+            color={Colors.secondary}
+            style={styles.btnIcon}
+          />
           <Text style={styles.addNewPatientBtnText}>Add new patient</Text>
         </TouchableOpacity>
 

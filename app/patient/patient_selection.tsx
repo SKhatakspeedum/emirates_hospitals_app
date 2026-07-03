@@ -33,7 +33,9 @@ export default function PatientSelectionScreen() {
         const fullDataStr = await getDecryptedID(USER_FULL_DATA);
         if (fullDataStr) {
           const parsed = JSON.parse(fullDataStr);
-          const name = parsed.fname || `${parsed.firstName || "John"} ${parsed.lastName || "Doe"}`;
+          const name =
+            parsed.fname ||
+            `${parsed.firstName || "John"} ${parsed.lastName || "Doe"}`;
           const dob = parsed.dob ? dayjs(parsed.dob) : dayjs("1978-08-10");
           const age = dayjs().diff(dob, "year");
           const gender = parsed.gender || "Male";
@@ -97,8 +99,14 @@ export default function PatientSelectionScreen() {
               onPress={handleRegisterAsPatient}
               activeOpacity={0.8}
             >
-              <Text style={styles.registerInnerBtnText}>Register as a patient</Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.secondary} />
+              <Text style={styles.registerInnerBtnText}>
+                Register as a patient
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={Colors.secondary}
+              />
             </TouchableOpacity>
           </View>
         )}
@@ -110,7 +118,12 @@ export default function PatientSelectionScreen() {
           onPress={handleAddNewPatient}
           activeOpacity={0.8}
         >
-          <Ionicons name="person-add-outline" size={20} color={Colors.secondary} style={styles.btnIcon} />
+          <Ionicons
+            name="person-add-outline"
+            size={20}
+            color={Colors.secondary}
+            style={styles.btnIcon}
+          />
           <Text style={styles.addNewPatientBtnText}>Add new patient</Text>
         </TouchableOpacity>
 

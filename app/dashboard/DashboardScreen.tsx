@@ -13,7 +13,11 @@ import {
   Pressable,
 } from "react-native";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
-import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  Ionicons,
+  FontAwesome5,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { SPD_USER_NAME } from "@/app/config/config";
@@ -42,29 +46,28 @@ export default function DashboardScreen() {
     // Navigate to see all specialties
   };
 
-  const Providers = [{
-    uri: "https://randomuser.me/api/portraits/men/32.jpg",
-    name: "Dr. Wael Berro",
-    specialty: "Family Medicine Consul..",
-  },
-  {
-    uri: "https://randomuser.me/api/portraits/women/68.jpg",
-    name: "Dr. Sheena Cherry",
-    specialty: "Family Medicine Consul..",
-  },
-  {
-    uri: "https://randomuser.me/api/portraits/women/34.jpg",
-    name: "Dr. Alice Johnson",
-    specialty: "Family Medicine Consul..",
-  },
-  {
-    uri: "https://randomuser.me/api/portraits/men/46.jpg",
-    name: "Dr. Yanal Salam",
-    specialty: "Consultation Internal",
-  },
-
-
-  ]
+  const Providers = [
+    {
+      uri: "https://randomuser.me/api/portraits/men/32.jpg",
+      name: "Dr. Wael Berro",
+      specialty: "Family Medicine Consul..",
+    },
+    {
+      uri: "https://randomuser.me/api/portraits/women/68.jpg",
+      name: "Dr. Sheena Cherry",
+      specialty: "Family Medicine Consul..",
+    },
+    {
+      uri: "https://randomuser.me/api/portraits/women/34.jpg",
+      name: "Dr. Alice Johnson",
+      specialty: "Family Medicine Consul..",
+    },
+    {
+      uri: "https://randomuser.me/api/portraits/men/46.jpg",
+      name: "Dr. Yanal Salam",
+      specialty: "Consultation Internal",
+    },
+  ];
 
   const specialties = [
     {
@@ -107,13 +110,10 @@ export default function DashboardScreen() {
       iconColor: "#2ECC71",
       bgColor: "#EAF6F0",
     },
-
   ];
 
   return (
     <View style={styles.container}>
-
-
       {/* Fixed Sticky Header Top Bar (positioned absolutely to avoid Android ScrollView sticky bugs) */}
       <View style={styles.stickyHeader}>
         <SafeAreaView style={styles.headerSafeArea}>
@@ -127,7 +127,9 @@ export default function DashboardScreen() {
               onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
             >
               <Image
-                source={{ uri: "https://randomuser.me/api/portraits/men/43.jpg" }}
+                source={{
+                  uri: "https://randomuser.me/api/portraits/men/43.jpg",
+                }}
                 style={styles.profileImage}
               />
             </Pressable>
@@ -138,25 +140,37 @@ export default function DashboardScreen() {
                   styles.iconButton,
                   {
                     opacity: pressed ? 0.6 : 1,
-                    backgroundColor: pressed ? "rgba(255, 255, 255, 0.15)" : "transparent",
+                    backgroundColor: pressed
+                      ? "rgba(255, 255, 255, 0.15)"
+                      : "transparent",
                     borderRadius: 20,
-                  }
+                  },
                 ]}
               >
-                <Ionicons name="search-outline" size={24} color={Colors.background} />
+                <Ionicons
+                  name="search-outline"
+                  size={24}
+                  color={Colors.background}
+                />
               </Pressable>
               <Pressable
                 style={({ pressed }) => [
                   styles.iconButton,
                   {
                     opacity: pressed ? 0.6 : 1,
-                    backgroundColor: pressed ? "rgba(255, 255, 255, 0.15)" : "transparent",
+                    backgroundColor: pressed
+                      ? "rgba(255, 255, 255, 0.15)"
+                      : "transparent",
                     borderRadius: 20,
-                  }
+                  },
                 ]}
               >
                 <View>
-                  <Ionicons name="notifications-outline" size={24} color={Colors.background} />
+                  <Ionicons
+                    name="notifications-outline"
+                    size={24}
+                    color={Colors.background}
+                  />
                   <View style={styles.badgeDot} />
                 </View>
               </Pressable>
@@ -181,7 +195,9 @@ export default function DashboardScreen() {
 
           <View style={styles.greetingContainer}>
             <Text style={styles.greetingText}>Morning, {userProfileName}</Text>
-            <Text style={styles.subGreetingText}>You have 4 upcoming appointments.</Text>
+            <Text style={styles.subGreetingText}>
+              You have 4 upcoming appointments.
+            </Text>
           </View>
         </View>
 
@@ -196,14 +212,15 @@ export default function DashboardScreen() {
                 transform: [{ scale: pressed ? 0.97 : 1 }],
                 borderTopLeftRadius: 16,
                 borderBottomLeftRadius: 16,
-              }
+              },
             ]}
             onPress={async () => {
               const patientId = await AsyncStorage.getItem("sg_patientId");
               if (!patientId || patientId === "null") {
                 let phone = "";
                 try {
-                  const fullDataStr = await AsyncStorage.getItem("sg_user_full_data");
+                  const fullDataStr =
+                    await AsyncStorage.getItem("sg_user_full_data");
                   if (fullDataStr) {
                     const parsed = JSON.parse(fullDataStr);
                     phone = parsed.contact || "";
@@ -220,7 +237,11 @@ export default function DashboardScreen() {
               }
             }}
           >
-            <Ionicons name="calendar-outline" size={32} color={Colors.secondary} />
+            <Ionicons
+              name="calendar-outline"
+              size={32}
+              color={Colors.secondary}
+            />
             <Text style={styles.actionCardText}>Appointments</Text>
           </Pressable>
 
@@ -235,11 +256,15 @@ export default function DashboardScreen() {
                 transform: [{ scale: pressed ? 0.97 : 1 }],
                 borderTopRightRadius: 16,
                 borderBottomRightRadius: 16,
-              }
+              },
             ]}
             onPress={() => navigation.navigate("HealthPackages")}
           >
-            <Ionicons name="medkit-outline" size={32} color={Colors.secondary} />
+            <Ionicons
+              name="medkit-outline"
+              size={32}
+              color={Colors.secondary}
+            />
             <Text style={styles.actionCardText}>Health Packages</Text>
           </Pressable>
         </View>
@@ -257,11 +282,13 @@ export default function DashboardScreen() {
                   backgroundColor: pressed ? Colors.pressed : "#E8F4FD",
                   opacity: pressed ? 0.9 : 1,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
-                }
+                },
               ]}
             >
               <Image
-                source={{ uri: "https://randomuser.me/api/portraits/men/1.jpg" }}
+                source={{
+                  uri: "https://randomuser.me/api/portraits/men/1.jpg",
+                }}
                 style={styles.doctorAvatarLarge}
               />
 
@@ -270,8 +297,15 @@ export default function DashboardScreen() {
                 <Text style={styles.upcomingDocSpecialty}>Dermatologists</Text>
 
                 <View style={styles.upcomingTimeRow}>
-                  <Ionicons name="time-outline" size={16} color={Colors.primary} style={styles.timeIcon} />
-                  <Text style={styles.upcomingTimeText}>09:30 AM - 10:00 AM</Text>
+                  <Ionicons
+                    name="time-outline"
+                    size={16}
+                    color={Colors.primary}
+                    style={styles.timeIcon}
+                  />
+                  <Text style={styles.upcomingTimeText}>
+                    09:30 AM - 10:00 AM
+                  </Text>
                 </View>
               </View>
 
@@ -287,15 +321,27 @@ export default function DashboardScreen() {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="people-outline" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
-                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Providers</Text>
+                <Ionicons
+                  name="people-outline"
+                  size={20}
+                  color={Colors.secondary}
+                  style={styles.sectionHeaderIcon}
+                />
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
+                  Providers
+                </Text>
               </View>
               <Pressable
                 onPress={handleSeeAllProviders}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
-                  See all <Ionicons name="chevron-forward" size={12} color={Colors.secondary} />
+                  See all{" "}
+                  <Ionicons
+                    name="chevron-forward"
+                    size={12}
+                    color={Colors.secondary}
+                  />
                 </Text>
               </Pressable>
             </View>
@@ -307,30 +353,35 @@ export default function DashboardScreen() {
             >
               {/* Dr Consultant Internal Medicine */}
 
-
-              {
-                Providers.map((provider, index) => (
-                  <Pressable
-                    key={index}
-                    style={({ pressed }) => [
-                      styles.providerCard,
-                      {
-                        backgroundColor: pressed ? Colors.pressed : Colors.background,
-                        borderColor: pressed ? Colors.activeBorder : Colors.border,
-                        opacity: pressed ? 0.9 : 1,
-                        transform: [{ scale: pressed ? 0.97 : 1 }],
-                      }
-                    ]}
-                  >
-                    <Image
-                      source={{ uri: provider.uri }}
-                      style={styles.providerAvatar}
-                    />
-                    <Text style={styles.providerName} numberOfLines={1}>{provider.name}</Text>
-                    <Text style={styles.providerSpecialty} numberOfLines={2}>{provider.specialty}</Text>
-                  </Pressable>
-                ))
-              }
+              {Providers.map((provider, index) => (
+                <Pressable
+                  key={index}
+                  style={({ pressed }) => [
+                    styles.providerCard,
+                    {
+                      backgroundColor: pressed
+                        ? Colors.pressed
+                        : Colors.background,
+                      borderColor: pressed
+                        ? Colors.activeBorder
+                        : Colors.border,
+                      opacity: pressed ? 0.9 : 1,
+                      transform: [{ scale: pressed ? 0.97 : 1 }],
+                    },
+                  ]}
+                >
+                  <Image
+                    source={{ uri: provider.uri }}
+                    style={styles.providerAvatar}
+                  />
+                  <Text style={styles.providerName} numberOfLines={1}>
+                    {provider.name}
+                  </Text>
+                  <Text style={styles.providerSpecialty} numberOfLines={2}>
+                    {provider.specialty}
+                  </Text>
+                </Pressable>
+              ))}
             </ScrollView>
           </View>
 
@@ -338,15 +389,27 @@ export default function DashboardScreen() {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="heart-half-outline" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
-                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Specialties</Text>
+                <Ionicons
+                  name="heart-half-outline"
+                  size={20}
+                  color={Colors.secondary}
+                  style={styles.sectionHeaderIcon}
+                />
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
+                  Specialties
+                </Text>
               </View>
               <Pressable
                 onPress={handleSeeAllSpecialties}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
-                  See all <Ionicons name="chevron-forward" size={12} color={Colors.secondary} />
+                  See all{" "}
+                  <Ionicons
+                    name="chevron-forward"
+                    size={12}
+                    color={Colors.secondary}
+                  />
                 </Text>
               </Pressable>
             </View>
@@ -367,7 +430,7 @@ export default function DashboardScreen() {
                       {
                         opacity: pressed ? 0.7 : 1,
                         transform: [{ scale: pressed ? 0.95 : 1 }],
-                      }
+                      },
                     ]}
                   >
                     <View
@@ -413,12 +476,14 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: Colors.primary,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 50,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 50,
     paddingBottom: 12,
     zIndex: 10,
   },
   stickyHeaderSpacer: {
-    height: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 72 : 110,
+    height:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 72 : 110,
     backgroundColor: Colors.primary,
   },
   headerSafeArea: {
@@ -462,7 +527,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderBottomStartRadius: 20,
     borderBottomEndRadius: 20,
-
   },
   greetingContainer: {
     marginTop: 1,

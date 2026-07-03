@@ -23,6 +23,7 @@ import { SiteConfig } from "../config/site_config";
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import countries from "../json_dummy_datas/country";
+import { FontFamilies } from "../config/fonts";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -151,7 +152,7 @@ export default function LoginScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.selectedFlagEmoji}>{selectedCountry.flag}</Text>
-                  <MaterialIcons name="keyboard-arrow-down" size={16} color="#7E8494" style={styles.chevron} />
+                  <MaterialIcons name="keyboard-arrow-down" size={16} color={Colors.label} style={styles.chevron} />
                 </TouchableOpacity>
                 <View style={styles.separator} />
 
@@ -163,7 +164,7 @@ export default function LoginScreen() {
                   value={phoneDigits}
                   onChangeText={handlePhoneChange}
                   placeholder={selectedCountry.placeholder}
-                  placeholderTextColor="#B3B7C6"
+                  placeholderTextColor={Colors.inactive}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
                   onSubmitEditing={handlePhoneContinue}
@@ -213,17 +214,17 @@ export default function LoginScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Country</Text>
               <TouchableOpacity onPress={() => setShowCountryModal(false)} activeOpacity={0.6}>
-                <MaterialIcons name="close" size={24} color="#1A1D24" />
+                <MaterialIcons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
 
             {/* Premium Search Bar */}
             <View style={styles.searchBarContainer}>
-              <MaterialIcons name="search" size={20} color="#8E95A9" style={styles.searchIcon} />
+              <MaterialIcons name="search" size={20} color={Colors.label} style={styles.searchIcon} />
               <TextInput
                 style={styles.searchBarInput}
                 placeholder="Search country name or dialing code"
-                placeholderTextColor="#B3B7C6"
+                placeholderTextColor={Colors.inactive}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoCorrect={false}
@@ -276,14 +277,14 @@ const styles: any = StyleSheet.create({
   },
   startTitle: {
     fontSize: 24,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 8,
     textAlign: "left",
   },
   startSubtitle: {
     fontSize: 15,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 40,
     textAlign: "left",
@@ -295,7 +296,7 @@ const styles: any = StyleSheet.create({
   },
   phoneLabel: {
     fontSize: 14,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     color: Colors.label,
     marginBottom: 8,
   },
@@ -332,15 +333,15 @@ const styles: any = StyleSheet.create({
   },
   countryCodePrefix: {
     fontSize: 16,
-    fontFamily: "QuicksandMedium",
-    color: "#1B2130",
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
     marginRight: 8,
   },
   phoneTextInput: {
     flex: 1,
     fontSize: 16,
-    color: "#1B2130",
-    fontFamily: "QuicksandMedium",
+    color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
     paddingVertical: 0,
     // @ts-ignore: outlineStyle is web-only
     outlineStyle: "none",
@@ -378,7 +379,7 @@ const styles: any = StyleSheet.create({
   continueBtnText: {
     color: Colors.lightgray,
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.bold,
   },
 
   // Premium Bottom-Sheet Modal styling
@@ -408,7 +409,7 @@ const styles: any = StyleSheet.create({
   modalHandle: {
     width: 36,
     height: 4,
-    backgroundColor: "#E2E5ED",
+    backgroundColor: Colors.border,
     borderRadius: 2,
     alignSelf: "center",
     marginTop: 8,
@@ -423,15 +424,15 @@ const styles: any = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontFamily: "QuicksandBold",
-    color: "#1A1D24",
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
   },
 
   // Premium Search Bar Styling
   searchBarContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F7F8FC",
+    backgroundColor: Colors.lightgray,
     borderRadius: 10,
     paddingHorizontal: 12,
     marginHorizontal: 20,
@@ -444,8 +445,8 @@ const styles: any = StyleSheet.create({
   searchBarInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "QuicksandMedium",
-    color: "#1B2130",
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
     paddingVertical: 0,
   },
 
@@ -458,7 +459,7 @@ const styles: any = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F8F9FC",
+    borderBottomColor: Colors.border,
   },
   countryFlagEmoji: {
     fontSize: 24,
@@ -467,13 +468,13 @@ const styles: any = StyleSheet.create({
   countryName: {
     flex: 1,
     fontSize: 16,
-    fontFamily: "QuicksandMedium",
-    color: "#1A1D24",
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
   },
   countryDialCode: {
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
-    color: "#6F768E",
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.label,
   },
   emptyContainer: {
     paddingVertical: 40,
@@ -481,7 +482,7 @@ const styles: any = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: "QuicksandMedium",
-    color: "#8E95A9",
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.label,
   },
 });

@@ -16,6 +16,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
@@ -374,7 +375,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.text,
     marginLeft: 5,
-    fontFamily: "Quicksand",
+    fontFamily: FontFamilies.bold,
   },
 
   categoriesContainer: {
@@ -398,12 +399,12 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 14,
-    color: "#4B5563",
-    fontWeight: "500",
+    color: Colors.label,
+    fontFamily: FontFamilies.medium,
   },
   categoryTextActive: {
     color: Colors.background,
-    fontWeight: "600",
+    fontFamily: FontFamilies.bold,
   },
   listContainer: {
     padding: 16,
@@ -417,6 +418,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: Colors.label,
+    fontFamily: FontFamilies.medium,
     marginTop: 12,
   },
   card: {
@@ -472,13 +474,14 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 17,
-    fontWeight: "bold",
-    color: "#4B5563",
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
     marginBottom: 2,
   },
   qualification: {
     fontSize: 13,
     color: Colors.label,
+    fontFamily: FontFamilies.medium,
     marginBottom: 6,
   },
   actionsRow: {
@@ -515,12 +518,12 @@ const styles = StyleSheet.create({
   bookButtonText: {
     fontSize: 15,
     color: Colors.primary,
-    fontWeight: "700",
+    fontFamily: FontFamilies.bold,
   },
   bookButtonSubtext: {
     fontSize: 11,
-    color: "#5A73A3",
+    color: Colors.label,
+    fontFamily: FontFamilies.medium,
     marginTop: 2,
-    fontWeight: "500",
   },
 });

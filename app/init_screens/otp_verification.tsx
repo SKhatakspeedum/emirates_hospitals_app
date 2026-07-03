@@ -25,6 +25,7 @@ import {
   setPatientId,
 } from "../suggestus_plugin/suggestusClient";
 import { Colors } from "../config/colors";
+import { FontFamilies } from "../config/fonts";
 import { useRoute } from "@react-navigation/native";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
@@ -75,16 +76,40 @@ export default function OTPVerificationScreen() {
   }, []);
 
   const handleChange = (text: string, idx: number) => {
-    if (/[^0-9]/.test(text)) return;
+    if (text.length === 6 && /^[0-9]+$/.test(text)) {
+      const newOtp = text.split("");
+      setOtp(newOtp);
+      inputRefs.current[5]?.focus();
+      setError("");
+      return;
+    }
+
+    const lastChar = text.length > 0 ? text[text.length - 1] : "";
+    if (lastChar && /[^0-9]/.test(lastChar)) return;
+
     const newOtp = [...otp];
-    newOtp[idx] = text;
+    newOtp[idx] = lastChar;
     setOtp(newOtp);
     setError("");
-    if (text && idx < 5) {
+
+    if (lastChar && idx < 5) {
       inputRefs.current[idx + 1]?.focus();
     }
-    if (!text && idx > 0) {
-      inputRefs.current[idx - 1]?.focus();
+  };
+
+  const handleKeyPress = (e: any, idx: number) => {
+    if (e.nativeEvent.key === "Backspace") {
+      const newOtp = [...otp];
+      if (otp[idx] === "") {
+        if (idx > 0) {
+          newOtp[idx - 1] = "";
+          setOtp(newOtp);
+          inputRefs.current[idx - 1]?.focus();
+        }
+      } else {
+        newOtp[idx] = "";
+        setOtp(newOtp);
+      }
     }
   };
 
@@ -149,12 +174,11 @@ export default function OTPVerificationScreen() {
               ? setPatientId(String(u.usr_patient_id))
               : Promise.resolve(),
           ]);
-          // router.replace("/(drawer)/tab_bar_home/HomeScreen");
-          router.replace({
-            pathname: "/init_screens/personal_details",
-          });
+          router.replace("/(drawer)/tab_bar_home/HomeScreen");
+          // router.replace({
+          //   pathname: "/init_screens/personal_details",
+          // });
         } else {
-          // router.replace("/init_screens/signup");
           router.replace({
             pathname: "/init_screens/personal_details",
             params: { phone_number: rawPhone },
@@ -254,9 +278,10 @@ export default function OTPVerificationScreen() {
                       error && !digit ? styles.otpInputError : null,
                     ]}
                     keyboardType="number-pad"
-                    maxLength={1}
+                    maxLength={6}
                     value={digit}
                     onChangeText={(text) => handleChange(text, idx)}
+                    onKeyPress={(e) => handleKeyPress(e, idx)}
                     onFocus={() => setFocusedIdx(idx)}
                     onBlur={() => setFocusedIdx(null)}
                     returnKeyType={idx === 5 ? "done" : "next"}
@@ -336,14 +361,14 @@ const styles: any = StyleSheet.create({
   },
   startTitle: {
     fontSize: 24,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 8,
     textAlign: "left",
   },
   startSubtitle: {
     fontSize: 15,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 40,
     textAlign: "left",
@@ -355,7 +380,7 @@ const styles: any = StyleSheet.create({
   },
   phoneLabel: {
     fontSize: 14,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.semiBold,
     color: Colors.label,
     marginBottom: 16,
   },
@@ -373,9 +398,9 @@ const styles: any = StyleSheet.create({
     borderColor: Colors.border,
     fontSize: 20,
     textAlign: "center",
-    color: "#1B2130",
+    color: Colors.text,
     backgroundColor: Colors.lightgray,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     // @ts-ignore: outlineStyle is web-only
     outlineStyle: "none",
     outlineWidth: 0,
@@ -391,7 +416,7 @@ const styles: any = StyleSheet.create({
     fontSize: 13,
     marginTop: 8,
     textAlign: "left",
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
   },
   resendRow: {
     flexDirection: "row",
@@ -403,11 +428,11 @@ const styles: any = StyleSheet.create({
   resendText: {
     color: Colors.label,
     fontSize: 14,
-    fontFamily: "QuicksandMedium",
+    fontFamily: FontFamilies.medium,
   },
   resendLink: {
     color: Colors.secondary,
-    fontFamily: "QuicksandBold",
+    fontFamily: FontFamilies.bold,
     fontSize: 14,
   },
   bottomBtnContainer: {
@@ -442,6 +467,6 @@ const styles: any = StyleSheet.create({
   verifyBtnText: {
     color: Colors.lightgray,
     fontSize: 16,
-    fontFamily: "QuicksandSemiBold",
+    fontFamily: FontFamilies.bold,
   },
 });

@@ -329,7 +329,12 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ThemeProvider value={DefaultTheme}>
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen
+            name="patient/register_new_patient"
+            options={{ presentation: "transparentModal", headerShown: false }}
+          />
+        </Stack>
         <StatusBar style="auto" />
         <Toast />
       </ThemeProvider>

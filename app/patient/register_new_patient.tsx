@@ -10,8 +10,8 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
-  Dimensions,
   Modal,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { IS_LOGGED_IN, USER_FULL_DATA, SPD_USER_NAME } from "../config/config";
+import { IS_LOGGED_IN, USER_FULL_DATA } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
@@ -28,30 +28,19 @@ import {
   setPatientId,
 } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
-import { SiteConfig } from "../config/site_config";
-import confettiParticles from "../json_dummy_datas/confettiParticles";
 
 const formatEmiratesId = (text: string) => {
   const cleaned = text.replace(/\D/g, "");
   let formatted = "";
-  if (cleaned.length > 0) {
-    formatted += cleaned.substring(0, 3);
-  }
-  if (cleaned.length > 3) {
-    formatted += "-" + cleaned.substring(3, 7);
-  }
-  if (cleaned.length > 7) {
-    formatted += "-" + cleaned.substring(7, 14);
-  }
-  if (cleaned.length > 14) {
-    formatted += "-" + cleaned.substring(14, 15);
-  }
+  if (cleaned.length > 0) formatted += cleaned.substring(0, 3);
+  if (cleaned.length > 3) formatted += "-" + cleaned.substring(3, 7);
+  if (cleaned.length > 7) formatted += "-" + cleaned.substring(7, 14);
+  if (cleaned.length > 14) formatted += "-" + cleaned.substring(14, 15);
   return formatted;
 };
 
-const formatPassport = (text: string) => {
-  return text.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-};
+const formatPassport = (text: string) =>
+  text.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
 export default function RegisterNewPatient() {
   const router = useRouter();
@@ -59,6 +48,7 @@ export default function RegisterNewPatient() {
   const isSelf =
     (route.params as any)?.isSelf === true ||
     (route.params as any)?.isSelf === "true";
+
   const [emiratesId, setEmiratesId] = useState("");
   const [passportNo, setPassportNo] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -69,46 +59,31 @@ export default function RegisterNewPatient() {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
 
-  // Form validity check to enable/disable Continue button
   const isIdProvided =
     emiratesId.trim().length > 0 || passportNo.trim().length > 0;
-  const isFirstNameValid = firstName.trim().length > 0;
-  const isLastNameValid = lastName.trim().length > 0;
-  const isGenderValid = gender !== "";
   const isFormValid =
-    isIdProvided && isFirstNameValid && isLastNameValid && isGenderValid;
+    isIdProvided &&
+    firstName.trim().length > 0 &&
+    lastName.trim().length > 0 &&
+    gender !== "";
+
+  const handleClose = () => router.back();
 
   const handleContinue = async () => {
     if (!emiratesId.trim() && !passportNo.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Required Field",
-        text2: "Please enter either your Emirates ID or Passport number.",
-      });
+      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter either your Emirates ID or Passport number." });
       return;
     }
     if (!firstName.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Required Field",
-        text2: "Please enter your First name to continue.",
-      });
+      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your First name to continue." });
       return;
     }
     if (!lastName.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Required Field",
-        text2: "Please enter your Last name to continue.",
-      });
+      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your Last name to continue." });
       return;
     }
     if (!gender) {
-      Toast.show({
-        type: "error",
-        text1: "Required Field",
-        text2: "Please select your gender.",
-      });
+      Toast.show({ type: "error", text1: "Required Field", text2: "Please select your gender." });
       return;
     }
 
@@ -129,13 +104,11 @@ export default function RegisterNewPatient() {
             },
           },
         );
-
         if (checkRes?.returnCode === true && checkRes.returnData?.length > 0) {
           Toast.show({
             type: "error",
             text1: "Patient Already Exists",
-            text2:
-              "A patient with this Emirates ID or Passport is already registered.",
+            text2: "A patient with this Emirates ID or Passport is already registered.",
           });
           return;
         }
@@ -173,9 +146,7 @@ export default function RegisterNewPatient() {
         Toast.show({
           type: "error",
           text1: "Error",
-          text2:
-            saveRes?.returnMessage ??
-            "Failed to save patient. Please try again.",
+          text2: saveRes?.returnMessage ?? "Failed to save patient. Please try again.",
         });
         return;
       }
@@ -186,20 +157,14 @@ export default function RegisterNewPatient() {
       if (!userId) {
         const fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
         if (fullDataStr) {
-          try {
-            userId = JSON.parse(fullDataStr)?.usr_id ?? "";
-          } catch (_) {}
+          try { userId = JSON.parse(fullDataStr)?.usr_id ?? ""; } catch (_) {}
         }
       }
 
       if (isSelf) {
         await callSuggestusAPI(
           spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
-          {
-            p_patient_id: patientId,
-            p_user_id: userId ?? "",
-            p_additional_attribites: {},
-          },
+          { p_patient_id: patientId, p_user_id: userId ?? "", p_additional_attribites: {} },
         );
       } else {
         await callSuggestusAPI(
@@ -222,67 +187,67 @@ export default function RegisterNewPatient() {
 
       Toast.show({
         type: "success",
-        text1: "Profile Updated Successfully",
+        text1: "Patient Added Successfully",
         text2: "Welcome to Emirates Hospitals Group",
       });
 
       router.replace("/patient/registered_patients");
     } catch (error) {
-      console.error("Error saving personal details:", error);
+      console.error("Error saving patient details:", error);
       Toast.show({
         type: "error",
         text1: "Error",
-        text2:
-          "Something went wrong while saving your details. Please try again.",
+        text2: "Something went wrong while saving your details. Please try again.",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const { height: screenHeight } = Dimensions.get("window");
-  const isSmallScreen = screenHeight < 680;
-
   return (
-    <View style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          showsHorizontalScrollIndicator={false}
-          bounces={false}
+    <Modal
+      visible={true}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={handleClose}
+    >
+      <View style={styles.overlay}>
+        <KeyboardAvoidingView
+          style={styles.sheet}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View
-            style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}
+          {/* Drag indicator */}
+          <View style={styles.dragIndicator} />
+
+          {/* Header */}
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>Add New Patient</Text>
+            <TouchableOpacity onPress={handleClose} style={styles.closeBtn} activeOpacity={0.7}>
+              <Ionicons name="close" size={22} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
           >
-            {/* Subheading instruction text */}
             <Text style={styles.subtext}>
               Enter your details for a personalized healthcare experience.
             </Text>
 
-            {/* Unified Emirates ID / Passport Card */}
+            {/* Emirates ID / Passport Card */}
             <View style={styles.unifiedCard}>
               <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: "#7D8A9D" }]}>
-                  Emirates ID
-                </Text>
-                <View
-                  style={[
-                    styles.cardInputWrapper,
-                    focusedField === "emiratesId" && styles.inputWrapperFocused,
-                  ]}
-                >
+                <Text style={[styles.inputLabel, { color: "#7D8A9D" }]}>Emirates ID</Text>
+                <View style={[styles.cardInputWrapper, focusedField === "emiratesId" && styles.inputWrapperFocused]}>
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="123-0000-5505123-1"
                     placeholderTextColor={Colors.inactive}
                     value={emiratesId}
-                    onChangeText={(text) =>
-                      setEmiratesId(formatEmiratesId(text))
-                    }
+                    onChangeText={(t) => setEmiratesId(formatEmiratesId(t))}
                     onFocus={() => setFocusedField("emiratesId")}
                     onBlur={() => setFocusedField("")}
                     keyboardType="numeric"
@@ -299,21 +264,14 @@ export default function RegisterNewPatient() {
               </View>
 
               <View style={[styles.inputContainer, { marginBottom: 0 }]}>
-                <Text style={[styles.inputLabel, { color: Colors.label }]}>
-                  Passport no.
-                </Text>
-                <View
-                  style={[
-                    styles.cardInputWrapper,
-                    focusedField === "passportNo" && styles.inputWrapperFocused,
-                  ]}
-                >
+                <Text style={[styles.inputLabel, { color: Colors.label }]}>Passport no.</Text>
+                <View style={[styles.cardInputWrapper, focusedField === "passportNo" && styles.inputWrapperFocused]}>
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="K5012250"
                     placeholderTextColor={Colors.inactive}
                     value={passportNo}
-                    onChangeText={(text) => setPassportNo(formatPassport(text))}
+                    onChangeText={(t) => setPassportNo(formatPassport(t))}
                     onFocus={() => setFocusedField("passportNo")}
                     onBlur={() => setFocusedField("")}
                     autoCapitalize="characters"
@@ -324,28 +282,12 @@ export default function RegisterNewPatient() {
               </View>
             </View>
 
-            {/* First Name & Last Name row */}
+            {/* First Name & Last Name */}
             <View style={styles.rowContainer}>
-              <View
-                style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
-              >
+              <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
                 <Text style={styles.inputLabel}>First name</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === "firstName" && styles.inputWrapperFocused,
-                  ]}
-                >
-                  <Ionicons
-                    name="person-outline"
-                    size={20}
-                    color={
-                      focusedField === "firstName"
-                        ? Colors.secondary
-                        : Colors.label
-                    }
-                    style={styles.inputIcon}
-                  />
+                <View style={[styles.inputWrapper, focusedField === "firstName" && styles.inputWrapperFocused]}>
+                  <Ionicons name="person-outline" size={20} color={focusedField === "firstName" ? Colors.secondary : Colors.label} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="John"
@@ -359,25 +301,10 @@ export default function RegisterNewPatient() {
                   />
                 </View>
               </View>
-
               <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.inputLabel}>Last name</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === "lastName" && styles.inputWrapperFocused,
-                  ]}
-                >
-                  <Ionicons
-                    name="person-outline"
-                    size={20}
-                    color={
-                      focusedField === "lastName"
-                        ? Colors.secondary
-                        : Colors.label
-                    }
-                    style={styles.inputIcon}
-                  />
+                <View style={[styles.inputWrapper, focusedField === "lastName" && styles.inputWrapperFocused]}>
+                  <Ionicons name="person-outline" size={20} color={focusedField === "lastName" ? Colors.secondary : Colors.label} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="Doe"
@@ -393,24 +320,12 @@ export default function RegisterNewPatient() {
               </View>
             </View>
 
-            {/* Date of birth */}
+            {/* Date of Birth */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Date of birth</Text>
               {Platform.OS === "web" ? (
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === "dob" && styles.inputWrapperFocused,
-                  ]}
-                >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color={
-                      focusedField === "dob" ? Colors.secondary : Colors.label
-                    }
-                    style={styles.inputIcon}
-                  />
+                <View style={[styles.inputWrapper, focusedField === "dob" && styles.inputWrapperFocused]}>
+                  <Ionicons name="calendar-outline" size={20} color={focusedField === "dob" ? Colors.secondary : Colors.label} style={styles.inputIcon} />
                   <input
                     type="date"
                     value={dayjs(dob).format("YYYY-MM-DD")}
@@ -418,153 +333,81 @@ export default function RegisterNewPatient() {
                     max={dayjs().format("YYYY-MM-DD")}
                     onChange={(e) => {
                       if (e.target.value) {
-                        const dateStr = e.target.value;
-                        const selectedDate = new Date(dateStr);
-                        const year = selectedDate.getFullYear();
+                        const d = new Date(e.target.value);
                         const today = new Date();
                         const minDate = new Date(1900, 0, 1);
-
-                        if (year >= 1000) {
-                          if (selectedDate < minDate) {
-                            setDob(minDate);
-                          } else if (year > today.getFullYear()) {
-                            setDob(today);
-                          } else {
-                            setDob(selectedDate);
-                          }
+                        if (d.getFullYear() >= 1000) {
+                          setDob(d < minDate ? minDate : d > today ? today : d);
                         } else {
-                          setDob(selectedDate);
+                          setDob(d);
                         }
                       }
                     }}
                     onFocus={() => setFocusedField("dob")}
-                    onBlur={() => {
-                      setFocusedField("");
-                      const today = new Date();
-                      const minDate = new Date(1900, 0, 1);
-                      if (dob > today) {
-                        setDob(today);
-                      } else if (dob < minDate) {
-                        setDob(minDate);
-                      }
-                    }}
-                    style={{
-                      flex: 1,
-                      border: "none",
-                      outline: "none",
-                      fontSize: "16px",
-                      fontFamily: FontFamilies.medium,
-                      color: Colors.text,
-                      backgroundColor: "transparent",
-                      height: "100%",
-                    }}
+                    onBlur={() => setFocusedField("")}
+                    style={{ flex: 1, border: "none", outline: "none", fontSize: "16px", fontFamily: FontFamilies.medium, color: Colors.text, backgroundColor: "transparent", height: "100%" }}
                   />
                 </View>
               ) : (
                 <TouchableOpacity
-                  style={[
-                    styles.inputWrapper,
-                    showDatePicker && styles.inputWrapperFocused,
-                  ]}
+                  style={[styles.inputWrapper, showDatePicker && styles.inputWrapperFocused]}
                   onPress={() => setShowDatePicker(true)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color={showDatePicker ? Colors.secondary : Colors.label}
-                    style={styles.inputIcon}
-                  />
-                  <Text style={styles.input}>
-                    {dayjs(dob).format("MMM DD, YYYY")}
-                  </Text>
+                  <Ionicons name="calendar-outline" size={20} color={showDatePicker ? Colors.secondary : Colors.label} style={styles.inputIcon} />
+                  <Text style={styles.input}>{dayjs(dob).format("MMM DD, YYYY")}</Text>
                   <Text style={styles.changeLinkText}>Change</Text>
                 </TouchableOpacity>
               )}
             </View>
 
-            {/* Gender Select */}
+            {/* Gender */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Gender</Text>
               <View style={styles.rowContainer}>
                 <TouchableOpacity
-                  style={[
-                    styles.genderBox,
-                    gender === "Male" && styles.genderBoxActive,
-                    { marginRight: 8 },
-                  ]}
+                  style={[styles.genderBox, gender === "Male" && styles.genderBoxActive, { marginRight: 8 }]}
                   onPress={() => setGender("Male")}
                   activeOpacity={0.8}
                 >
                   <View style={styles.radioContainer}>
-                    <View
-                      style={[
-                        styles.radioOuter,
-                        gender === "Male" && styles.radioOuterActive,
-                      ]}
-                    >
+                    <View style={[styles.radioOuter, gender === "Male" && styles.radioOuterActive]}>
                       {gender === "Male" && <View style={styles.radioInner} />}
                     </View>
                     <Text style={styles.genderText}>Male</Text>
                   </View>
                 </TouchableOpacity>
-
                 <TouchableOpacity
-                  style={[
-                    styles.genderBox,
-                    gender === "Female" && styles.genderBoxActive,
-                    { marginLeft: 8 },
-                  ]}
+                  style={[styles.genderBox, gender === "Female" && styles.genderBoxActive, { marginLeft: 8 }]}
                   onPress={() => setGender("Female")}
                   activeOpacity={0.8}
                 >
                   <View style={styles.radioContainer}>
-                    <View
-                      style={[
-                        styles.radioOuter,
-                        gender === "Female" && styles.radioOuterActive,
-                      ]}
-                    >
-                      {gender === "Female" && (
-                        <View style={styles.radioInner} />
-                      )}
+                    <View style={[styles.radioOuter, gender === "Female" && styles.radioOuterActive]}>
+                      {gender === "Female" && <View style={styles.radioInner} />}
                     </View>
                     <Text style={styles.genderText}>Female</Text>
                   </View>
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
-        </ScrollView>
 
-        <View
-          style={[
-            styles.bottomBtnContainer,
-            {
-              paddingBottom:
-                Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24,
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={[
-              styles.continueBtn,
-              isFormValid
-                ? styles.continueBtnEnabled
-                : styles.continueBtnDisabled,
-            ]}
-            disabled={loading || !isFormValid}
-            onPress={handleContinue}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color={Colors.background} />
-            ) : (
-              <Text style={styles.continueBtnText}>Continue</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+            {/* Continue Button */}
+            <TouchableOpacity
+              style={[styles.continueBtn, isFormValid ? styles.continueBtnEnabled : styles.continueBtnDisabled]}
+              disabled={loading || !isFormValid}
+              onPress={handleContinue}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color={Colors.background} />
+              ) : (
+                <Text style={styles.continueBtnText}>Continue</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
 
       <DateTimePickerModal
         isVisible={showDatePicker}
@@ -575,38 +418,77 @@ export default function RegisterNewPatient() {
         onConfirm={(date) => {
           const today = new Date();
           const minDate = new Date(1900, 0, 1);
-
-          if (date > today) {
-            setDob(today);
-          } else if (date < minDate) {
-            setDob(minDate);
-          } else {
-            setDob(date);
-          }
+          setDob(date > today ? today : date < minDate ? minDate : date);
           setShowDatePicker(false);
         }}
         onCancel={() => setShowDatePicker(false)}
       />
       <Toast />
-    </View>
+    </Modal>
   );
 }
 
 const styles: any = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+  sheet: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "92%",
+    paddingBottom: Platform.OS === "ios" ? 34 : 24,
+  },
+  dragIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    alignSelf: "center",
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  sheetTitle: {
+    fontSize: 17,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.lightgray,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  subtext: {
+    fontSize: 14,
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
+    marginBottom: 20,
+    lineHeight: 20,
   },
   unifiedCard: {
     backgroundColor: "#EBF3FC",
     borderRadius: 16,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   cardInputWrapper: {
     flexDirection: "row",
@@ -616,12 +498,12 @@ const styles: any = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
-    height: 56,
+    height: 52,
   },
   orDividerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 16,
+    marginVertical: 12,
   },
   dottedLine: {
     flex: 1,
@@ -636,23 +518,14 @@ const styles: any = StyleSheet.create({
     color: Colors.label,
     marginHorizontal: 12,
   },
-  subtext: {
-    fontSize: 14,
-    fontFamily: FontFamilies.medium,
-    color: Colors.text,
-    marginBottom: 24,
-    lineHeight: 20,
-    textAlign: "left",
-  },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontFamilies.semiBold,
     color: Colors.label,
     marginBottom: 8,
-    textAlign: "left",
   },
   inputWrapper: {
     flexDirection: "row",
@@ -662,7 +535,7 @@ const styles: any = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
-    height: 56,
+    height: 52,
   },
   inputWrapperFocused: {
     borderColor: Colors.secondary,
@@ -672,13 +545,12 @@ const styles: any = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.text,
     fontFamily: FontFamilies.semiBold,
     paddingVertical: 0,
     minWidth: 0,
   },
-  // @ts-ignore: outlineStyle is web-only
   inputNoOutline: {
     outlineStyle: "none",
     outlineWidth: 0,
@@ -687,35 +559,14 @@ const styles: any = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  datePickerTrigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: Colors.lightgray,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 56,
-  },
-  datePickerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  datePickerText: {
-    fontSize: 16,
-    color: Colors.text,
-    fontFamily: FontFamilies.semiBold,
-  },
-
   changeLinkText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontFamilies.bold,
     color: Colors.secondary,
   },
   genderBox: {
     flex: 1,
-    height: 56,
+    height: 52,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -739,7 +590,7 @@ const styles: any = StyleSheet.create({
     borderColor: Colors.inactive,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 10,
   },
   radioOuterActive: {
     borderColor: Colors.primary,
@@ -751,104 +602,30 @@ const styles: any = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   genderText: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: FontFamilies.bold,
     color: Colors.text,
   },
-  bottomBtnContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: Platform.OS === "ios" ? 36 : 24,
-    paddingTop: 12,
-    backgroundColor: Colors.background,
-  },
   continueBtn: {
     width: "100%",
-    borderRadius: 8,
+    borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
+    marginTop: 8,
   },
   continueBtnEnabled: {
     backgroundColor: Colors.primary,
     ...Platform.select({
-      ios: {
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
+      ios: { shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+      android: { elevation: 4 },
     }),
   },
   continueBtnDisabled: {
     backgroundColor: Colors.inactive,
   },
   continueBtnText: {
-    color: Colors.lightgray,
+    color: Colors.background,
     fontSize: 16,
     fontFamily: FontFamilies.bold,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: Colors.background,
-    borderRadius: 24,
-    paddingVertical: 24,
-    paddingHorizontal: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "90%",
-    height: "65%",
-    maxWidth: 340,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  illustrationContainer: {
-    width: 280,
-    height: 280,
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  successIconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.secondary,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  confetti: {
-    position: "absolute",
-    borderRadius: 2,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: FontFamilies.bold,
-    color: Colors.text,
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  modalSubtext: {
-    fontSize: 14,
-    fontFamily: FontFamilies.medium,
-    color: Colors.label,
-    textAlign: "center",
-    lineHeight: 22,
-    paddingHorizontal: 10,
   },
 });

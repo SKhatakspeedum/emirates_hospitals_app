@@ -8,7 +8,7 @@ const Stack = createNativeStackNavigator();
 
 export default function MedicinesStackScreen() {
     return (
-        <Stack.Navigator id="MedicinesStack" screenOptions={{ headerShown: false }}>
+        <Stack.Navigator id="MedicinesStack" screenOptions={{ headerShown: false, animation: "slide_from_right", animationTypeForReplace: "push" }}>
             <Stack.Screen name="MedicinesList" component={MedicinesScreen} />
             <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
             <Stack.Screen name="Cart" component={CartScreen} />

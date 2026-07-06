@@ -251,29 +251,17 @@ export default function OTPVerificationScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View
-            style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}
-          >
-            <View
-              style={[
-                styles.logoContainer,
-                { marginVertical: isSmallScreen ? 15 : 40 },
-              ]}
-            >
+          <View style={styles.content}>
+            <View style={styles.logoContainer}>
               <Image
                 source={require("@/assets/images/logo.png")}
-                style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
+                style={styles.logoImg}
                 resizeMode="contain"
               />
             </View>
 
             <Text style={styles.startTitle}>Awesome, Thanks!</Text>
-            <Text
-              style={[
-                styles.startSubtitle,
-                { marginBottom: isSmallScreen ? 20 : 40 },
-              ]}
-            >
+            <Text style={styles.startSubtitle}>
               Enter the 6 digit code we sent to {phoneDisplay} to verify your
               number.
             </Text>
@@ -323,15 +311,7 @@ export default function OTPVerificationScreen() {
           </View>
         </ScrollView>
 
-        <View
-          style={[
-            styles.bottomBtnContainer,
-            {
-              paddingBottom:
-                Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24,
-            },
-          ]}
-        >
+        <View style={styles.bottomBtnContainer}>
           <TouchableOpacity
             style={[
               styles.verifyBtn,
@@ -369,12 +349,13 @@ const styles: any = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-
+    marginVertical: 50,
     width: "100%",
-    marginVertical: 40,
   },
   logoImg: {
-    width: 280,
+    width: "80%",
+    maxWidth: 280,
+    aspectRatio: 4,
     height: 70,
   },
   startTitle: {

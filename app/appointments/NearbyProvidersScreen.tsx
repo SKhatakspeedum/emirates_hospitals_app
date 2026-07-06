@@ -267,7 +267,7 @@ export default function NearbyProvidersScreen() {
                   )}
 
                   {/* Actions Row */}
-                  <View style={styles.actionsRow}>
+                  {/* <View style={styles.actionsRow}>
                     <TouchableOpacity
                       style={styles.actionIconButton}
                       activeOpacity={0.7}
@@ -290,7 +290,7 @@ export default function NearbyProvidersScreen() {
                     >
                       <Text style={styles.infoText}>i</Text>
                     </TouchableOpacity>
-                  </View>
+                  </View> */}
                 </View>
               </View>
 

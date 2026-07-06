@@ -18,7 +18,7 @@ const HomeStack = createNativeStackNavigator();
 
 export default function HomeStackScreen() {
   return (
-    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+    <HomeStack.Navigator screenOptions={{ headerShown: false, animation: "slide_from_right", animationTypeForReplace: "push" }}>
       <HomeStack.Screen name="Dashboard" component={DashboardScreen} />
       <HomeStack.Screen name="Appointment" component={AppointmentScreen} />
       <HomeStack.Screen name="NearbyProviders" component={NearbyProvidersScreen} />

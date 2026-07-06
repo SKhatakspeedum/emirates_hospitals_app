@@ -329,7 +329,14 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ThemeProvider value={DefaultTheme}>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: "slide_from_right",
+            animationTypeForReplace: "push",
+            animationDuration: 250,
+          }}
+        >
           <Stack.Screen
             name="patient/register_new_patient"
             options={{ presentation: "transparentModal", headerShown: false }}

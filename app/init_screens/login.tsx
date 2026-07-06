@@ -145,17 +145,17 @@ export default function LoginScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={[styles.content, { paddingTop: isSmallScreen ? 40 : 80 }]}>
-            <View style={[styles.logoContainer, { marginVertical: isSmallScreen ? 15 : 50 }]}>
+          <View style={styles.content}>
+            <View style={styles.logoContainer}>
               <Image
                 source={require("@/assets/images/logo.png")}
-                style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
+                style={styles.logoImg}
                 resizeMode="contain"
               />
             </View>
 
             <Text style={styles.startTitle}>Let's get started</Text>
-            <Text style={[styles.startSubtitle, { marginBottom: isSmallScreen ? 20 : 40 }]}>To start, what is your mobile phone number?</Text>
+            <Text style={styles.startSubtitle}>To start, what is your mobile phone number?</Text>
 
             <View style={styles.inputContainer}>
               <Text style={styles.phoneLabel}>Phone No.</Text>
@@ -191,7 +191,7 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
 
-        <View style={[styles.bottomBtnContainer, { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 }]}>
+        <View style={styles.bottomBtnContainer}>
           <TouchableOpacity
             style={[
               styles.continueBtn,

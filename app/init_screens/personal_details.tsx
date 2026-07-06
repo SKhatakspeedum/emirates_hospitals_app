@@ -180,9 +180,9 @@ export default function PersonalDetailsScreen() {
       const alreadyVerified =
         isResident
           ? emiratesIdCheck.status === "available" &&
-            emiratesIdCheck.checkedValue === emiratesId
+          emiratesIdCheck.checkedValue === emiratesId
           : passportCheck.status === "available" &&
-            passportCheck.checkedValue === passportNo;
+          passportCheck.checkedValue === passportNo;
 
       if (!alreadyVerified) {
         const checkRes = await callSuggestusAPI(
@@ -229,7 +229,7 @@ export default function PersonalDetailsScreen() {
       if (currentDataStr) {
         try {
           updatedData = { ...JSON.parse(currentDataStr), ...updatedData };
-        } catch (_) {}
+        } catch (_) { }
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
@@ -530,8 +530,8 @@ export default function PersonalDetailsScreen() {
                             selectedDate < minDate
                               ? minDate
                               : year > today.getFullYear()
-                              ? today
-                              : selectedDate,
+                                ? today
+                                : selectedDate,
                           );
                         } else {
                           setDob(selectedDate);

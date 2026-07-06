@@ -142,8 +142,35 @@ export default function PatientDetailsScreen() {
     const lastName = nameParts.slice(1).join(" ") ?? "";
     const genderCode = patientGender === "Male" ? "1" : "2";
 
+    const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
     setIsSaving(true);
     try {
+      const emiratesIdToCheck = "";
+      const passportToCheck = "";
+      if (emiratesIdToCheck || passportToCheck) {
+        const checkRes = await callSuggestusAPI(
+          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          {
+            p_user_id: userId,
+            // // p_patient_id: p_patient_id,
+            // p_search_text: "",
+            // p_search_additional_attributes: "",
+            // p_process_flag: "user_patients",
+            p_additional_attribute: {
+              p_emirates_id: emiratesIdToCheck,
+              p_passport_no: passportToCheck,
+            },
+          },
+        );
+        if (checkRes?.returnCode === true && checkRes.returnData?.length > 0) {
+          alert(
+            "A patient with this Emirates ID or Passport is already registered.",
+          );
+          setIsSaving(false);
+          return null;
+        }
+      }
+
       const response = await callSuggestusAPI(
         spd_processId_config.xcelpat_save_trn_patient_master,
         {

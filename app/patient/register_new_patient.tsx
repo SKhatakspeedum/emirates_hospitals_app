@@ -56,7 +56,9 @@ const formatPassport = (text: string) => {
 export default function RegisterNewPatient() {
   const router = useRouter();
   const route = useRoute<any>();
-  const isSelf = (route.params as any)?.isSelf === true || (route.params as any)?.isSelf === "true";
+  const isSelf =
+    (route.params as any)?.isSelf === true ||
+    (route.params as any)?.isSelf === "true";
   const [emiratesId, setEmiratesId] = useState("");
   const [passportNo, setPassportNo] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -68,11 +70,13 @@ export default function RegisterNewPatient() {
   const [focusedField, setFocusedField] = useState("");
 
   // Form validity check to enable/disable Continue button
-  const isIdProvided = emiratesId.trim().length > 0 || passportNo.trim().length > 0;
+  const isIdProvided =
+    emiratesId.trim().length > 0 || passportNo.trim().length > 0;
   const isFirstNameValid = firstName.trim().length > 0;
   const isLastNameValid = lastName.trim().length > 0;
   const isGenderValid = gender !== "";
-  const isFormValid = isIdProvided && isFirstNameValid && isLastNameValid && isGenderValid;
+  const isFormValid =
+    isIdProvided && isFirstNameValid && isLastNameValid && isGenderValid;
 
   const handleContinue = async () => {
     if (!emiratesId.trim() && !passportNo.trim()) {
@@ -114,6 +118,29 @@ export default function RegisterNewPatient() {
       const formattedDob = dayjs(dob).format("YYYY-MM-DD");
       const emiratesIdClean = emiratesId.replace(/-/g, "");
 
+      // Check if patient already exists in EMR by Emirates ID or Passport
+      if (emiratesIdClean || passportNo.trim()) {
+        const checkRes = await callSuggestusAPI(
+          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          {
+            p_additional_attribute: {
+              p_emirates_id: emiratesIdClean,
+              p_passport_no: passportNo.trim(),
+            },
+          },
+        );
+
+        if (checkRes?.returnCode === true && checkRes.returnData?.length > 0) {
+          Toast.show({
+            type: "error",
+            text1: "Patient Already Exists",
+            text2:
+              "A patient with this Emirates ID or Passport is already registered.",
+          });
+          return;
+        }
+      }
+
       const saveRes = await callSuggestusAPI(
         spd_processId_config.xcelpat_save_trn_patient_master,
         {
@@ -146,7 +173,9 @@ export default function RegisterNewPatient() {
         Toast.show({
           type: "error",
           text1: "Error",
-          text2: saveRes?.returnMessage ?? "Failed to save patient. Please try again.",
+          text2:
+            saveRes?.returnMessage ??
+            "Failed to save patient. Please try again.",
         });
         return;
       }
@@ -157,7 +186,9 @@ export default function RegisterNewPatient() {
       if (!userId) {
         const fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
         if (fullDataStr) {
-          try { userId = JSON.parse(fullDataStr)?.usr_id ?? ""; } catch (_) { }
+          try {
+            userId = JSON.parse(fullDataStr)?.usr_id ?? "";
+          } catch (_) {}
         }
       }
 
@@ -201,7 +232,8 @@ export default function RegisterNewPatient() {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Something went wrong while saving your details. Please try again.",
+        text2:
+          "Something went wrong while saving your details. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -517,7 +549,9 @@ export default function RegisterNewPatient() {
           <TouchableOpacity
             style={[
               styles.continueBtn,
-              isFormValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
+              isFormValid
+                ? styles.continueBtnEnabled
+                : styles.continueBtnDisabled,
             ]}
             disabled={loading || !isFormValid}
             onPress={handleContinue}

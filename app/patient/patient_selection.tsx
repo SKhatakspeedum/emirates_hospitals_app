@@ -10,6 +10,7 @@ import {
   StatusBar,
   Platform,
   Dimensions,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -92,6 +93,27 @@ export default function PatientSelectionScreen() {
       const genderCode = gender === "Female" ? "2" : "1";
       const formattedDob = dob ? dayjs(dob).format("YYYY-MM-DD") : "";
 
+      const emiratesIdToCheck = attrs.p_emirates_id ?? "";
+      const passportToCheck = attrs.p_identification_num ?? "";
+      if (emiratesIdToCheck || passportToCheck) {
+        const checkRes = await callSuggestusAPI(
+          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          {
+            p_additional_attribute: {
+              p_emirates_id: emiratesIdToCheck,
+              p_passport_no: passportToCheck,
+            },
+          },
+        );
+        if (checkRes?.returnCode === true && checkRes.returnData?.length > 0) {
+          Alert.alert(
+            "Patient Already Exists",
+            "A patient with this Emirates ID or Passport is already registered.",
+          );
+          return;
+        }
+      }
+
       const saveRes = await callSuggestusAPI(
         spd_processId_config.xcelpat_save_trn_patient_master,
         {
@@ -131,7 +153,7 @@ export default function PatientSelectionScreen() {
         if (!userId) {
           try {
             userId = parsed?.usr_id ?? "";
-          } catch (_) { }
+          } catch (_) {}
         }
 
         await callSuggestusAPI(

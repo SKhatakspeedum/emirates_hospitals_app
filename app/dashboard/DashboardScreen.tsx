@@ -22,8 +22,22 @@ import { router } from "expo-router";
 import { SPD_USER_NAME, SPD_SELECTED_PATIENT } from "@/app/config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
 const { width, height } = Dimensions.get("window");
+
+const getGreetingTime = () => {
+  const currentHour = new Date().getHours();
+  if (currentHour < 12) {
+    return 'Morning';
+  } else if (currentHour < 18) {
+    return 'Afternoon';
+  } else {
+    return 'Evening';
+  }
+};
 
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
@@ -40,7 +54,7 @@ export default function DashboardScreen() {
             const p = JSON.parse(patStr);
             if (p.name) setUserProfileName(p.name);
             if (p.age || p.gender) setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-          } catch (_) {}
+          } catch (_) { }
         } else {
           const name = await AsyncStorage.getItem(SPD_USER_NAME);
           if (name) setUserProfileName(name);
@@ -52,8 +66,8 @@ export default function DashboardScreen() {
     }, [])
   );
 
-  const handleSeeAllProviders = () => {};
-  const handleSeeAllSpecialties = () => {};
+  const handleSeeAllProviders = () => { };
+  const handleSeeAllSpecialties = () => { };
 
   const Providers = [
     {
@@ -126,7 +140,32 @@ export default function DashboardScreen() {
       bgColor: "#EBF5FB",
       onPress: async () => {
         const pid = await AsyncStorage.getItem("sg_patientId");
-        if (!pid || pid === "null") {
+        if (pid && pid !== "null") {
+          navigation.navigate("Appointment");
+        } else {
+          try {
+            const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+            const response = await callSuggestusAPI(
+              spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+              {
+                p_user_id: userId,
+                p_search_text: "",
+                p_search_additional_attributes: "",
+                p_process_flag: "user_patients",
+              }
+            );
+
+            if (response?.returnCode === true && response.returnData?.length > 0) {
+              router.push({
+                pathname: "/patient/registered_patients",
+                params: { hideSkip: "true" }
+              });
+              return;
+            }
+          } catch (error) {
+            console.error("Error checking patients in Dashboard:", error);
+          }
+
           let phone = "";
           try {
             const fullDataStr = await AsyncStorage.getItem("sg_user_full_data");
@@ -134,13 +173,11 @@ export default function DashboardScreen() {
               const parsed = JSON.parse(fullDataStr);
               phone = parsed.contact || "";
             }
-          } catch (e) {}
+          } catch (e) { }
           router.push({
             pathname: "/patient/register_new_patient",
             params: { phone_number: phone },
           });
-        } else {
-          navigation.navigate("PatientDetails");
         }
       },
     },
@@ -158,7 +195,7 @@ export default function DashboardScreen() {
       IconFamily: Ionicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
-      onPress: () => {},
+      onPress: () => { },
     },
     {
       label: "Rx refill",
@@ -166,7 +203,7 @@ export default function DashboardScreen() {
       IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
-      onPress: () => {},
+      onPress: () => { },
     },
   ];
 
@@ -210,24 +247,15 @@ export default function DashboardScreen() {
 
           <View style={styles.greetingContainer}>
             <Text style={styles.greetingText}>
-              {noPatient ? `Welcome, ${userProfileName}!` : `Morning, ${userProfileName}!`}
+              {noPatient ? `Welcome, ${userProfileName}!` : `${getGreetingTime()}, ${userProfileName}!`}
             </Text>
-            {patientMeta ? (
-              <View style={styles.patientMetaRow}>
-                <View style={styles.patientMetaBadge}>
-                  <Text style={styles.patientMetaText}>{patientMeta.age} Yrs</Text>
-                </View>
-                <View style={styles.patientMetaBadge}>
-                  <Text style={styles.patientMetaText}>{patientMeta.gender}</Text>
-                </View>
-              </View>
-            ) : (
-              <Text style={styles.subGreetingText}>
-                {noPatient
-                  ? "Start exploring healthcare services\n& specialist - all in one place."
-                  : "Welcome back. How can we support\nyour health today?"}
-              </Text>
-            )}
+
+            <Text style={styles.subGreetingText}>
+              {noPatient
+                ? "Start exploring healthcare services\n& specialist - all in one place."
+                : "Welcome back. How can we support\nyour health today?"}
+            </Text>
+
           </View>
         </View>
 

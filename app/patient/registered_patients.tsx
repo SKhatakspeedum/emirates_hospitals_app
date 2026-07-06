@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { USER_FULL_DATA, SPD_SELECTED_PATIENT } from "../config/config";
@@ -52,6 +52,7 @@ const parseAdditionalAttributes = (raw: any): Record<string, string> => {
 
 export default function RegisteredPatientsScreen() {
   const router = useRouter();
+  const { hideSkip } = useLocalSearchParams<{ hideSkip?: string }>();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<{
@@ -207,7 +208,7 @@ export default function RegisteredPatientsScreen() {
             USER_FULL_DATA,
             JSON.stringify(stored),
           );
-        } catch (_) {}
+        } catch (_) { }
 
         let userId = await fetchDataFromLocalStorage("sg_userId");
         if (!userId) {
@@ -282,7 +283,7 @@ export default function RegisteredPatientsScreen() {
           JSON.stringify({ name, age, gender }),
         );
       }
-    } catch (_) {}
+    } catch (_) { }
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 
@@ -410,13 +411,15 @@ export default function RegisteredPatientsScreen() {
           <Text style={styles.addNewPatientBtnText}>Add new patient</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.skipBtn}
-          onPress={handleSkip}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.skipBtnText}>Skip &gt;</Text>
-        </TouchableOpacity>
+        {hideSkip !== "true" && (
+          <TouchableOpacity
+            style={styles.skipBtn}
+            onPress={handleSkip}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.skipBtnText}>Skip &gt;</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

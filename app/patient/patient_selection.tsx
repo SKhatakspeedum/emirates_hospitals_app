@@ -170,8 +170,53 @@ export default function PatientSelectionScreen() {
 
   const handleSkip = async () => {
     try {
-      await AsyncStorage.removeItem("sg_patientId");
-    } catch (_) {}
+      const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+      
+      const response = await callSuggestusAPI(
+        spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+        {
+          p_user_id: userId,
+          p_search_text: "",
+          p_search_additional_attributes: "",
+          p_process_flag: "user_patients",
+        },
+      );
+
+      if (response?.returnCode === true && response.returnData?.length > 0) {
+        const firstPatient = response.returnData[0];
+        const patientId = String(firstPatient.p_patient_id ?? firstPatient.patient_id ?? "");
+        
+        const name = firstPatient.p_patient_name ??
+            firstPatient.ptm_name ??
+            [
+              firstPatient.p_patient_first_name,
+              firstPatient.p_patient_middle_name,
+              firstPatient.p_patient_last_name,
+            ]
+              .filter(Boolean)
+              .join(" ") ??
+            "Unknown";
+        const age = parseInt(String(firstPatient.ptm_age ?? firstPatient.p_age ?? "0"), 10) || 0;
+        const gender = firstPatient.ptm_gender ?? (firstPatient.p_gender === "2" ? "Female" : "Male");
+
+        if (patientId) {
+          await setPatientId(patientId);
+          await AsyncStorage.setItem(
+            SPD_SELECTED_PATIENT,
+            JSON.stringify({ name, age, gender }),
+          );
+        } else {
+          await AsyncStorage.removeItem("sg_patientId");
+        }
+      } else {
+        await AsyncStorage.removeItem("sg_patientId");
+      }
+    } catch (e) {
+      console.error("Error in handleSkip:", e);
+      try {
+        await AsyncStorage.removeItem("sg_patientId");
+      } catch (_) {}
+    }
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 

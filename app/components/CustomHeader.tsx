@@ -15,9 +15,10 @@ import { FontFamilies } from '../config/fonts';
 interface CustomHeaderProps {
   title: string;
   onBackPress?: () => void;
+  showBackButton?: boolean;
 }
 
-export default function CustomHeader({ title, onBackPress }: CustomHeaderProps) {
+export default function CustomHeader({ title, onBackPress, showBackButton = true }: CustomHeaderProps) {
   const navigation = useNavigation();
 
   const handleBack = () => {

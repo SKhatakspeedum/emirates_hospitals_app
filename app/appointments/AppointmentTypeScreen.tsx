@@ -210,13 +210,13 @@ export default function AppointmentTypeScreen() {
           <Ionicons
             name="search-outline"
             size={20}
-            color={isFocused ? Colors.secondary : Colors.label}
+            color={Colors.label}
             style={styles.searchIcon}
           />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by keyword..."
-            placeholderTextColor={Colors.label}
+            placeholderTextColor={Colors.inactive}
             value={searchQuery}
             onChangeText={setSearchQuery}
             onFocus={() => setIsFocused(true)}
@@ -329,13 +329,17 @@ const styles = StyleSheet.create({
     borderColor: Colors.secondary,
   },
   searchIcon: {
-    marginRight: 10,
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     color: Colors.text,
     fontFamily: FontFamilies.semiBold,
+    paddingVertical: 0,
+    // @ts-ignore: outlineStyle is web-only
+    outlineStyle: "none",
+    outlineWidth: 0,
   },
   gridContainer: {
     flexDirection: "row",

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
@@ -11,7 +11,6 @@ import {
   Platform,
   ActivityIndicator,
   Dimensions,
-  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
@@ -36,33 +35,32 @@ import {
 } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
-import confettiParticles from "../json_dummy_datas/confettiParticles";
+
+type CheckStatus = "idle" | "checking" | "exists" | "available" | "error";
+interface FieldCheck {
+  status: CheckStatus;
+  checkedValue: string;
+}
+
+const IDLE_CHECK: FieldCheck = { status: "idle", checkedValue: "" };
 
 const formatEmiratesId = (text: string) => {
   const cleaned = text.replace(/\D/g, "");
   let formatted = "";
-  if (cleaned.length > 0) {
-    formatted += cleaned.substring(0, 3);
-  }
-  if (cleaned.length > 3) {
-    formatted += "-" + cleaned.substring(3, 7);
-  }
-  if (cleaned.length > 7) {
-    formatted += "-" + cleaned.substring(7, 14);
-  }
-  if (cleaned.length > 14) {
-    formatted += "-" + cleaned.substring(14, 15);
-  }
+  if (cleaned.length > 0) formatted += cleaned.substring(0, 3);
+  if (cleaned.length > 3) formatted += "-" + cleaned.substring(3, 7);
+  if (cleaned.length > 7) formatted += "-" + cleaned.substring(7, 14);
+  if (cleaned.length > 14) formatted += "-" + cleaned.substring(14, 15);
   return formatted;
 };
 
-const formatPassport = (text: string) => {
-  return text.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-};
+const formatPassport = (text: string) =>
+  text.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
 export default function PersonalDetailsScreen() {
   const router = useRouter();
   const route = useRoute();
+
   const [isResident, setIsResident] = useState(true);
   const [emiratesId, setEmiratesId] = useState("");
   const [passportNo, setPassportNo] = useState("");
@@ -73,59 +71,99 @@ export default function PersonalDetailsScreen() {
   const [gender, setGender] = useState<"Male" | "Female" | "">("Male");
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Form validity check to enable/disable Register button
+  const [emiratesIdCheck, setEmiratesIdCheck] = useState<FieldCheck>(IDLE_CHECK);
+  const [passportCheck, setPassportCheck] = useState<FieldCheck>(IDLE_CHECK);
+
+  // The active check is whichever tab is open
+  const activeCheck = isResident ? emiratesIdCheck : passportCheck;
+
   const isEmiratesIdValid = !isResident || emiratesId.trim().length > 0;
   const isPassportNoValid = isResident || passportNo.trim().length > 0;
-  const isFirstNameValid = firstName.trim().length > 0;
-  const isLastNameValid = lastName.trim().length > 0;
-  const isGenderValid = gender !== "";
   const isFormValid =
     isEmiratesIdValid &&
     isPassportNoValid &&
-    isFirstNameValid &&
-    isLastNameValid &&
-    isGenderValid;
+    firstName.trim().length > 0 &&
+    lastName.trim().length > 0 &&
+    gender !== "" &&
+    activeCheck.status !== "exists" &&
+    activeCheck.status !== "checking";
+
+  // Inline existence check — fires on blur of the ID field
+  const checkExistence = useCallback(
+    async (field: "emirates" | "passport", value: string) => {
+      const clean =
+        field === "emirates" ? value.replace(/-/g, "") : value.trim();
+      if (!clean) return;
+
+      const setCheck =
+        field === "emirates" ? setEmiratesIdCheck : setPassportCheck;
+      setCheck({ status: "checking", checkedValue: value });
+
+      try {
+        const res = await callSuggestusAPI(
+          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          {
+            p_additional_attribute: {
+              p_emirates_id: field === "emirates" ? clean : "",
+              p_passport_no: field === "passport" ? clean : "",
+            },
+          },
+        );
+
+        if (res?.returnCode === true && res.returnData?.length > 0) {
+          setCheck({ status: "exists", checkedValue: value });
+        } else if (res !== null && res !== undefined) {
+          setCheck({ status: "available", checkedValue: value });
+        } else {
+          setCheck({ status: "error", checkedValue: value });
+        }
+      } catch (err) {
+        console.error("[PersonalDetails] existence check failed:", err);
+        setCheck({ status: "error", checkedValue: value });
+      }
+    },
+    [],
+  );
+
+  const renderFieldStatus = (check: FieldCheck) => {
+    if (check.status === "checking")
+      return <ActivityIndicator size="small" color={Colors.secondary} />;
+    if (check.status === "available")
+      return <Ionicons name="checkmark-circle" size={20} color="#22C55E" />;
+    if (check.status === "exists" || check.status === "error")
+      return <Ionicons name="close-circle" size={20} color="#EF4444" />;
+    return null;
+  };
 
   const handleContinue = async () => {
     if (isResident && !emiratesId.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Required Field",
-        text2: "Please enter your Emirates ID to continue.",
-      });
+      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your Emirates ID to continue." });
       return;
     }
     if (!isResident && !passportNo.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Required Field",
-        text2: "Please enter your Passport number to continue.",
-      });
+      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your Passport number to continue." });
       return;
     }
     if (!firstName.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Required Field",
-        text2: "Please enter your First name to continue.",
-      });
+      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your First name to continue." });
       return;
     }
     if (!lastName.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Required Field",
-        text2: "Please enter your Last name to continue.",
-      });
+      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your Last name to continue." });
       return;
     }
     if (!gender) {
+      Toast.show({ type: "error", text1: "Required Field", text2: "Please select your gender." });
+      return;
+    }
+
+    // Guard: block if the active field is already flagged as exists
+    if (activeCheck.status === "exists") {
       Toast.show({
         type: "error",
-        text1: "Required Field",
-        text2: "Please select your gender.",
+        text1: "Already Registered",
+        text2: `A user with this ${isResident ? "Emirates ID" : "Passport"} is already registered.`,
       });
       return;
     }
@@ -136,17 +174,53 @@ export default function PersonalDetailsScreen() {
       const lName = lastName.trim();
       const name = `${fName} ${lName}`;
       const rawPhone = (route.params as any)?.phone_number ?? "";
-      // 1. Save Full Name encrypted
+      const emiratesIdClean = emiratesId.replace(/-/g, "");
+
+      // Final existence check — skip if already verified as available for this value
+      const alreadyVerified =
+        isResident
+          ? emiratesIdCheck.status === "available" &&
+            emiratesIdCheck.checkedValue === emiratesId
+          : passportCheck.status === "available" &&
+            passportCheck.checkedValue === passportNo;
+
+      if (!alreadyVerified) {
+        const checkRes = await callSuggestusAPI(
+          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          {
+            p_additional_attribute: {
+              p_emirates_id: isResident ? emiratesIdClean : "",
+              p_passport_no: !isResident ? passportNo.trim() : "",
+            },
+          },
+        );
+
+        if (checkRes?.returnCode === true && checkRes.returnData?.length > 0) {
+          if (isResident) {
+            setEmiratesIdCheck({ status: "exists", checkedValue: emiratesId });
+          } else {
+            setPassportCheck({ status: "exists", checkedValue: passportNo });
+          }
+          Toast.show({
+            type: "error",
+            text1: "Already Registered",
+            text2: `A user with this ${isResident ? "Emirates ID" : "Passport"} is already registered.`,
+          });
+          return;
+        }
+      }
+
+      // Save Full Name
       await setEncryptedID(SPD_USER_NAME, name);
 
-      // 2. Fetch current USER_FULL_DATA, update and save back
+      // Merge into USER_FULL_DATA
       const currentDataStr = await getDecryptedID(USER_FULL_DATA);
       let updatedData: Record<string, string> = {
         fname: name,
         firstName: fName,
         lastName: lName,
         dob: dayjs(dob).format("YYYY-MM-DD"),
-        gender: gender,
+        gender,
         emirates_id: isResident ? emiratesId.trim() : "",
         passport_no: !isResident ? passportNo.trim() : "",
         contact: rawPhone,
@@ -154,25 +228,18 @@ export default function PersonalDetailsScreen() {
 
       if (currentDataStr) {
         try {
-          const parsed = JSON.parse(currentDataStr);
-          updatedData = {
-            ...parsed,
-            ...updatedData,
-          };
-        } catch (e) {
-          // keep default
-        }
+          updatedData = { ...JSON.parse(currentDataStr), ...updatedData };
+        } catch (_) {}
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
 
-      // 3. Register user via signup wrapper (p_register_new_patient_flag is 'N' for normal signup)
+      // Register user
       const signupRes = await callSuggestusAPI(
         spd_processId_config.sgconf_save_mst_user_from_signup_wrapper,
         {
           p_create_ai_code: SiteConfig.AI_CODE,
-          p_next_process_id:
-            "sgconf_get_mst_user_profile_for_authentic_token_v2",
+          p_next_process_id: "sgconf_get_mst_user_profile_for_authentic_token_v2",
           p_register_new_patient_flag: "N",
           p_usr_phone: rawPhone,
           p_usr_name: name,
@@ -192,13 +259,13 @@ export default function PersonalDetailsScreen() {
       if (signupRes?.returnCode !== true) {
         Toast.show({
           type: "error",
-          text1: "Registration failed. Please try again.",
+          text1: "Registration Failed",
+          text2: signupRes?.returnMessage ?? "Please try again.",
         });
-        setLoading(false);
         return;
       }
 
-      // 4. Fetch full user profile to get usr_id, rol_id, org_id, and usr_patient_id
+      // Fetch full user profile
       const phoneE164 = rawPhone.replace(/\s+/g, "");
       try {
         const validateRes = await callSuggestusAPI(
@@ -211,10 +278,7 @@ export default function PersonalDetailsScreen() {
           },
         );
 
-        if (
-          validateRes?.returnCode === true &&
-          validateRes?.returnData?.length > 0
-        ) {
+        if (validateRes?.returnCode === true && validateRes?.returnData?.length > 0) {
           const u = validateRes.returnData[0];
           await Promise.all([
             setUserId(String(u.usr_id ?? "")),
@@ -230,13 +294,9 @@ export default function PersonalDetailsScreen() {
           ]);
         }
       } catch (validateErr) {
-        console.error(
-          "Error validation/fetching user profile in personal_details:",
-          validateErr,
-        );
+        console.error("[PersonalDetails] profile fetch after signup failed:", validateErr);
       }
 
-      // 3. Statically set session variables
       await AsyncStorage.setItem(IS_LOGGED_IN, "true");
 
       Toast.show({
@@ -247,12 +307,11 @@ export default function PersonalDetailsScreen() {
 
       router.replace("/patient/patient_selection");
     } catch (error) {
-      console.error("Error saving personal details:", error);
+      console.error("[PersonalDetails] registration error:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2:
-          "Something went wrong while saving your details. Please try again.",
+        text1: "Something Went Wrong",
+        text2: "Unable to save your details. Please check your connection and try again.",
       });
     } finally {
       setLoading(false);
@@ -274,50 +333,34 @@ export default function PersonalDetailsScreen() {
           showsHorizontalScrollIndicator={false}
           bounces={false}
         >
-          <View
-            style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}
-          >
-            {/* Resident / Non-Resident Segmented Control */}
+          <View style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}>
+            {/* Resident / Non-Resident tabs */}
             <View style={styles.tabContainer}>
               <TouchableOpacity
                 style={[styles.tabButton, isResident && styles.activeTabButton]}
                 onPress={() => setIsResident(true)}
                 activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.tabButtonText,
-                    isResident && styles.activeTabButtonText,
-                  ]}
-                >
+                <Text style={[styles.tabButtonText, isResident && styles.activeTabButtonText]}>
                   Resident
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.tabButton,
-                  !isResident && styles.activeTabButton,
-                ]}
+                style={[styles.tabButton, !isResident && styles.activeTabButton]}
                 onPress={() => setIsResident(false)}
                 activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.tabButtonText,
-                    !isResident && styles.activeTabButtonText,
-                  ]}
-                >
+                <Text style={[styles.tabButtonText, !isResident && styles.activeTabButtonText]}>
                   Non-Resident
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Subheading instruction text */}
             <Text style={styles.subtext}>
               Complete your profile for a personalized healthcare experience.
             </Text>
 
-            {/* Conditional Input based on toggle */}
+            {/* ID field — Emirates ID or Passport based on active tab */}
             {isResident ? (
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Emirates ID</Text>
@@ -325,6 +368,8 @@ export default function PersonalDetailsScreen() {
                   style={[
                     styles.inputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
+                    emiratesIdCheck.status === "exists" && styles.inputWrapperError,
+                    emiratesIdCheck.status === "available" && styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -332,16 +377,36 @@ export default function PersonalDetailsScreen() {
                     placeholder="000-0000-0000000-0"
                     placeholderTextColor={Colors.inactive}
                     value={emiratesId}
-                    onChangeText={(text) =>
-                      setEmiratesId(formatEmiratesId(text))
-                    }
+                    onChangeText={(text) => {
+                      const formatted = formatEmiratesId(text);
+                      setEmiratesId(formatted);
+                      if (formatted !== emiratesIdCheck.checkedValue) {
+                        setEmiratesIdCheck((prev) => ({ ...prev, status: "idle" }));
+                      }
+                    }}
                     onFocus={() => setFocusedField("emiratesId")}
-                    onBlur={() => setFocusedField("")}
+                    onBlur={() => {
+                      setFocusedField("");
+                      if (emiratesId.trim() && emiratesId !== emiratesIdCheck.checkedValue) {
+                        checkExistence("emirates", emiratesId);
+                      }
+                    }}
                     keyboardType="numeric"
                     maxLength={18}
                     returnKeyType="next"
                   />
+                  {renderFieldStatus(emiratesIdCheck)}
                 </View>
+                {emiratesIdCheck.status === "exists" && (
+                  <Text style={styles.fieldError}>
+                    A user with this Emirates ID is already registered
+                  </Text>
+                )}
+                {emiratesIdCheck.status === "error" && (
+                  <Text style={styles.fieldError}>
+                    Unable to verify — please try again
+                  </Text>
+                )}
               </View>
             ) : (
               <View style={styles.inputContainer}>
@@ -350,6 +415,8 @@ export default function PersonalDetailsScreen() {
                   style={[
                     styles.inputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
+                    passportCheck.status === "exists" && styles.inputWrapperError,
+                    passportCheck.status === "available" && styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -357,42 +424,52 @@ export default function PersonalDetailsScreen() {
                     placeholder="A1234567"
                     placeholderTextColor={Colors.inactive}
                     value={passportNo}
-                    onChangeText={(text) => setPassportNo(formatPassport(text))}
+                    onChangeText={(text) => {
+                      const formatted = formatPassport(text);
+                      setPassportNo(formatted);
+                      if (formatted !== passportCheck.checkedValue) {
+                        setPassportCheck((prev) => ({ ...prev, status: "idle" }));
+                      }
+                    }}
                     onFocus={() => setFocusedField("passportNo")}
-                    onBlur={() => setFocusedField("")}
+                    onBlur={() => {
+                      setFocusedField("");
+                      if (passportNo.trim() && passportNo !== passportCheck.checkedValue) {
+                        checkExistence("passport", passportNo);
+                      }
+                    }}
                     autoCapitalize="characters"
                     maxLength={12}
                     returnKeyType="next"
                   />
+                  {renderFieldStatus(passportCheck)}
                 </View>
+                {passportCheck.status === "exists" && (
+                  <Text style={styles.fieldError}>
+                    A user with this Passport is already registered
+                  </Text>
+                )}
+                {passportCheck.status === "error" && (
+                  <Text style={styles.fieldError}>
+                    Unable to verify — please try again
+                  </Text>
+                )}
               </View>
             )}
 
-            {/* First Name & Last Name row */}
+            {/* First Name & Last Name */}
             <View style={styles.rowContainer}>
-              <View
-                style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
-              >
+              <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
                 <Text style={styles.inputLabel}>First name</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === "firstName" && styles.inputWrapperFocused,
-                  ]}
-                >
+                <View style={[styles.inputWrapper, focusedField === "firstName" && styles.inputWrapperFocused]}>
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={
-                      focusedField === "firstName"
-                        ? Colors.secondary
-                        : Colors.label
-                    }
+                    color={focusedField === "firstName" ? Colors.secondary : Colors.label}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    // placeholder="John"
                     placeholderTextColor={Colors.inactive}
                     value={firstName}
                     onChangeText={setFirstName}
@@ -403,28 +480,17 @@ export default function PersonalDetailsScreen() {
                   />
                 </View>
               </View>
-
               <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.inputLabel}>Last name</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === "lastName" && styles.inputWrapperFocused,
-                  ]}
-                >
+                <View style={[styles.inputWrapper, focusedField === "lastName" && styles.inputWrapperFocused]}>
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={
-                      focusedField === "lastName"
-                        ? Colors.secondary
-                        : Colors.label
-                    }
+                    color={focusedField === "lastName" ? Colors.secondary : Colors.label}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    // placeholder="Doe"
                     placeholderTextColor={Colors.inactive}
                     value={lastName}
                     onChangeText={setLastName}
@@ -437,22 +503,15 @@ export default function PersonalDetailsScreen() {
               </View>
             </View>
 
-            {/* Date of birth */}
+            {/* Date of Birth */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Date of birth</Text>
               {Platform.OS === "web" ? (
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === "dob" && styles.inputWrapperFocused,
-                  ]}
-                >
+                <View style={[styles.inputWrapper, focusedField === "dob" && styles.inputWrapperFocused]}>
                   <Ionicons
                     name="calendar-outline"
                     size={20}
-                    color={
-                      focusedField === "dob" ? Colors.secondary : Colors.label
-                    }
+                    color={focusedField === "dob" ? Colors.secondary : Colors.label}
                     style={styles.inputIcon}
                   />
                   <input
@@ -462,26 +521,18 @@ export default function PersonalDetailsScreen() {
                     max={dayjs().format("YYYY-MM-DD")}
                     onChange={(e) => {
                       if (e.target.value) {
-                        const dateStr = e.target.value;
-                        const selectedDate = new Date(dateStr);
+                        const selectedDate = new Date(e.target.value);
                         const year = selectedDate.getFullYear();
                         const today = new Date();
                         const minDate = new Date(1900, 0, 1);
-
-                        // Only clamp if the year is >= 1000 (meaning they finished typing 4 digits)
-                        // This prevents wiping out intermediate typing like year "0020"
                         if (year >= 1000) {
-                          if (selectedDate < minDate) {
-                            // Prevent years before 1900
-                            setDob(minDate);
-                          } else if (year > today.getFullYear()) {
-                            // Prevent future years, but allow future months in the current year temporarily
-                            // so users can edit the Month before editing the Year!
-                            setDob(today);
-                          } else {
-                            // Allow valid years (onBlur will handle exact future date clamping)
-                            setDob(selectedDate);
-                          }
+                          setDob(
+                            selectedDate < minDate
+                              ? minDate
+                              : year > today.getFullYear()
+                              ? today
+                              : selectedDate,
+                          );
                         } else {
                           setDob(selectedDate);
                         }
@@ -492,11 +543,8 @@ export default function PersonalDetailsScreen() {
                       setFocusedField("");
                       const today = new Date();
                       const minDate = new Date(1900, 0, 1);
-                      if (dob > today) {
-                        setDob(today);
-                      } else if (dob < minDate) {
-                        setDob(minDate);
-                      }
+                      if (dob > today) setDob(today);
+                      else if (dob < minDate) setDob(minDate);
                     }}
                     style={{
                       flex: 1,
@@ -512,10 +560,7 @@ export default function PersonalDetailsScreen() {
                 </View>
               ) : (
                 <TouchableOpacity
-                  style={[
-                    styles.inputWrapper,
-                    showDatePicker && styles.inputWrapperFocused,
-                  ]}
+                  style={[styles.inputWrapper, showDatePicker && styles.inputWrapperFocused]}
                   onPress={() => setShowDatePicker(true)}
                   activeOpacity={0.8}
                 >
@@ -525,59 +570,36 @@ export default function PersonalDetailsScreen() {
                     color={showDatePicker ? Colors.secondary : Colors.label}
                     style={styles.inputIcon}
                   />
-                  <Text style={styles.input}>
-                    {dayjs(dob).format("MMM DD, YYYY")}
-                  </Text>
+                  <Text style={styles.input}>{dayjs(dob).format("MMM DD, YYYY")}</Text>
                   <Text style={styles.changeLinkText}>Change</Text>
                 </TouchableOpacity>
               )}
             </View>
 
-            {/* Gender Select */}
+            {/* Gender */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Gender</Text>
               <View style={styles.rowContainer}>
                 <TouchableOpacity
-                  style={[
-                    styles.genderBox,
-                    gender === "Male" && styles.genderBoxActive,
-                    { marginRight: 8 },
-                  ]}
+                  style={[styles.genderBox, gender === "Male" && styles.genderBoxActive, { marginRight: 8 }]}
                   onPress={() => setGender("Male")}
                   activeOpacity={0.8}
                 >
                   <View style={styles.radioContainer}>
-                    <View
-                      style={[
-                        styles.radioOuter,
-                        gender === "Male" && styles.radioOuterActive,
-                      ]}
-                    >
+                    <View style={[styles.radioOuter, gender === "Male" && styles.radioOuterActive]}>
                       {gender === "Male" && <View style={styles.radioInner} />}
                     </View>
                     <Text style={styles.genderText}>Male</Text>
                   </View>
                 </TouchableOpacity>
-
                 <TouchableOpacity
-                  style={[
-                    styles.genderBox,
-                    gender === "Female" && styles.genderBoxActive,
-                    { marginLeft: 8 },
-                  ]}
+                  style={[styles.genderBox, gender === "Female" && styles.genderBoxActive, { marginLeft: 8 }]}
                   onPress={() => setGender("Female")}
                   activeOpacity={0.8}
                 >
                   <View style={styles.radioContainer}>
-                    <View
-                      style={[
-                        styles.radioOuter,
-                        gender === "Female" && styles.radioOuterActive,
-                      ]}
-                    >
-                      {gender === "Female" && (
-                        <View style={styles.radioInner} />
-                      )}
+                    <View style={[styles.radioOuter, gender === "Female" && styles.radioOuterActive]}>
+                      {gender === "Female" && <View style={styles.radioInner} />}
                     </View>
                     <Text style={styles.genderText}>Female</Text>
                   </View>
@@ -590,18 +612,13 @@ export default function PersonalDetailsScreen() {
         <View
           style={[
             styles.bottomBtnContainer,
-            {
-              paddingBottom:
-                Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24,
-            },
+            { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 },
           ]}
         >
           <TouchableOpacity
             style={[
               styles.continueBtn,
-              isFormValid
-                ? styles.continueBtnEnabled
-                : styles.continueBtnDisabled,
+              isFormValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
             ]}
             disabled={loading || !isFormValid}
             onPress={handleContinue}
@@ -625,14 +642,7 @@ export default function PersonalDetailsScreen() {
         onConfirm={(date) => {
           const today = new Date();
           const minDate = new Date(1900, 0, 1);
-
-          if (date > today) {
-            setDob(today);
-          } else if (date < minDate) {
-            setDob(minDate);
-          } else {
-            setDob(date);
-          }
+          setDob(date > today ? today : date < minDate ? minDate : date);
           setShowDatePicker(false);
         }}
         onCancel={() => setShowDatePicker(false)}
@@ -709,6 +719,20 @@ const styles: any = StyleSheet.create({
   inputWrapperFocused: {
     borderColor: Colors.secondary,
   },
+  inputWrapperError: {
+    borderColor: "#EF4444",
+    backgroundColor: "#FFF5F5",
+  },
+  inputWrapperSuccess: {
+    borderColor: "#22C55E",
+    backgroundColor: "#F0FDF4",
+  },
+  fieldError: {
+    fontSize: 12,
+    fontFamily: FontFamilies.medium,
+    color: "#EF4444",
+    marginTop: 6,
+  },
   inputIcon: {
     marginRight: 12,
   },
@@ -728,27 +752,6 @@ const styles: any = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  datePickerTrigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: Colors.lightgray,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 56,
-  },
-  datePickerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  datePickerText: {
-    fontSize: 16,
-    color: Colors.text,
-    fontFamily: FontFamilies.semiBold,
-  },
-
   changeLinkText: {
     fontSize: 14,
     fontFamily: FontFamilies.bold,
@@ -798,7 +801,6 @@ const styles: any = StyleSheet.create({
   },
   bottomBtnContainer: {
     paddingHorizontal: 24,
-    paddingBottom: Platform.OS === "ios" ? 36 : 24,
     paddingTop: 12,
     backgroundColor: Colors.background,
   },
@@ -817,9 +819,7 @@ const styles: any = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 8,
       },
-      android: {
-        elevation: 4,
-      },
+      android: { elevation: 4 },
     }),
   },
   continueBtnDisabled: {
@@ -829,67 +829,5 @@ const styles: any = StyleSheet.create({
     color: Colors.lightgray,
     fontSize: 16,
     fontFamily: FontFamilies.bold,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: Colors.background,
-    borderRadius: 24,
-    paddingVertical: 24,
-    paddingHorizontal: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "90%",
-    height: "65%",
-    maxWidth: 340,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  illustrationContainer: {
-    width: 280,
-    height: 280,
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  successIconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.secondary,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  confetti: {
-    position: "absolute",
-    borderRadius: 2,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: FontFamilies.bold,
-    color: Colors.text,
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  modalSubtext: {
-    fontSize: 14,
-    fontFamily: FontFamilies.medium,
-    color: Colors.label,
-    textAlign: "center",
-    lineHeight: 22,
-    paddingHorizontal: 10,
   },
 });

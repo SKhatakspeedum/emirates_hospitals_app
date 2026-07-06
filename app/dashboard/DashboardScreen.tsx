@@ -650,8 +650,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   quickActionItem: {
+    flex: 1,
     alignItems: "center",
-    width: (width - 40) / 4,
   },
   quickActionIconBg: {
     width: 56,

@@ -68,7 +68,7 @@ export default function PatientDetailsScreen() {
         try {
           const selectedStr = await AsyncStorage.getItem(SPD_SELECTED_PATIENT);
           const selected = selectedStr ? JSON.parse(selectedStr) : {};
-          navigation.navigate("AppointmentType", {
+          navigation.replace("AppointmentType", {
             doctorId,
             doctorName,
             specialty,
@@ -81,7 +81,7 @@ export default function PatientDetailsScreen() {
             symptoms: "",
           });
           return;
-        } catch (_) {}
+        } catch (_) { }
       }
 
       fetchPatientData(patientId ?? undefined);
@@ -217,7 +217,7 @@ export default function PatientDetailsScreen() {
   };
 
   const handleSelectPatientAndContinue = (patient: (typeof patients)[0]) => {
-    navigation.navigate("AppointmentType", {
+    navigation.replace("AppointmentType", {
       doctorId,
       doctorName,
       specialty,
@@ -265,7 +265,7 @@ export default function PatientDetailsScreen() {
         if (fullDataStr) {
           try {
             userId = JSON.parse(fullDataStr)?.usr_id ?? "";
-          } catch (_) {}
+          } catch (_) { }
         }
       }
       await callSuggestusAPI(
@@ -292,7 +292,7 @@ export default function PatientDetailsScreen() {
 
     setShowAddForm(false);
 
-    navigation.navigate("AppointmentType", {
+    navigation.replace("AppointmentType", {
       doctorId,
       doctorName,
       specialty,
@@ -507,7 +507,7 @@ export default function PatientDetailsScreen() {
                           style={[
                             styles.genderChipText,
                             patientGender === "Male" &&
-                              styles.genderChipTextActive,
+                            styles.genderChipTextActive,
                           ]}
                         >
                           Male
@@ -524,7 +524,7 @@ export default function PatientDetailsScreen() {
                           style={[
                             styles.genderChipText,
                             patientGender === "Female" &&
-                              styles.genderChipTextActive,
+                            styles.genderChipTextActive,
                           ]}
                         >
                           Female

@@ -21,6 +21,7 @@ import CustomHeader from "../components/CustomHeader";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+import Toast from "react-native-toast-message";
 
 const getDynamicScheduleData = () => {
   const today = new Date();
@@ -179,7 +180,11 @@ export default function ScheduleBookScreen() {
 
   const handleConfirm = () => {
     if (!selectedSlot) {
-      alert("Please select a time slot");
+      Toast.show({
+        type: "error",
+        text1: "Selection Required",
+        text2: "Please select a time slot",
+      });
       return;
     }
 

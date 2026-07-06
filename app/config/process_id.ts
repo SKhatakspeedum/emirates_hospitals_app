@@ -14,6 +14,8 @@ export const spd_processId_config = {
   hospapp_get_resources: "hospapp_get_resources",
   hospapp_get_doctor_schedule: "hospapp_get_doctor_schedule",
   hospapp_save_patient_appointment_hv: "hospapp_save_patient_appointment_hv",
+  sgconf_get_mst_user_validate_detail_for_ehg_pntapp:
+    "sgconf_get_mst_user_validate_detail_for_ehg_pntapp",
 
   spdonmood9_get_md_user_accounts_login:
     "spdonmood9_get_md_user_accounts_login",

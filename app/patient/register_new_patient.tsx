@@ -34,6 +34,18 @@ interface FieldCheck {
   checkedValue: string;
 }
 
+// returnCode arrives as string "true" or boolean true; returnData may be [{}] when empty
+const hasReturnData = (res: any): boolean => {
+  const ok = res?.returnCode === true || res?.returnCode === "true";
+  return (
+    ok &&
+    Array.isArray(res.returnData) &&
+    res.returnData.some(
+      (item: any) => item && Object.keys(item).length > 0,
+    )
+  );
+};
+
 const formatEmiratesId = (text: string) => {
   const cleaned = text.replace(/\D/g, "");
   let formatted = "";
@@ -111,7 +123,7 @@ export default function RegisterNewPatient() {
           },
         );
 
-        if (res?.returnCode === true && res.returnData?.length > 0) {
+        if (hasReturnData(res)) {
           setCheck({ status: "exists", checkedValue: value });
         } else if (res !== null && res !== undefined) {
           setCheck({ status: "available", checkedValue: value });
@@ -187,7 +199,7 @@ export default function RegisterNewPatient() {
             },
           },
         );
-        if (checkRes?.returnCode === true && checkRes.returnData?.length > 0) {
+        if (hasReturnData(checkRes)) {
           if (emiratesIdClean)
             setEmiratesIdCheck({ status: "exists", checkedValue: emiratesId });
           if (passportNo.trim())

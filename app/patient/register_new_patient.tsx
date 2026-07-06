@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
@@ -11,7 +11,6 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
-  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
@@ -28,6 +27,12 @@ import {
   setPatientId,
 } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
+
+type CheckStatus = "idle" | "checking" | "exists" | "available" | "error";
+interface FieldCheck {
+  status: CheckStatus;
+  checkedValue: string;
+}
 
 const formatEmiratesId = (text: string) => {
   const cleaned = text.replace(/\D/g, "");
@@ -59,31 +64,98 @@ export default function RegisterNewPatient() {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
 
+  const [emiratesIdCheck, setEmiratesIdCheck] = useState<FieldCheck>({
+    status: "idle",
+    checkedValue: "",
+  });
+  const [passportCheck, setPassportCheck] = useState<FieldCheck>({
+    status: "idle",
+    checkedValue: "",
+  });
+
   const isIdProvided =
     emiratesId.trim().length > 0 || passportNo.trim().length > 0;
+  const hasExistsError =
+    emiratesIdCheck.status === "exists" || passportCheck.status === "exists";
+  const isChecking =
+    emiratesIdCheck.status === "checking" ||
+    passportCheck.status === "checking";
   const isFormValid =
     isIdProvided &&
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
-    gender !== "";
+    gender !== "" &&
+    !hasExistsError &&
+    !isChecking;
 
   const handleClose = () => router.back();
 
+  const checkPatientExistence = useCallback(
+    async (field: "emirates" | "passport", value: string) => {
+      const clean =
+        field === "emirates" ? value.replace(/-/g, "") : value.trim();
+      if (!clean) return;
+
+      const setCheck =
+        field === "emirates" ? setEmiratesIdCheck : setPassportCheck;
+      setCheck({ status: "checking", checkedValue: value });
+
+      try {
+        const res = await callSuggestusAPI(
+          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          {
+            p_additional_attribute: {
+              p_emirates_id: field === "emirates" ? clean : "",
+              p_passport_no: field === "passport" ? clean : "",
+            },
+          },
+        );
+
+        if (res?.returnCode === true && res.returnData?.length > 0) {
+          setCheck({ status: "exists", checkedValue: value });
+        } else if (res !== null && res !== undefined) {
+          setCheck({ status: "available", checkedValue: value });
+        } else {
+          setCheck({ status: "error", checkedValue: value });
+        }
+      } catch {
+        setCheck({ status: "error", checkedValue: value });
+      }
+    },
+    [],
+  );
+
   const handleContinue = async () => {
     if (!emiratesId.trim() && !passportNo.trim()) {
-      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter either your Emirates ID or Passport number." });
+      Toast.show({
+        type: "error",
+        text1: "Required Field",
+        text2: "Please enter either your Emirates ID or Passport number.",
+      });
       return;
     }
     if (!firstName.trim()) {
-      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your First name to continue." });
+      Toast.show({
+        type: "error",
+        text1: "Required Field",
+        text2: "Please enter your First name to continue.",
+      });
       return;
     }
     if (!lastName.trim()) {
-      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your Last name to continue." });
+      Toast.show({
+        type: "error",
+        text1: "Required Field",
+        text2: "Please enter your Last name to continue.",
+      });
       return;
     }
     if (!gender) {
-      Toast.show({ type: "error", text1: "Required Field", text2: "Please select your gender." });
+      Toast.show({
+        type: "error",
+        text1: "Required Field",
+        text2: "Please select your gender.",
+      });
       return;
     }
 
@@ -93,8 +165,19 @@ export default function RegisterNewPatient() {
       const formattedDob = dayjs(dob).format("YYYY-MM-DD");
       const emiratesIdClean = emiratesId.replace(/-/g, "");
 
-      // Check if patient already exists in EMR by Emirates ID or Passport
-      if (emiratesIdClean || passportNo.trim()) {
+      // Only re-check if the field wasn't already verified as available
+      const emiratesVerified =
+        emiratesIdCheck.status === "available" &&
+        emiratesIdCheck.checkedValue === emiratesId;
+      const passportVerified =
+        passportCheck.status === "available" &&
+        passportCheck.checkedValue === passportNo;
+      const needsFinalCheck =
+        (emiratesIdClean || passportNo.trim()) &&
+        !emiratesVerified &&
+        !passportVerified;
+
+      if (needsFinalCheck) {
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
@@ -105,6 +188,10 @@ export default function RegisterNewPatient() {
           },
         );
         if (checkRes?.returnCode === true && checkRes.returnData?.length > 0) {
+          if (emiratesIdClean)
+            setEmiratesIdCheck({ status: "exists", checkedValue: emiratesId });
+          if (passportNo.trim())
+            setPassportCheck({ status: "exists", checkedValue: passportNo });
           Toast.show({
             type: "error",
             text1: "Patient Already Exists",
@@ -145,8 +232,10 @@ export default function RegisterNewPatient() {
       if (!patientId) {
         Toast.show({
           type: "error",
-          text1: "Error",
-          text2: saveRes?.returnMessage ?? "Failed to save patient. Please try again.",
+          text1: "Registration Failed",
+          text2:
+            saveRes?.returnMessage ??
+            "Failed to save patient. Please try again.",
         });
         return;
       }
@@ -157,14 +246,20 @@ export default function RegisterNewPatient() {
       if (!userId) {
         const fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
         if (fullDataStr) {
-          try { userId = JSON.parse(fullDataStr)?.usr_id ?? ""; } catch (_) {}
+          try {
+            userId = JSON.parse(fullDataStr)?.usr_id ?? "";
+          } catch (_) {}
         }
       }
 
       if (isSelf) {
         await callSuggestusAPI(
           spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
-          { p_patient_id: patientId, p_user_id: userId ?? "", p_additional_attribites: {} },
+          {
+            p_patient_id: patientId,
+            p_user_id: userId ?? "",
+            p_additional_attribites: {},
+          },
         );
       } else {
         await callSuggestusAPI(
@@ -174,7 +269,8 @@ export default function RegisterNewPatient() {
             p_user_id: userId ?? "",
             p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
             p_entity_reference_id: patientId,
-            p_entity_reference_code: "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_entity_reference_code:
+              "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
             p_active_status: "Y",
             p_process_flag: "Y",
             p_additional_attribites: {},
@@ -196,12 +292,29 @@ export default function RegisterNewPatient() {
       console.error("Error saving patient details:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Something went wrong while saving your details. Please try again.",
+        text1: "Something Went Wrong",
+        text2: "Unable to save your details. Please check your connection and try again.",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderFieldStatus = (check: FieldCheck) => {
+    if (check.status === "checking") {
+      return <ActivityIndicator size="small" color={Colors.secondary} />;
+    }
+    if (check.status === "available") {
+      return (
+        <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+      );
+    }
+    if (check.status === "exists" || check.status === "error") {
+      return (
+        <Ionicons name="close-circle" size={20} color="#EF4444" />
+      );
+    }
+    return null;
   };
 
   return (
@@ -222,7 +335,11 @@ export default function RegisterNewPatient() {
           {/* Header */}
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>Add New Patient</Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={handleClose}
+              style={styles.closeBtn}
+              activeOpacity={0.7}
+            >
               <Ionicons name="close" size={22} color={Colors.text} />
             </TouchableOpacity>
           </View>
@@ -239,22 +356,62 @@ export default function RegisterNewPatient() {
 
             {/* Emirates ID / Passport Card */}
             <View style={styles.unifiedCard}>
+              {/* Emirates ID */}
               <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: "#7D8A9D" }]}>Emirates ID</Text>
-                <View style={[styles.cardInputWrapper, focusedField === "emiratesId" && styles.inputWrapperFocused]}>
+                <Text style={[styles.inputLabel, { color: "#7D8A9D" }]}>
+                  Emirates ID
+                </Text>
+                <View
+                  style={[
+                    styles.cardInputWrapper,
+                    focusedField === "emiratesId" && styles.inputWrapperFocused,
+                    emiratesIdCheck.status === "exists" &&
+                      styles.inputWrapperError,
+                    emiratesIdCheck.status === "available" &&
+                      styles.inputWrapperSuccess,
+                  ]}
+                >
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="123-0000-5505123-1"
                     placeholderTextColor={Colors.inactive}
                     value={emiratesId}
-                    onChangeText={(t) => setEmiratesId(formatEmiratesId(t))}
+                    onChangeText={(t) => {
+                      const formatted = formatEmiratesId(t);
+                      setEmiratesId(formatted);
+                      if (formatted !== emiratesIdCheck.checkedValue) {
+                        setEmiratesIdCheck((prev) => ({
+                          ...prev,
+                          status: "idle",
+                        }));
+                      }
+                    }}
                     onFocus={() => setFocusedField("emiratesId")}
-                    onBlur={() => setFocusedField("")}
+                    onBlur={() => {
+                      setFocusedField("");
+                      if (
+                        emiratesId.trim() &&
+                        emiratesId !== emiratesIdCheck.checkedValue
+                      ) {
+                        checkPatientExistence("emirates", emiratesId);
+                      }
+                    }}
                     keyboardType="numeric"
                     maxLength={18}
                     returnKeyType="next"
                   />
+                  {renderFieldStatus(emiratesIdCheck)}
                 </View>
+                {emiratesIdCheck.status === "exists" && (
+                  <Text style={styles.fieldError}>
+                    Patient already registered with this Emirates ID
+                  </Text>
+                )}
+                {emiratesIdCheck.status === "error" && (
+                  <Text style={styles.fieldError}>
+                    Unable to verify — please try again
+                  </Text>
+                )}
               </View>
 
               <View style={styles.orDividerRow}>
@@ -263,22 +420,62 @@ export default function RegisterNewPatient() {
                 <View style={styles.dottedLine} />
               </View>
 
+              {/* Passport */}
               <View style={[styles.inputContainer, { marginBottom: 0 }]}>
-                <Text style={[styles.inputLabel, { color: Colors.label }]}>Passport no.</Text>
-                <View style={[styles.cardInputWrapper, focusedField === "passportNo" && styles.inputWrapperFocused]}>
+                <Text style={[styles.inputLabel, { color: Colors.label }]}>
+                  Passport no.
+                </Text>
+                <View
+                  style={[
+                    styles.cardInputWrapper,
+                    focusedField === "passportNo" && styles.inputWrapperFocused,
+                    passportCheck.status === "exists" &&
+                      styles.inputWrapperError,
+                    passportCheck.status === "available" &&
+                      styles.inputWrapperSuccess,
+                  ]}
+                >
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="K5012250"
                     placeholderTextColor={Colors.inactive}
                     value={passportNo}
-                    onChangeText={(t) => setPassportNo(formatPassport(t))}
+                    onChangeText={(t) => {
+                      const formatted = formatPassport(t);
+                      setPassportNo(formatted);
+                      if (formatted !== passportCheck.checkedValue) {
+                        setPassportCheck((prev) => ({
+                          ...prev,
+                          status: "idle",
+                        }));
+                      }
+                    }}
                     onFocus={() => setFocusedField("passportNo")}
-                    onBlur={() => setFocusedField("")}
+                    onBlur={() => {
+                      setFocusedField("");
+                      if (
+                        passportNo.trim() &&
+                        passportNo !== passportCheck.checkedValue
+                      ) {
+                        checkPatientExistence("passport", passportNo);
+                      }
+                    }}
                     autoCapitalize="characters"
                     maxLength={12}
                     returnKeyType="next"
                   />
+                  {renderFieldStatus(passportCheck)}
                 </View>
+                {passportCheck.status === "exists" && (
+                  <Text style={styles.fieldError}>
+                    Patient already registered with this Passport
+                  </Text>
+                )}
+                {passportCheck.status === "error" && (
+                  <Text style={styles.fieldError}>
+                    Unable to verify — please try again
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -286,8 +483,22 @@ export default function RegisterNewPatient() {
             <View style={styles.rowContainer}>
               <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
                 <Text style={styles.inputLabel}>First name</Text>
-                <View style={[styles.inputWrapper, focusedField === "firstName" && styles.inputWrapperFocused]}>
-                  <Ionicons name="person-outline" size={20} color={focusedField === "firstName" ? Colors.secondary : Colors.label} style={styles.inputIcon} />
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === "firstName" && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={
+                      focusedField === "firstName"
+                        ? Colors.secondary
+                        : Colors.label
+                    }
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="John"
@@ -303,8 +514,22 @@ export default function RegisterNewPatient() {
               </View>
               <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.inputLabel}>Last name</Text>
-                <View style={[styles.inputWrapper, focusedField === "lastName" && styles.inputWrapperFocused]}>
-                  <Ionicons name="person-outline" size={20} color={focusedField === "lastName" ? Colors.secondary : Colors.label} style={styles.inputIcon} />
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === "lastName" && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={
+                      focusedField === "lastName"
+                        ? Colors.secondary
+                        : Colors.label
+                    }
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
                     placeholder="Doe"
@@ -324,8 +549,20 @@ export default function RegisterNewPatient() {
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Date of birth</Text>
               {Platform.OS === "web" ? (
-                <View style={[styles.inputWrapper, focusedField === "dob" && styles.inputWrapperFocused]}>
-                  <Ionicons name="calendar-outline" size={20} color={focusedField === "dob" ? Colors.secondary : Colors.label} style={styles.inputIcon} />
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === "dob" && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={
+                      focusedField === "dob" ? Colors.secondary : Colors.label
+                    }
+                    style={styles.inputIcon}
+                  />
                   <input
                     type="date"
                     value={dayjs(dob).format("YYYY-MM-DD")}
@@ -337,7 +574,9 @@ export default function RegisterNewPatient() {
                         const today = new Date();
                         const minDate = new Date(1900, 0, 1);
                         if (d.getFullYear() >= 1000) {
-                          setDob(d < minDate ? minDate : d > today ? today : d);
+                          setDob(
+                            d < minDate ? minDate : d > today ? today : d,
+                          );
                         } else {
                           setDob(d);
                         }
@@ -345,17 +584,36 @@ export default function RegisterNewPatient() {
                     }}
                     onFocus={() => setFocusedField("dob")}
                     onBlur={() => setFocusedField("")}
-                    style={{ flex: 1, border: "none", outline: "none", fontSize: "16px", fontFamily: FontFamilies.medium, color: Colors.text, backgroundColor: "transparent", height: "100%" }}
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      outline: "none",
+                      fontSize: "16px",
+                      fontFamily: FontFamilies.medium,
+                      color: Colors.text,
+                      backgroundColor: "transparent",
+                      height: "100%",
+                    }}
                   />
                 </View>
               ) : (
                 <TouchableOpacity
-                  style={[styles.inputWrapper, showDatePicker && styles.inputWrapperFocused]}
+                  style={[
+                    styles.inputWrapper,
+                    showDatePicker && styles.inputWrapperFocused,
+                  ]}
                   onPress={() => setShowDatePicker(true)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="calendar-outline" size={20} color={showDatePicker ? Colors.secondary : Colors.label} style={styles.inputIcon} />
-                  <Text style={styles.input}>{dayjs(dob).format("MMM DD, YYYY")}</Text>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={showDatePicker ? Colors.secondary : Colors.label}
+                    style={styles.inputIcon}
+                  />
+                  <Text style={styles.input}>
+                    {dayjs(dob).format("MMM DD, YYYY")}
+                  </Text>
                   <Text style={styles.changeLinkText}>Change</Text>
                 </TouchableOpacity>
               )}
@@ -366,25 +624,45 @@ export default function RegisterNewPatient() {
               <Text style={styles.inputLabel}>Gender</Text>
               <View style={styles.rowContainer}>
                 <TouchableOpacity
-                  style={[styles.genderBox, gender === "Male" && styles.genderBoxActive, { marginRight: 8 }]}
+                  style={[
+                    styles.genderBox,
+                    gender === "Male" && styles.genderBoxActive,
+                    { marginRight: 8 },
+                  ]}
                   onPress={() => setGender("Male")}
                   activeOpacity={0.8}
                 >
                   <View style={styles.radioContainer}>
-                    <View style={[styles.radioOuter, gender === "Male" && styles.radioOuterActive]}>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        gender === "Male" && styles.radioOuterActive,
+                      ]}
+                    >
                       {gender === "Male" && <View style={styles.radioInner} />}
                     </View>
                     <Text style={styles.genderText}>Male</Text>
                   </View>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.genderBox, gender === "Female" && styles.genderBoxActive, { marginLeft: 8 }]}
+                  style={[
+                    styles.genderBox,
+                    gender === "Female" && styles.genderBoxActive,
+                    { marginLeft: 8 },
+                  ]}
                   onPress={() => setGender("Female")}
                   activeOpacity={0.8}
                 >
                   <View style={styles.radioContainer}>
-                    <View style={[styles.radioOuter, gender === "Female" && styles.radioOuterActive]}>
-                      {gender === "Female" && <View style={styles.radioInner} />}
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        gender === "Female" && styles.radioOuterActive,
+                      ]}
+                    >
+                      {gender === "Female" && (
+                        <View style={styles.radioInner} />
+                      )}
                     </View>
                     <Text style={styles.genderText}>Female</Text>
                   </View>
@@ -394,7 +672,12 @@ export default function RegisterNewPatient() {
 
             {/* Continue Button */}
             <TouchableOpacity
-              style={[styles.continueBtn, isFormValid ? styles.continueBtnEnabled : styles.continueBtnDisabled]}
+              style={[
+                styles.continueBtn,
+                isFormValid
+                  ? styles.continueBtnEnabled
+                  : styles.continueBtnDisabled,
+              ]}
               disabled={loading || !isFormValid}
               onPress={handleContinue}
               activeOpacity={0.8}
@@ -540,6 +823,20 @@ const styles: any = StyleSheet.create({
   inputWrapperFocused: {
     borderColor: Colors.secondary,
   },
+  inputWrapperError: {
+    borderColor: "#EF4444",
+    backgroundColor: "#FFF5F5",
+  },
+  inputWrapperSuccess: {
+    borderColor: "#22C55E",
+    backgroundColor: "#F0FDF4",
+  },
+  fieldError: {
+    fontSize: 12,
+    fontFamily: FontFamilies.medium,
+    color: "#EF4444",
+    marginTop: 6,
+  },
   inputIcon: {
     marginRight: 12,
   },
@@ -616,7 +913,12 @@ const styles: any = StyleSheet.create({
   continueBtnEnabled: {
     backgroundColor: Colors.primary,
     ...Platform.select({
-      ios: { shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+      ios: {
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
       android: { elevation: 4 },
     }),
   },

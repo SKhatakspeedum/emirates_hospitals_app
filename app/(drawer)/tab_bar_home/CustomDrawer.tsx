@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,27 +7,52 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
-  Dimensions,
   Platform,
 } from "react-native";
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
-import {
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   IS_LOGGED_IN,
   SPD_USER_EMAIL,
-  SPD_USER_ID,
   SPD_USER_NAME,
-  SPD_USER_SUBSCRIPTION,
   USER_FULL_DATA,
 } from "@/app/config/config";
 import Toast from "react-native-toast-message";
 import { Colors } from "@/app/config/colors";
 import { FontFamilies } from "@/app/config/fonts";
 import { initializeSuggestus } from "@/app/suggestus_plugin/suggestusClient";
+import { getDecryptedID } from "@/app/suggestus_plugin/util/util_functions";
+
+interface UserProfile {
+  name: string;
+  email: string;
+  city: string;
+  avatarUri: string | null;
+}
+
+const DEFAULT_PROFILE: UserProfile = {
+  name: "User",
+  email: "",
+  city: "",
+  avatarUri: null,
+};
+
+const parseAdditionalAttributes = (raw: any): Record<string, string> => {
+  if (!raw) return {};
+  try {
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return {};
+  }
+};
+
+const getInitials = (name: string): string => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
 
 const drawerItems = [
   {
@@ -63,56 +88,119 @@ const drawerItems = [
 ];
 
 export default function CustomDrawer(props: DrawerContentComponentProps) {
-  const [userProfileName, setUserProfileName] = useState("John Doe");
+  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [avatarError, setAvatarError] = useState(false);
+
+  const loadProfile = useCallback(async () => {
+    setLoadingProfile(true);
+    setAvatarError(false);
+    try {
+      const fullDataStr = await getDecryptedID(USER_FULL_DATA);
+      if (fullDataStr) {
+        const parsed = JSON.parse(fullDataStr);
+        const attrs = parseAdditionalAttributes(parsed.additional_attributes);
+
+        const name =
+          parsed.usr_name?.trim() ||
+          (await AsyncStorage.getItem(SPD_USER_NAME)) ||
+          "User";
+
+        const email =
+          parsed.usr_email?.trim() ||
+          parsed.email?.trim() ||
+          (await AsyncStorage.getItem(SPD_USER_EMAIL)) ||
+          "";
+
+        const city =
+          attrs.user_city?.trim() ||
+          attrs.p_city?.trim() ||
+          attrs.city?.trim() ||
+          "";
+
+        const avatarUri =
+          parsed.usr_profile_pic?.trim() ||
+          parsed.profile_pic?.trim() ||
+          parsed.usr_photo?.trim() ||
+          null;
+
+        setProfile({ name, email, city, avatarUri });
+      } else {
+        // USER_FULL_DATA not available — fall back to individual cached keys
+        const name =
+          (await AsyncStorage.getItem(SPD_USER_NAME)) || "User";
+        const email =
+          (await AsyncStorage.getItem(SPD_USER_EMAIL)) || "";
+        setProfile({ ...DEFAULT_PROFILE, name, email });
+      }
+    } catch (error) {
+      console.error("[CustomDrawer] Failed to load profile:", error);
+      // Best-effort fallback — never crash the drawer
+      try {
+        const name =
+          (await AsyncStorage.getItem(SPD_USER_NAME)) || "User";
+        setProfile({ ...DEFAULT_PROFILE, name });
+      } catch {
+        setProfile(DEFAULT_PROFILE);
+      }
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadProfileData = async () => {
-      const name = await AsyncStorage.getItem(SPD_USER_NAME);
-      if (name) {
-        setUserProfileName(name);
-      }
-    };
-    loadProfileData();
-    const unsubscribe = (props.navigation as any).addListener("focus", () => {
-      loadProfileData();
-    });
+    loadProfile();
+    const unsubscribe = (props.navigation as any).addListener(
+      "focus",
+      loadProfile,
+    );
     return unsubscribe;
-  }, [props.navigation]);
+  }, [props.navigation, loadProfile]);
 
   const handleNav = async (screen: string) => {
-    console.log(screen);
     if (screen === "SignOut") {
-      await AsyncStorage.clear();
       try {
-        await initializeSuggestus();
+        await AsyncStorage.clear();
+        try {
+          await initializeSuggestus();
+        } catch (err) {
+          console.warn("[CustomDrawer] initializeSuggestus after logout failed:", err);
+        }
+        Toast.show({ type: "success", text1: "You have been signed out." });
+        props.navigation.reset({
+          index: 0,
+          routes: [{ name: "init_screens/login" }],
+        });
       } catch (err) {
-        console.log("Error initializing suggestus session after logout:", err);
+        console.error("[CustomDrawer] Sign-out error:", err);
+        Toast.show({
+          type: "error",
+          text1: "Sign-out failed",
+          text2: "Please try again.",
+        });
       }
-      Toast.show({
-        type: "success",
-        text1: "You have been signed out.",
-      });
-      props.navigation.reset({
-        index: 0,
-        routes: [{ name: "init_screens/login" }],
-      });
       return;
     }
 
-    // Check if the route is defined in the navigator
-    const validRoutes = ["profile/ProfileScreen", "explore_tab/ExploreScreen", "orders/OrdersScreen"];
+    const validRoutes = [
+      "profile/ProfileScreen",
+      "explore_tab/ExploreScreen",
+      "orders/OrdersScreen",
+    ];
     if (validRoutes.includes(screen)) {
       props.navigation.navigate(screen);
       props.navigation.closeDrawer();
     } else if (screen === "OrderScreen") {
-      props.navigation.navigate("tab_bar_home/HomeScreen", { screen: "OrderScreen" });
+      props.navigation.navigate("tab_bar_home/HomeScreen", {
+        screen: "OrderScreen",
+      });
       props.navigation.closeDrawer();
-    }
-    else if (screen === "MedicinesScreen") {
-      props.navigation.navigate("tab_bar_home/HomeScreen", { screen: "MedicinesScreen" });
+    } else if (screen === "MedicinesScreen") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", {
+        screen: "MedicinesScreen",
+      });
       props.navigation.closeDrawer();
     } else {
-      // Placeholder display for under-development medical screens
       Toast.show({
         type: "info",
         text1: "Feature coming soon",
@@ -122,51 +210,85 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     }
   };
 
+  const renderAvatar = () => {
+    if (loadingProfile) {
+      return <View style={[styles.avatar, styles.avatarSkeleton]} />;
+    }
+    if (profile.avatarUri && !avatarError) {
+      return (
+        <Image
+          source={{ uri: profile.avatarUri }}
+          style={styles.avatar}
+          onError={() => setAvatarError(true)}
+        />
+      );
+    }
+    return (
+      <View style={[styles.avatar, styles.avatarInitials]}>
+        <Text style={styles.initialsText}>{getInitials(profile.name)}</Text>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.drawerContainer}>
-        {/* Profile Header Row */}
+        {/* Profile Header */}
         <TouchableOpacity
           style={styles.headerRow}
           onPress={() => handleNav("profile/ProfileScreen")}
           activeOpacity={0.7}
         >
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/men/43.jpg" }}
-            style={styles.avatar}
-          />
+          {renderAvatar()}
+
           <View style={styles.headerTextContainer}>
-            <Text style={styles.userName} numberOfLines={1}>{userProfileName}</Text>
-            <Text style={styles.userLocation}>Dubai</Text>
+            {loadingProfile ? (
+              <>
+                <View style={styles.skeletonName} />
+                <View style={styles.skeletonSub} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.userName} numberOfLines={1}>
+                  {profile.name}
+                </Text>
+                {(profile.email || profile.city) ? (
+                  <Text style={styles.userSub} numberOfLines={1}>
+                    {profile.city || profile.email}
+                  </Text>
+                ) : null}
+              </>
+            )}
           </View>
-          <Ionicons name="chevron-forward" size={18} color={Colors.primary} style={styles.headerChevron} />
+
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={Colors.primary}
+            style={styles.headerChevron}
+          />
         </TouchableOpacity>
 
         {/* Separator */}
         <View style={styles.headerSeparator} />
 
-        {/* Drawer Menu Items */}
-        <ScrollView
-          style={styles.linksScroll}
-          showsVerticalScrollIndicator={false}
-        >
-          {drawerItems.map((item, idx) => (
+        {/* Menu Items */}
+        <ScrollView style={styles.linksScroll} showsVerticalScrollIndicator={false}>
+          {drawerItems.map((item) => (
             <TouchableOpacity
               key={item.label}
               style={styles.linkRow}
               onPress={() => handleNav(item.screen)}
               activeOpacity={0.7}
             >
-              <View style={styles.linkIconWrapper}>
-                {item.icon}
-              </View>
+              <View style={styles.linkIconWrapper}>{item.icon}</View>
               <Text style={styles.linkLabel}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={16} color={Colors.inactive} />
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Logout at bottom */}
+        {/* Logout */}
         <View style={styles.logoutContainer}>
           <TouchableOpacity
             style={styles.logoutRow}
@@ -174,7 +296,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             activeOpacity={0.7}
           >
             <View style={styles.linkIconWrapper}>
-              <Ionicons name="log-out-outline" size={22} color={Colors.primary} style={styles.logoutIcon} />
+              <Ionicons name="log-out-outline" size={22} color={Colors.primary} />
             </View>
             <Text style={styles.logoutLabel}>Log out</Text>
             <Ionicons name="chevron-forward" size={16} color={Colors.inactive} />
@@ -211,9 +333,24 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: Colors.lightgray,
   },
+  avatarSkeleton: {
+    backgroundColor: Colors.border,
+  },
+  avatarInitials: {
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  initialsText: {
+    fontSize: 22,
+    fontFamily: FontFamilies.bold,
+    color: Colors.background,
+    letterSpacing: 1,
+  },
   headerTextContainer: {
     flex: 1,
     marginLeft: 16,
+    justifyContent: "center",
   },
   userName: {
     fontSize: 18,
@@ -221,10 +358,23 @@ const styles = StyleSheet.create({
     fontFamily: FontFamilies.bold,
     marginBottom: 2,
   },
-  userLocation: {
+  userSub: {
     fontSize: 12,
     color: Colors.primary,
     fontFamily: FontFamilies.medium,
+  },
+  skeletonName: {
+    width: 120,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.border,
+    marginBottom: 6,
+  },
+  skeletonSub: {
+    width: 70,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: Colors.border,
   },
   headerChevron: {
     marginLeft: 8,
@@ -269,9 +419,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 8,
     backgroundColor: Colors.background,
-  },
-  logoutIcon: {
-    // Arrow icon points to the right
   },
   logoutLabel: {
     fontSize: 15,

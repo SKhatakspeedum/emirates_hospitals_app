@@ -84,15 +84,28 @@ export default function PatientDetailsScreen() {
   const fetchPatientData = async (p_patient_id?: string) => {
     const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
     setIsLoading(true);
+
+    // Load phone number from stored user data
+    let mobileNumber = "";
+    try {
+      const fullDataStr =
+        (await fetchDataFromLocalStorage(USER_FULL_DATA)) ?? "";
+      if (fullDataStr) {
+        const parsed = JSON.parse(fullDataStr);
+        mobileNumber =
+          parsed.usr_phone ?? parsed.usr_mobile ?? parsed.p_mobile_no ?? "";
+      }
+    } catch (_) {}
+
     try {
       const response = await callSuggestusAPI(
         spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
         {
           p_user_id: userId,
-          // p_patient_id: p_patient_id,
           p_search_text: "",
           p_search_additional_attributes: "",
           p_process_flag: "user_patients",
+          ...(mobileNumber ? { p_ptm_mobile_number: mobileNumber } : {}),
         },
         "",
         "",

@@ -28,7 +28,7 @@ import {
 } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 
-type CheckStatus = "idle" | "checking" | "exists" | "available" | "error";
+type CheckStatus = "idle" | "checking" | "exists" | "available" | "error" | "invalid";
 interface FieldCheck {
   status: CheckStatus;
   checkedValue: string;
@@ -110,6 +110,20 @@ export default function RegisterNewPatient() {
 
       const setCheck =
         field === "emirates" ? setEmiratesIdCheck : setPassportCheck;
+
+      // Format validation before hitting the API
+      if (field === "emirates") {
+        if (clean.length !== 15 || !clean.startsWith("784")) {
+          setCheck({ status: "invalid", checkedValue: value });
+          return;
+        }
+      } else {
+        if (clean.length < 6) {
+          setCheck({ status: "invalid", checkedValue: value });
+          return;
+        }
+      }
+
       setCheck({ status: "checking", checkedValue: value });
 
       try {
@@ -320,7 +334,7 @@ export default function RegisterNewPatient() {
     if (check.status === "available") {
       return <Ionicons name="checkmark-circle" size={20} color="#22C55E" />;
     }
-    if (check.status === "exists" || check.status === "error") {
+    if (check.status === "exists" || check.status === "error" || check.status === "invalid") {
       return <Ionicons name="close-circle" size={20} color="#EF4444" />;
     }
     return null;
@@ -389,10 +403,7 @@ export default function RegisterNewPatient() {
                       const formatted = formatEmiratesId(t);
                       setEmiratesId(formatted);
                       if (formatted !== emiratesIdCheck.checkedValue) {
-                        setEmiratesIdCheck((prev) => ({
-                          ...prev,
-                          status: "idle",
-                        }));
+                        setEmiratesIdCheck({ status: "idle", checkedValue: "" });
                       }
                     }}
                     onFocus={() => setFocusedField("emiratesId")}
@@ -411,6 +422,11 @@ export default function RegisterNewPatient() {
                   />
                   {renderFieldStatus(emiratesIdCheck)}
                 </View>
+                {emiratesIdCheck.status === "invalid" && (
+                  <Text style={styles.fieldError}>
+                    Please enter a valid Emirates ID (784-XXXX-XXXXXXX-X)
+                  </Text>
+                )}
                 {emiratesIdCheck.status === "exists" && (
                   <Text style={styles.fieldError}>
                     Patient already registered with this Emirates ID
@@ -453,10 +469,7 @@ export default function RegisterNewPatient() {
                       const formatted = formatPassport(t);
                       setPassportNo(formatted);
                       if (formatted !== passportCheck.checkedValue) {
-                        setPassportCheck((prev) => ({
-                          ...prev,
-                          status: "idle",
-                        }));
+                        setPassportCheck({ status: "idle", checkedValue: "" });
                       }
                     }}
                     onFocus={() => setFocusedField("passportNo")}
@@ -475,6 +488,11 @@ export default function RegisterNewPatient() {
                   />
                   {renderFieldStatus(passportCheck)}
                 </View>
+                {passportCheck.status === "invalid" && (
+                  <Text style={styles.fieldError}>
+                    Please enter a valid Passport number (min. 6 characters)
+                  </Text>
+                )}
                 {passportCheck.status === "exists" && (
                   <Text style={styles.fieldError}>
                     Patient already registered with this Passport

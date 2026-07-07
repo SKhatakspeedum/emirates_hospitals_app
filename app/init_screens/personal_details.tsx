@@ -41,7 +41,7 @@ import {
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 
-type CheckStatus = "idle" | "checking" | "exists" | "available" | "error";
+type CheckStatus = "idle" | "checking" | "exists" | "available" | "error" | "invalid";
 interface FieldCheck {
   status: CheckStatus;
   checkedValue: string;
@@ -114,6 +114,7 @@ export default function PersonalDetailsScreen() {
   const isFormValid =
     activeCheck.status !== "checking" &&
     activeCheck.status !== "exists" &&
+    activeCheck.status !== "invalid" &&
     idFieldFilled &&
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
@@ -130,6 +131,20 @@ export default function PersonalDetailsScreen() {
 
       const setCheck =
         field === "emirates" ? setEmiratesIdCheck : setPassportCheck;
+
+      // Format validation before hitting the API
+      if (field === "emirates") {
+        if (clean.length !== 15 || !clean.startsWith("784")) {
+          setCheck({ status: "invalid", checkedValue: value });
+          return;
+        }
+      } else {
+        if (clean.length < 6) {
+          setCheck({ status: "invalid", checkedValue: value });
+          return;
+        }
+      }
+
       setCheck({ status: "checking", checkedValue: value });
 
       try {
@@ -204,7 +219,7 @@ export default function PersonalDetailsScreen() {
       return <ActivityIndicator size="small" color={Colors.secondary} />;
     if (check.status === "available")
       return <Ionicons name="checkmark-circle" size={20} color="#22C55E" />;
-    if (check.status === "exists" || check.status === "error")
+    if (check.status === "exists" || check.status === "error" || check.status === "invalid")
       return <Ionicons name="close-circle" size={20} color="#EF4444" />;
     return null;
   };
@@ -758,6 +773,11 @@ export default function PersonalDetailsScreen() {
                   />
                   {renderFieldStatus(emiratesIdCheck)}
                 </View>
+                {emiratesIdCheck.status === "invalid" && (
+                  <Text style={styles.fieldError}>
+                    Please enter a valid Emirates ID (784-XXXX-XXXXXXX-X)
+                  </Text>
+                )}
                 {emiratesIdCheck.status === "exists" && (
                   <Text style={styles.fieldError}>
                     A user with this Emirates ID is already registered
@@ -822,6 +842,11 @@ export default function PersonalDetailsScreen() {
                   />
                   {renderFieldStatus(passportCheck)}
                 </View>
+                {passportCheck.status === "invalid" && (
+                  <Text style={styles.fieldError}>
+                    Please enter a valid Passport number (min. 6 characters)
+                  </Text>
+                )}
                 {passportCheck.status === "exists" && (
                   <Text style={styles.fieldError}>
                     A user with this Passport is already registered

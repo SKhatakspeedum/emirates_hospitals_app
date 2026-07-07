@@ -739,10 +739,7 @@ export default function PersonalDetailsScreen() {
                           setGender("Male");
                           setLinkedPatientId("");
                         }
-                        setEmiratesIdCheck((prev) => ({
-                          ...prev,
-                          status: "idle",
-                        }));
+                        setEmiratesIdCheck({ status: "idle", checkedValue: "" });
                       }
                     }}
                     onFocus={() => setFocusedField("emiratesId")}
@@ -801,10 +798,7 @@ export default function PersonalDetailsScreen() {
                           setGender("Male");
                           setLinkedPatientId("");
                         }
-                        setPassportCheck((prev) => ({
-                          ...prev,
-                          status: "idle",
-                        }));
+                        setPassportCheck({ status: "idle", checkedValue: "" });
                       }
                     }}
                     onFocus={() => setFocusedField("passportNo")}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  SafeAreaView,
   StatusBar,
   Platform,
   Dimensions,
   Alert,
+  ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,6 +21,7 @@ import { FontFamilies } from "../config/fonts";
 import {
   getDecryptedID,
   fetchDataFromLocalStorage,
+  saveDataFromLocalStorage,
 } from "../suggestus_plugin/util/util_functions";
 import {
   callSuggestusAPI,
@@ -27,6 +29,17 @@ import {
 } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import dayjs from "dayjs";
+
+interface Patient {
+  id: string;
+  name: string;
+  age: number;
+  gender: string;
+  initials: string;
+  bgColor: string;
+}
+
+const AVATAR_COLORS = ["#E3EEF9", "#F9EAF2", "#EBF7EC", "#FFF3E0", "#F3E5F5"];
 
 const parseAdditionalAttributes = (raw: any): Record<string, string> => {
   if (!raw) return {};
@@ -47,33 +60,91 @@ export default function PatientSelectionScreen() {
     age: number;
     gender: string;
   } | null>(null);
+  const [isAlreadyPatient, setIsAlreadyPatient] = useState(false);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [registeringAsSelf, setRegisteringAsSelf] = useState(false);
 
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const fullDataStr = await getDecryptedID(USER_FULL_DATA);
-        if (fullDataStr) {
-          const parsed = JSON.parse(fullDataStr);
-          const attrs = parseAdditionalAttributes(parsed.additional_attributes);
-          const name = parsed.usr_name ?? "";
-          const dob = attrs.user_dob ?? parsed.usr_dob;
-          const age = dob ? dayjs().diff(dob, "year") : 0;
-          const gender = attrs.user_gender ?? parsed.usr_gender ?? "Male";
-          setUserData({ name, age, gender });
-        } else {
-          setUserData(null);
-        }
-      } catch (e) {
-        console.error("Error loading user data in PatientSelectionScreen:", e);
-        setUserData(null);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Try encrypted storage first, fall back to plain
+      let fullDataStr = await getDecryptedID(USER_FULL_DATA);
+      if (!fullDataStr) {
+        fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
       }
-    };
-    loadUserData();
+
+      let userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+
+      if (fullDataStr) {
+        const parsed = JSON.parse(fullDataStr);
+        const attrs = parseAdditionalAttributes(parsed.additional_attributes);
+        const name = parsed.usr_name ?? "";
+        const dob = attrs.user_dob ?? parsed.usr_dob;
+        const age = dob ? dayjs().diff(dob, "year") : 0;
+        const gender = attrs.user_gender ?? parsed.usr_gender ?? "Male";
+        setUserData({ name, age, gender });
+        if (parsed.usr_patient_id) setIsAlreadyPatient(true);
+        if (!userId) userId = parsed.usr_id ?? "";
+      }
+
+      // Fetch registered patients from API
+      const response = await callSuggestusAPI(
+        spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+        {
+          p_user_id: userId,
+          p_search_text: "",
+          p_search_additional_attributes: "",
+          p_process_flag: "user_patients",
+        },
+      );
+
+      if (response?.returnCode === true && response.returnData?.length > 0) {
+        const mapped: Patient[] = response.returnData.map(
+          (p: any, idx: number) => {
+            const name =
+              p.p_patient_name ??
+              p.ptm_name ??
+              [p.p_patient_first_name, p.p_patient_middle_name, p.p_patient_last_name]
+                .filter(Boolean)
+                .join(" ") ??
+              "Unknown";
+            const age = parseInt(String(p.ptm_age ?? p.p_age ?? "0"), 10) || 0;
+            const gender =
+              p.ptm_gender ?? (p.p_gender === "2" ? "Female" : "Male");
+            return {
+              id: String(p.p_patient_id ?? p.patient_id ?? idx),
+              name,
+              age,
+              gender,
+              initials: name
+                .split(" ")
+                .map((n: string) => n[0] ?? "")
+                .join("")
+                .toUpperCase()
+                .slice(0, 2),
+              bgColor: AVATAR_COLORS[idx % AVATAR_COLORS.length],
+            };
+          },
+        );
+        setPatients(mapped);
+      }
+    } catch (e) {
+      console.error("Error loading patient selection screen:", e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const handleRegisterAsPatient = async () => {
+    setRegisteringAsSelf(true);
     try {
-      const fullDataStr = await getDecryptedID(USER_FULL_DATA);
+      let fullDataStr = await getDecryptedID(USER_FULL_DATA);
+      if (!fullDataStr) fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
       if (!fullDataStr) {
         router.replace("/(drawer)/tab_bar_home/HomeScreen");
         return;
@@ -85,7 +156,6 @@ export default function PatientSelectionScreen() {
       const dob = attrs.user_dob ?? parsed.usr_dob;
       const age = dob ? dayjs().diff(dob, "year") : 0;
       const gender: string = attrs.user_gender ?? parsed.usr_gender ?? "Male";
-      setUserData({ name, age, gender });
 
       const nameParts = name.trim().split(" ");
       const firstName = nameParts[0] ?? "";
@@ -110,6 +180,7 @@ export default function PatientSelectionScreen() {
             "Patient Already Exists",
             "A patient with this Emirates ID or Passport is already registered.",
           );
+          setRegisteringAsSelf(false);
           return;
         }
       }
@@ -149,12 +220,17 @@ export default function PatientSelectionScreen() {
           JSON.stringify({ name, age, gender }),
         );
 
+        try {
+          const stored = JSON.parse(
+            (await getDecryptedID(USER_FULL_DATA)) ??
+            (await fetchDataFromLocalStorage(USER_FULL_DATA)) ?? "{}",
+          );
+          stored.usr_patient_id = patientId;
+          await saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(stored));
+        } catch (_) {}
+
         let userId = await fetchDataFromLocalStorage("sg_userId");
-        if (!userId) {
-          try {
-            userId = parsed?.usr_id ?? "";
-          } catch (_) {}
-        }
+        if (!userId) userId = parsed?.usr_id ?? "";
 
         await callSuggestusAPI(
           spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
@@ -179,65 +255,48 @@ export default function PatientSelectionScreen() {
             p_internal_flag: "N",
           },
         );
+
+        setIsAlreadyPatient(true);
+        await loadData();
       }
     } catch (e) {
       console.error("Error registering as patient:", e);
+    }
+    setRegisteringAsSelf(false);
+  };
+
+  const handleSelectPatient = async (patient: Patient) => {
+    try {
+      await setPatientId(patient.id);
+      await AsyncStorage.setItem(
+        SPD_SELECTED_PATIENT,
+        JSON.stringify({ name: patient.name, age: patient.age, gender: patient.gender }),
+      );
+    } catch (e) {
+      console.error("Error setting patient:", e);
     }
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 
   const handleAddNewPatient = () => {
-    router.push("/patient/register_new_patient");
+    router.push("/patient/registered_patients");
   };
 
   const handleSkip = async () => {
     try {
-      const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
-      
-      const response = await callSuggestusAPI(
-        spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
-        {
-          p_user_id: userId,
-          p_search_text: "",
-          p_search_additional_attributes: "",
-          p_process_flag: "user_patients",
-        },
-      );
-
-      if (response?.returnCode === true && response.returnData?.length > 0) {
-        const firstPatient = response.returnData[0];
-        const patientId = String(firstPatient.p_patient_id ?? firstPatient.patient_id ?? "");
-        
-        const name = firstPatient.p_patient_name ??
-            firstPatient.ptm_name ??
-            [
-              firstPatient.p_patient_first_name,
-              firstPatient.p_patient_middle_name,
-              firstPatient.p_patient_last_name,
-            ]
-              .filter(Boolean)
-              .join(" ") ??
-            "Unknown";
-        const age = parseInt(String(firstPatient.ptm_age ?? firstPatient.p_age ?? "0"), 10) || 0;
-        const gender = firstPatient.ptm_gender ?? (firstPatient.p_gender === "2" ? "Female" : "Male");
-
-        if (patientId) {
-          await setPatientId(patientId);
-          await AsyncStorage.setItem(
-            SPD_SELECTED_PATIENT,
-            JSON.stringify({ name, age, gender }),
-          );
-        } else {
-          await AsyncStorage.removeItem("sg_patientId");
-        }
+      if (patients.length > 0) {
+        const first = patients[0];
+        await setPatientId(first.id);
+        await AsyncStorage.setItem(
+          SPD_SELECTED_PATIENT,
+          JSON.stringify({ name: first.name, age: first.age, gender: first.gender }),
+        );
       } else {
         await AsyncStorage.removeItem("sg_patientId");
       }
     } catch (e) {
       console.error("Error in handleSkip:", e);
-      try {
-        await AsyncStorage.removeItem("sg_patientId");
-      } catch (_) {}
+      try { await AsyncStorage.removeItem("sg_patientId"); } catch (_) {}
     }
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
@@ -249,7 +308,7 @@ export default function PatientSelectionScreen() {
         style={[
           styles.header,
           {
-            paddingTop: isSmallScreen ? 55 : 130, // 80 (content) + 50 (logo margin)
+            paddingTop: isSmallScreen ? 55 : 130,
             paddingBottom: isSmallScreen ? 15 : 50,
           },
         ]}
@@ -261,38 +320,92 @@ export default function PatientSelectionScreen() {
         />
       </View>
 
-      <View style={styles.content}>
-        {userData && (
-          <View style={styles.userCard}>
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.avatarContainer}>
-                <Ionicons name="person" size={24} color="#FFF" />
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+      >
+        {loading ? (
+          <ActivityIndicator color={Colors.primary} style={{ marginTop: 24 }} />
+        ) : (
+          <>
+            {/* Self-registration card — only if not already a patient */}
+            {!isAlreadyPatient && userData && (
+              <View style={styles.userCard}>
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.avatarContainer}>
+                    <Ionicons name="person" size={24} color="#FFF" />
+                  </View>
+                  <View style={styles.userInfoCol}>
+                    <Text style={styles.userName}>{userData.name}</Text>
+                  </View>
+                  <Text style={styles.userMeta}>
+                    {userData.age} Yrs / {userData.gender}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.registerInnerBtn}
+                  onPress={handleRegisterAsPatient}
+                  disabled={registeringAsSelf}
+                  activeOpacity={0.8}
+                >
+                  {registeringAsSelf ? (
+                    <ActivityIndicator color={Colors.secondary} size="small" />
+                  ) : (
+                    <>
+                      <Text style={styles.registerInnerBtnText}>
+                        Register as a patient
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={Colors.secondary}
+                      />
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
-              <View style={styles.userInfoCol}>
-                <Text style={styles.userName}>{userData.name}</Text>
-              </View>
-              <Text style={styles.userMeta}>
-                {userData.age} Yrs / {userData.gender}
-              </Text>
-            </View>
+            )}
 
-            <TouchableOpacity
-              style={styles.registerInnerBtn}
-              onPress={handleRegisterAsPatient}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.registerInnerBtnText}>
-                Register as a patient
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={Colors.secondary}
-              />
-            </TouchableOpacity>
-          </View>
+            {/* Registered patients list */}
+            {patients.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Registered patients</Text>
+                <View style={styles.patientsList}>
+                  {patients.map((patient) => (
+                    <TouchableOpacity
+                      key={patient.id}
+                      style={styles.patientRow}
+                      onPress={() => handleSelectPatient(patient)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.avatarCircle,
+                          { backgroundColor: patient.bgColor },
+                        ]}
+                      >
+                        <Text style={styles.avatarText}>{patient.initials}</Text>
+                      </View>
+                      <View style={styles.patientInfoCol}>
+                        <Text style={styles.patientName}>{patient.name}</Text>
+                        <Text style={styles.patientMeta}>
+                          {patient.age} Yrs / {patient.gender}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color={Colors.secondary}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+          </>
         )}
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity
@@ -335,8 +448,17 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentInner: {
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontFamily: FontFamilies.bold,
+    color: Colors.secondary,
+    marginBottom: 12,
+    marginTop: 20,
   },
   userCard: {
     backgroundColor: "#F2F7FC",
@@ -363,7 +485,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   userName: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: FontFamilies.bold,
     color: Colors.text,
   },
@@ -392,6 +514,43 @@ const styles = StyleSheet.create({
     fontFamily: FontFamilies.bold,
     color: Colors.secondary,
     marginRight: 6,
+  },
+  patientsList: {
+    width: "100%",
+  },
+  patientRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarText: {
+    fontSize: 15,
+    fontFamily: FontFamilies.bold,
+    color: "#2C5D9E",
+  },
+  patientInfoCol: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  patientName: {
+    fontSize: 15,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+  },
+  patientMeta: {
+    fontSize: 13,
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
+    marginTop: 2,
   },
   footer: {
     paddingHorizontal: 24,

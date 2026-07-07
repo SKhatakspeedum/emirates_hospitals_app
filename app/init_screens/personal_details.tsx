@@ -18,7 +18,12 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { IS_LOGGED_IN, USER_FULL_DATA, SPD_USER_NAME } from "../config/config";
+import {
+  IS_LOGGED_IN,
+  USER_FULL_DATA,
+  SPD_USER_NAME,
+  SPD_SELECTED_PATIENT,
+} from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import {
@@ -43,6 +48,25 @@ interface FieldCheck {
 }
 
 const IDLE_CHECK: FieldCheck = { status: "idle", checkedValue: "" };
+
+// returnCode arrives as string "true" or boolean true; returnData may be [{}] when empty
+const hasReturnData = (res: any): boolean => {
+  const ok = res?.returnCode === true || res?.returnCode === "true";
+  return (
+    ok &&
+    Array.isArray(res.returnData) &&
+    res.returnData.some((item: any) => item && Object.keys(item).length > 0)
+  );
+};
+
+const parseAdditionalAttributes = (raw: any): Record<string, string> => {
+  if (!raw) return {};
+  try {
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return {};
+  }
+};
 
 const formatEmiratesId = (text: string) => {
   const cleaned = text.replace(/\D/g, "");
@@ -72,22 +96,28 @@ export default function PersonalDetailsScreen() {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
 
-  const [emiratesIdCheck, setEmiratesIdCheck] = useState<FieldCheck>(IDLE_CHECK);
+  const [emiratesIdCheck, setEmiratesIdCheck] =
+    useState<FieldCheck>(IDLE_CHECK);
   const [passportCheck, setPassportCheck] = useState<FieldCheck>(IDLE_CHECK);
 
   // The active check is whichever tab is open
   const activeCheck = isResident ? emiratesIdCheck : passportCheck;
 
-  const isEmiratesIdValid = !isResident || emiratesId.trim().length > 0;
-  const isPassportNoValid = isResident || passportNo.trim().length > 0;
+  const idFieldFilled = isResident
+    ? emiratesId.trim().length > 0
+    : passportNo.trim().length > 0;
+
+  const idVerified = activeCheck.status === "available";
+
   const isFormValid =
-    isEmiratesIdValid &&
-    isPassportNoValid &&
+    activeCheck.status !== "checking" &&
+    activeCheck.status !== "exists" &&
+    idFieldFilled &&
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
-    gender !== "" &&
-    activeCheck.status !== "exists" &&
-    activeCheck.status !== "checking";
+    gender !== "";
+
+  const buttonLabel = "Register";
 
   // Inline existence check — fires on blur of the ID field
   const checkExistence = useCallback(
@@ -102,21 +132,21 @@ export default function PersonalDetailsScreen() {
 
       try {
         const res = await callSuggestusAPI(
-          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          spd_processId_config.sgconf_get_mst_user_validate_detail_for_ehg_pntapp,
           {
-            p_additional_attribute: {
-              p_emirates_id: field === "emirates" ? clean : "",
-              p_passport_no: field === "passport" ? clean : "",
-            },
+            p_emirates_id: field === "emirates" ? value : "",
+            p_passport: field === "passport" ? value : "",
+            p_process_flag: "validate_duplicate",
+            p_additional_attribute: {},
           },
         );
 
-        if (res?.returnCode === true && res.returnData?.length > 0) {
-          setCheck({ status: "exists", checkedValue: value });
-        } else if (res !== null && res !== undefined) {
+        if (res?.returnCode) {
           setCheck({ status: "available", checkedValue: value });
+          return;
         } else {
-          setCheck({ status: "error", checkedValue: value });
+          setCheck({ status: "exists", checkedValue: value });
+          return;
         }
       } catch (err) {
         console.error("[PersonalDetails] existence check failed:", err);
@@ -137,33 +167,243 @@ export default function PersonalDetailsScreen() {
   };
 
   const handleContinue = async () => {
-    if (isResident && !emiratesId.trim()) {
-      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your Emirates ID to continue." });
-      return;
-    }
-    if (!isResident && !passportNo.trim()) {
-      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your Passport number to continue." });
-      return;
-    }
-    if (!firstName.trim()) {
-      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your First name to continue." });
-      return;
-    }
-    if (!lastName.trim()) {
-      Toast.show({ type: "error", text1: "Required Field", text2: "Please enter your Last name to continue." });
-      return;
-    }
-    if (!gender) {
-      Toast.show({ type: "error", text1: "Required Field", text2: "Please select your gender." });
+    // --- Path A: ID already exists → restore session + self-register as patient ---
+    if (activeCheck.status === "exists") {
+      setLoading(true);
+      try {
+        const rawPhone = (route.params as any)?.phone_number ?? "";
+        const phoneE164 = rawPhone.replace(/\s+/g, "");
+
+        // Step 1: Restore existing user session via phone
+        const validateRes = await callSuggestusAPI(
+          spd_processId_config.sgconf_util_validate_user_v2,
+          {
+            p_username: phoneE164.replace(/^\+/, ""),
+            p_password: "",
+            p_ai_code: SiteConfig.AI_CODE,
+            p_login_type: "external",
+          },
+        );
+
+        const validateOk =
+          (validateRes?.returnCode === true ||
+            validateRes?.returnCode === "true") &&
+          validateRes?.returnData?.length > 0;
+
+        if (!validateOk) {
+          Toast.show({
+            type: "error",
+            text1: "Account Not Found",
+            text2: "Unable to locate your account. Please try again.",
+          });
+          return;
+        }
+
+        const u = validateRes.returnData[0];
+        let userId = String(u.usr_id ?? "");
+
+        await Promise.all([
+          setUserId(userId),
+          setRoleId(String(u.rol_id ?? "")),
+          setUserName(u.usr_name ?? ""),
+          saveDataFromLocalStorage("sg_userEmail", u.usr_email ?? ""),
+          saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
+          saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
+          saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(u)),
+          u.usr_patient_id
+            ? setPatientId(String(u.usr_patient_id))
+            : Promise.resolve(),
+        ]);
+        await AsyncStorage.setItem(IS_LOGGED_IN, "true");
+
+        // Step 2: Build patient fields from the returned user profile
+        const attrs = parseAdditionalAttributes(u.additional_attributes);
+        const name: string = u.usr_name ?? "";
+        const dobValue: string = attrs.user_dob ?? u.usr_dob ?? "";
+        const age = dobValue ? dayjs().diff(dobValue, "year") : 0;
+        const userGender: string = attrs.user_gender ?? u.usr_gender ?? "Male";
+        const nameParts = name.trim().split(" ");
+        const fName = nameParts[0] ?? "";
+        const lName = nameParts.slice(1).join(" ");
+        const genderCode = userGender === "Female" ? "2" : "1";
+        const formattedDob = dobValue
+          ? dayjs(dobValue).format("YYYY-MM-DD")
+          : "";
+
+        const emiratesIdClean = isResident ? emiratesId.replace(/-/g, "") : "";
+        const passportClean = !isResident ? passportNo.trim() : "";
+
+        // Step 3: Check if a patient record already exists for this ID
+        const checkRes = await callSuggestusAPI(
+          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          {
+            p_additional_attribute: {
+              p_emirates_id: emiratesIdClean,
+              p_passport_no: passportClean,
+            },
+          },
+        );
+
+        if (hasReturnData(checkRes)) {
+          // Patient record already exists — link it without creating a duplicate
+          const existingPatientId = String(
+            checkRes.returnData[0]?.p_patient_id ?? "",
+          );
+          if (existingPatientId) {
+            await setPatientId(existingPatientId);
+            await AsyncStorage.setItem(
+              SPD_SELECTED_PATIENT,
+              JSON.stringify({ name, age, gender: userGender }),
+            );
+            try {
+              const stored = JSON.parse(
+                (await getDecryptedID(USER_FULL_DATA)) ?? "{}",
+              );
+              stored.usr_patient_id = existingPatientId;
+              await saveDataFromLocalStorage(
+                USER_FULL_DATA,
+                JSON.stringify(stored),
+              );
+            } catch (_) {}
+          }
+          Toast.show({
+            type: "success",
+            text1: "Welcome back!",
+            text2: "Your account has been set up successfully.",
+          });
+          router.replace("/(drawer)/tab_bar_home/HomeScreen");
+          return;
+        }
+
+        // Step 4: No patient record yet — create one
+        const saveRes = await callSuggestusAPI(
+          spd_processId_config.xcelpat_save_trn_patient_master,
+          {
+            p_patient_id: null,
+            p_patient_title: genderCode,
+            p_name: fName,
+            p_middle_name: "",
+            p_last_name: lName,
+            p_gender: genderCode,
+            p_dob: formattedDob,
+            p_age: String(age),
+            p_marital_status: "",
+            p_mobile_no: "",
+            "p_mobile_no~CTN": "",
+            p_email: "",
+            ptd_home_phone: "",
+            "ptd_home_phone~CTN": "",
+            p_additional_attribute: {
+              p_father_name: "",
+              p_emirates_id: emiratesIdClean,
+              p_identification_type: isResident ? "emirates_id" : "passport",
+              p_identification_num: passportClean,
+            },
+            p_additional_attributes: {},
+          },
+        );
+
+        const patientId = String(saveRes?.returnData?.[0]?.p_patient_id ?? "");
+        if (patientId) {
+          await setPatientId(patientId);
+          await AsyncStorage.setItem(
+            SPD_SELECTED_PATIENT,
+            JSON.stringify({ name, age, gender: userGender }),
+          );
+
+          try {
+            const stored = JSON.parse(
+              (await getDecryptedID(USER_FULL_DATA)) ?? "{}",
+            );
+            stored.usr_patient_id = patientId;
+            await saveDataFromLocalStorage(
+              USER_FULL_DATA,
+              JSON.stringify(stored),
+            );
+          } catch (_) {}
+
+          await callSuggestusAPI(
+            spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
+            {
+              p_patient_id: patientId,
+              p_user_id: userId,
+              p_additional_attribites: {},
+            },
+          );
+
+          await callSuggestusAPI(
+            spd_processId_config.xcelpat_save_mst_user_entity_mapping_common,
+            {
+              p_patient_id: patientId,
+              p_user_id: userId,
+              p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
+              p_entity_reference_id: patientId,
+              p_entity_reference_code: "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+              p_active_status: "Y",
+              p_process_flag: "Y",
+              p_additional_attribites: {},
+              p_internal_flag: "N",
+            },
+          );
+        }
+
+        Toast.show({
+          type: "success",
+          text1: "Welcome back!",
+          text2: "Your account has been set up successfully.",
+        });
+      } catch (err) {
+        console.error("[PersonalDetails] link account failed:", err);
+        Toast.show({
+          type: "error",
+          text1: "Something Went Wrong",
+          text2: "Unable to link your account. Please try again.",
+        });
+      } finally {
+        setLoading(false);
+      }
+      router.replace("/(drawer)/tab_bar_home/HomeScreen");
       return;
     }
 
-    // Guard: block if the active field is already flagged as exists
-    if (activeCheck.status === "exists") {
+    // --- Path B: New user registration ---
+    if (isResident && !emiratesId.trim()) {
       Toast.show({
         type: "error",
-        text1: "Already Registered",
-        text2: `A user with this ${isResident ? "Emirates ID" : "Passport"} is already registered.`,
+        text1: "Required Field",
+        text2: "Please enter your Emirates ID to continue.",
+      });
+      return;
+    }
+    if (!isResident && !passportNo.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Required Field",
+        text2: "Please enter your Passport number to continue.",
+      });
+      return;
+    }
+    if (!firstName.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Required Field",
+        text2: "Please enter your First name to continue.",
+      });
+      return;
+    }
+    if (!lastName.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Required Field",
+        text2: "Please enter your Last name to continue.",
+      });
+      return;
+    }
+    if (!gender) {
+      Toast.show({
+        type: "error",
+        text1: "Required Field",
+        text2: "Please select your gender.",
       });
       return;
     }
@@ -177,11 +417,10 @@ export default function PersonalDetailsScreen() {
       const emiratesIdClean = emiratesId.replace(/-/g, "");
 
       // Final existence check — skip if already verified as available for this value
-      const alreadyVerified =
-        isResident
-          ? emiratesIdCheck.status === "available" &&
+      const alreadyVerified = isResident
+        ? emiratesIdCheck.status === "available" &&
           emiratesIdCheck.checkedValue === emiratesId
-          : passportCheck.status === "available" &&
+        : passportCheck.status === "available" &&
           passportCheck.checkedValue === passportNo;
 
       if (!alreadyVerified) {
@@ -195,7 +434,7 @@ export default function PersonalDetailsScreen() {
           },
         );
 
-        if (checkRes?.returnCode === true && checkRes.returnData?.length > 0) {
+        if (hasReturnData(checkRes)) {
           if (isResident) {
             setEmiratesIdCheck({ status: "exists", checkedValue: emiratesId });
           } else {
@@ -229,7 +468,7 @@ export default function PersonalDetailsScreen() {
       if (currentDataStr) {
         try {
           updatedData = { ...JSON.parse(currentDataStr), ...updatedData };
-        } catch (_) { }
+        } catch (_) {}
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
@@ -239,7 +478,8 @@ export default function PersonalDetailsScreen() {
         spd_processId_config.sgconf_save_mst_user_from_signup_wrapper,
         {
           p_create_ai_code: SiteConfig.AI_CODE,
-          p_next_process_id: "sgconf_get_mst_user_profile_for_authentic_token_v2",
+          p_next_process_id:
+            "sgconf_get_mst_user_profile_for_authentic_token_v2",
           p_register_new_patient_flag: "N",
           p_usr_phone: rawPhone,
           p_usr_name: name,
@@ -278,7 +518,10 @@ export default function PersonalDetailsScreen() {
           },
         );
 
-        if (validateRes?.returnCode === true && validateRes?.returnData?.length > 0) {
+        if (
+          validateRes?.returnCode === true &&
+          validateRes?.returnData?.length > 0
+        ) {
           const u = validateRes.returnData[0];
           await Promise.all([
             setUserId(String(u.usr_id ?? "")),
@@ -294,7 +537,10 @@ export default function PersonalDetailsScreen() {
           ]);
         }
       } catch (validateErr) {
-        console.error("[PersonalDetails] profile fetch after signup failed:", validateErr);
+        console.error(
+          "[PersonalDetails] profile fetch after signup failed:",
+          validateErr,
+        );
       }
 
       await AsyncStorage.setItem(IS_LOGGED_IN, "true");
@@ -311,7 +557,8 @@ export default function PersonalDetailsScreen() {
       Toast.show({
         type: "error",
         text1: "Something Went Wrong",
-        text2: "Unable to save your details. Please check your connection and try again.",
+        text2:
+          "Unable to save your details. Please check your connection and try again.",
       });
     } finally {
       setLoading(false);
@@ -333,7 +580,9 @@ export default function PersonalDetailsScreen() {
           showsHorizontalScrollIndicator={false}
           bounces={false}
         >
-          <View style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}>
+          <View
+            style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}
+          >
             {/* Resident / Non-Resident tabs */}
             <View style={styles.tabContainer}>
               <TouchableOpacity
@@ -341,16 +590,29 @@ export default function PersonalDetailsScreen() {
                 onPress={() => setIsResident(true)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.tabButtonText, isResident && styles.activeTabButtonText]}>
+                <Text
+                  style={[
+                    styles.tabButtonText,
+                    isResident && styles.activeTabButtonText,
+                  ]}
+                >
                   Resident
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.tabButton, !isResident && styles.activeTabButton]}
+                style={[
+                  styles.tabButton,
+                  !isResident && styles.activeTabButton,
+                ]}
                 onPress={() => setIsResident(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.tabButtonText, !isResident && styles.activeTabButtonText]}>
+                <Text
+                  style={[
+                    styles.tabButtonText,
+                    !isResident && styles.activeTabButtonText,
+                  ]}
+                >
                   Non-Resident
                 </Text>
               </TouchableOpacity>
@@ -368,8 +630,10 @@ export default function PersonalDetailsScreen() {
                   style={[
                     styles.inputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
-                    emiratesIdCheck.status === "exists" && styles.inputWrapperError,
-                    emiratesIdCheck.status === "available" && styles.inputWrapperSuccess,
+                    emiratesIdCheck.status === "exists" &&
+                      styles.inputWrapperError,
+                    emiratesIdCheck.status === "available" &&
+                      styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -381,13 +645,19 @@ export default function PersonalDetailsScreen() {
                       const formatted = formatEmiratesId(text);
                       setEmiratesId(formatted);
                       if (formatted !== emiratesIdCheck.checkedValue) {
-                        setEmiratesIdCheck((prev) => ({ ...prev, status: "idle" }));
+                        setEmiratesIdCheck((prev) => ({
+                          ...prev,
+                          status: "idle",
+                        }));
                       }
                     }}
                     onFocus={() => setFocusedField("emiratesId")}
                     onBlur={() => {
                       setFocusedField("");
-                      if (emiratesId.trim() && emiratesId !== emiratesIdCheck.checkedValue) {
+                      if (
+                        emiratesId.trim() &&
+                        emiratesId !== emiratesIdCheck.checkedValue
+                      ) {
                         checkExistence("emirates", emiratesId);
                       }
                     }}
@@ -415,8 +685,10 @@ export default function PersonalDetailsScreen() {
                   style={[
                     styles.inputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
-                    passportCheck.status === "exists" && styles.inputWrapperError,
-                    passportCheck.status === "available" && styles.inputWrapperSuccess,
+                    passportCheck.status === "exists" &&
+                      styles.inputWrapperError,
+                    passportCheck.status === "available" &&
+                      styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -428,13 +700,19 @@ export default function PersonalDetailsScreen() {
                       const formatted = formatPassport(text);
                       setPassportNo(formatted);
                       if (formatted !== passportCheck.checkedValue) {
-                        setPassportCheck((prev) => ({ ...prev, status: "idle" }));
+                        setPassportCheck((prev) => ({
+                          ...prev,
+                          status: "idle",
+                        }));
                       }
                     }}
                     onFocus={() => setFocusedField("passportNo")}
                     onBlur={() => {
                       setFocusedField("");
-                      if (passportNo.trim() && passportNo !== passportCheck.checkedValue) {
+                      if (
+                        passportNo.trim() &&
+                        passportNo !== passportCheck.checkedValue
+                      ) {
                         checkExistence("passport", passportNo);
                       }
                     }}
@@ -457,168 +735,237 @@ export default function PersonalDetailsScreen() {
               </View>
             )}
 
-            {/* First Name & Last Name */}
-            <View style={styles.rowContainer}>
-              <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
-                <Text style={styles.inputLabel}>First name</Text>
-                <View style={[styles.inputWrapper, focusedField === "firstName" && styles.inputWrapperFocused]}>
-                  <Ionicons
-                    name="person-outline"
-                    size={20}
-                    color={focusedField === "firstName" ? Colors.secondary : Colors.label}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.inputNoOutline]}
-                    placeholderTextColor={Colors.inactive}
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    onFocus={() => setFocusedField("firstName")}
-                    onBlur={() => setFocusedField("")}
-                    autoCapitalize="words"
-                    returnKeyType="next"
-                  />
+            {/* First Name, Last Name, DOB, Gender — locked until ID is verified */}
+            <View
+              pointerEvents={idVerified ? "auto" : "none"}
+              style={!idVerified && styles.fieldsDisabled}
+            >
+              {/* First Name & Last Name */}
+              <View style={styles.rowContainer}>
+                <View
+                  style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
+                >
+                  <Text style={styles.inputLabel}>First name</Text>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      focusedField === "firstName" &&
+                        styles.inputWrapperFocused,
+                    ]}
+                  >
+                    <Ionicons
+                      name="person-outline"
+                      size={20}
+                      color={
+                        focusedField === "firstName"
+                          ? Colors.secondary
+                          : Colors.label
+                      }
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={[styles.input, styles.inputNoOutline]}
+                      placeholderTextColor={Colors.inactive}
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      onFocus={() => setFocusedField("firstName")}
+                      onBlur={() => setFocusedField("")}
+                      autoCapitalize="words"
+                      returnKeyType="next"
+                    />
+                  </View>
+                </View>
+                <View
+                  style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}
+                >
+                  <Text style={styles.inputLabel}>Last name</Text>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      focusedField === "lastName" && styles.inputWrapperFocused,
+                    ]}
+                  >
+                    <Ionicons
+                      name="person-outline"
+                      size={20}
+                      color={
+                        focusedField === "lastName"
+                          ? Colors.secondary
+                          : Colors.label
+                      }
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={[styles.input, styles.inputNoOutline]}
+                      placeholderTextColor={Colors.inactive}
+                      value={lastName}
+                      onChangeText={setLastName}
+                      onFocus={() => setFocusedField("lastName")}
+                      onBlur={() => setFocusedField("")}
+                      autoCapitalize="words"
+                      returnKeyType="next"
+                    />
+                  </View>
                 </View>
               </View>
-              <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
-                <Text style={styles.inputLabel}>Last name</Text>
-                <View style={[styles.inputWrapper, focusedField === "lastName" && styles.inputWrapperFocused]}>
-                  <Ionicons
-                    name="person-outline"
-                    size={20}
-                    color={focusedField === "lastName" ? Colors.secondary : Colors.label}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.inputNoOutline]}
-                    placeholderTextColor={Colors.inactive}
-                    value={lastName}
-                    onChangeText={setLastName}
-                    onFocus={() => setFocusedField("lastName")}
-                    onBlur={() => setFocusedField("")}
-                    autoCapitalize="words"
-                    returnKeyType="next"
-                  />
-                </View>
-              </View>
-            </View>
 
-            {/* Date of Birth */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Date of birth</Text>
-              {Platform.OS === "web" ? (
-                <View style={[styles.inputWrapper, focusedField === "dob" && styles.inputWrapperFocused]}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color={focusedField === "dob" ? Colors.secondary : Colors.label}
-                    style={styles.inputIcon}
-                  />
-                  <input
-                    type="date"
-                    value={dayjs(dob).format("YYYY-MM-DD")}
-                    min="1900-01-01"
-                    max={dayjs().format("YYYY-MM-DD")}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const selectedDate = new Date(e.target.value);
-                        const year = selectedDate.getFullYear();
+              {/* Date of Birth */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Date of birth</Text>
+                {Platform.OS === "web" ? (
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      focusedField === "dob" && styles.inputWrapperFocused,
+                    ]}
+                  >
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color={
+                        focusedField === "dob" ? Colors.secondary : Colors.label
+                      }
+                      style={styles.inputIcon}
+                    />
+                    <input
+                      type="date"
+                      value={dayjs(dob).format("YYYY-MM-DD")}
+                      min="1900-01-01"
+                      max={dayjs().format("YYYY-MM-DD")}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const selectedDate = new Date(e.target.value);
+                          const year = selectedDate.getFullYear();
+                          const today = new Date();
+                          const minDate = new Date(1900, 0, 1);
+                          if (year >= 1000) {
+                            setDob(
+                              selectedDate < minDate
+                                ? minDate
+                                : year > today.getFullYear()
+                                  ? today
+                                  : selectedDate,
+                            );
+                          } else {
+                            setDob(selectedDate);
+                          }
+                        }
+                      }}
+                      onFocus={() => setFocusedField("dob")}
+                      onBlur={() => {
+                        setFocusedField("");
                         const today = new Date();
                         const minDate = new Date(1900, 0, 1);
-                        if (year >= 1000) {
-                          setDob(
-                            selectedDate < minDate
-                              ? minDate
-                              : year > today.getFullYear()
-                                ? today
-                                : selectedDate,
-                          );
-                        } else {
-                          setDob(selectedDate);
-                        }
-                      }
-                    }}
-                    onFocus={() => setFocusedField("dob")}
-                    onBlur={() => {
-                      setFocusedField("");
-                      const today = new Date();
-                      const minDate = new Date(1900, 0, 1);
-                      if (dob > today) setDob(today);
-                      else if (dob < minDate) setDob(minDate);
-                    }}
-                    style={{
-                      flex: 1,
-                      border: "none",
-                      outline: "none",
-                      fontSize: "16px",
-                      fontFamily: FontFamilies.medium,
-                      color: Colors.text,
-                      backgroundColor: "transparent",
-                      height: "100%",
-                    }}
-                  />
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.inputWrapper, showDatePicker && styles.inputWrapperFocused]}
-                  onPress={() => setShowDatePicker(true)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color={showDatePicker ? Colors.secondary : Colors.label}
-                    style={styles.inputIcon}
-                  />
-                  <Text style={styles.input}>{dayjs(dob).format("MMM DD, YYYY")}</Text>
-                  <Text style={styles.changeLinkText}>Change</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+                        if (dob > today) setDob(today);
+                        else if (dob < minDate) setDob(minDate);
+                      }}
+                      style={{
+                        flex: 1,
+                        border: "none",
+                        outline: "none",
+                        fontSize: "16px",
+                        fontFamily: FontFamilies.medium,
+                        color: Colors.text,
+                        backgroundColor: "transparent",
+                        height: "100%",
+                      }}
+                    />
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.inputWrapper,
+                      showDatePicker && styles.inputWrapperFocused,
+                    ]}
+                    onPress={() => setShowDatePicker(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color={showDatePicker ? Colors.secondary : Colors.label}
+                      style={styles.inputIcon}
+                    />
+                    <Text style={styles.input}>
+                      {dayjs(dob).format("MMM DD, YYYY")}
+                    </Text>
+                    <Text style={styles.changeLinkText}>Change</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
-            {/* Gender */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Gender</Text>
-              <View style={styles.rowContainer}>
-                <TouchableOpacity
-                  style={[styles.genderBox, gender === "Male" && styles.genderBoxActive, { marginRight: 8 }]}
-                  onPress={() => setGender("Male")}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.radioContainer}>
-                    <View style={[styles.radioOuter, gender === "Male" && styles.radioOuterActive]}>
-                      {gender === "Male" && <View style={styles.radioInner} />}
+              {/* Gender */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Gender</Text>
+                <View style={styles.rowContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.genderBox,
+                      gender === "Male" && styles.genderBoxActive,
+                      { marginRight: 8 },
+                    ]}
+                    onPress={() => setGender("Male")}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.radioContainer}>
+                      <View
+                        style={[
+                          styles.radioOuter,
+                          gender === "Male" && styles.radioOuterActive,
+                        ]}
+                      >
+                        {gender === "Male" && (
+                          <View style={styles.radioInner} />
+                        )}
+                      </View>
+                      <Text style={styles.genderText}>Male</Text>
                     </View>
-                    <Text style={styles.genderText}>Male</Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.genderBox, gender === "Female" && styles.genderBoxActive, { marginLeft: 8 }]}
-                  onPress={() => setGender("Female")}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.radioContainer}>
-                    <View style={[styles.radioOuter, gender === "Female" && styles.radioOuterActive]}>
-                      {gender === "Female" && <View style={styles.radioInner} />}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.genderBox,
+                      gender === "Female" && styles.genderBoxActive,
+                      { marginLeft: 8 },
+                    ]}
+                    onPress={() => setGender("Female")}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.radioContainer}>
+                      <View
+                        style={[
+                          styles.radioOuter,
+                          gender === "Female" && styles.radioOuterActive,
+                        ]}
+                      >
+                        {gender === "Female" && (
+                          <View style={styles.radioInner} />
+                        )}
+                      </View>
+                      <Text style={styles.genderText}>Female</Text>
                     </View>
-                    <Text style={styles.genderText}>Female</Text>
-                  </View>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
+            {/* end fieldsDisabled wrapper */}
           </View>
         </ScrollView>
 
         <View
           style={[
             styles.bottomBtnContainer,
-            { paddingBottom: Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24 },
+            {
+              paddingBottom:
+                Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24,
+            },
           ]}
         >
           <TouchableOpacity
             style={[
               styles.continueBtn,
-              isFormValid ? styles.continueBtnEnabled : styles.continueBtnDisabled,
+              isFormValid
+                ? styles.continueBtnEnabled
+                : styles.continueBtnDisabled,
             ]}
             disabled={loading || !isFormValid}
             onPress={handleContinue}
@@ -627,7 +974,7 @@ export default function PersonalDetailsScreen() {
             {loading ? (
               <ActivityIndicator color={Colors.background} />
             ) : (
-              <Text style={styles.continueBtnText}>Register</Text>
+              <Text style={styles.continueBtnText}>{buttonLabel}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -824,6 +1171,9 @@ const styles: any = StyleSheet.create({
   },
   continueBtnDisabled: {
     backgroundColor: Colors.inactive,
+  },
+  fieldsDisabled: {
+    opacity: 0.4,
   },
   continueBtnText: {
     color: Colors.lightgray,

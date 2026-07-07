@@ -28,31 +28,23 @@ import { router } from "expo-router";
 export default function PatientDetailsScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { doctorId, doctorName, specialty, avatar, hospital } =
-    route.params || {
-      doctorId: "1",
-      doctorName: "Dr. Harry Dewson",
-      specialty: "Dermatologist",
-      avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-      hospital: "",
-    };
+  const {
+    doctorId = "",
+    doctorName = "",
+    specialty = "",
+    avatar = "",
+    hospital = "",
+  } = route.params ?? {};
 
-  const [patients, setPatients] = useState([
-    {
-      id: "1",
-      name: "John Doe",
-      age: "30",
-      gender: "Male",
-      relationship: "Self",
-    },
-  ]);
+  const [patients, setPatients] = useState<
+    { id: string; name: string; age: string; gender: string; relationship: string }[]
+  >([]);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<"self" | "family">(
     "self",
   );
   const [patientName, setPatientName] = useState("");
-  const [savedPatientId, setSavedPatientId] = useState<string | null>(null);
   const [patientAge, setPatientAge] = useState("");
   const [patientGender, setPatientGender] = useState("Female");
   const [relationship, setRelationship] = useState("Spouse");
@@ -81,7 +73,7 @@ export default function PatientDetailsScreen() {
             symptoms: "",
           });
           return;
-        } catch (_) { }
+        } catch (_) {}
       }
 
       fetchPatientData(patientId ?? undefined);
@@ -234,8 +226,8 @@ export default function PatientDetailsScreen() {
   const handleSelectPatientType = (type: "self" | "family") => {
     setSelectedPatient(type);
     if (type === "self") {
-      setPatientName("John Doe");
-      setPatientAge("30");
+      setPatientName("");
+      setPatientAge("");
       setPatientGender("Male");
       setRelationship("Self");
     } else {
@@ -265,7 +257,7 @@ export default function PatientDetailsScreen() {
         if (fullDataStr) {
           try {
             userId = JSON.parse(fullDataStr)?.usr_id ?? "";
-          } catch (_) { }
+          } catch (_) {}
         }
       }
       await callSuggestusAPI(
@@ -339,6 +331,18 @@ export default function PatientDetailsScreen() {
                 color={Colors.primary}
                 style={{ marginTop: 40 }}
               />
+            ) : patients.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons
+                  name="person-outline"
+                  size={48}
+                  color={Colors.inactive}
+                />
+                <Text style={styles.emptyStateText}>No patients found</Text>
+                <Text style={styles.emptyStateSub}>
+                  Add a patient below to book an appointment
+                </Text>
+              </View>
             ) : (
               patients.map((patient) => (
                 <Pressable
@@ -507,7 +511,7 @@ export default function PatientDetailsScreen() {
                           style={[
                             styles.genderChipText,
                             patientGender === "Male" &&
-                            styles.genderChipTextActive,
+                              styles.genderChipTextActive,
                           ]}
                         >
                           Male
@@ -524,7 +528,7 @@ export default function PatientDetailsScreen() {
                           style={[
                             styles.genderChipText,
                             patientGender === "Female" &&
-                            styles.genderChipTextActive,
+                              styles.genderChipTextActive,
                           ]}
                         >
                           Female
@@ -869,5 +873,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.background,
     fontFamily: FontFamilies.bold,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+    marginTop: 16,
+  },
+  emptyStateSub: {
+    fontSize: 13,
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
+    marginTop: 6,
+    textAlign: "center",
   },
 });

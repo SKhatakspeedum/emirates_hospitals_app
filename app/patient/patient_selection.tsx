@@ -61,11 +61,11 @@ export default function PatientSelectionScreen() {
           const gender = attrs.user_gender ?? parsed.usr_gender ?? "Male";
           setUserData({ name, age, gender });
         } else {
-          setUserData({ name: "John Doe", age: 48, gender: "Male" });
+          setUserData(null);
         }
       } catch (e) {
         console.error("Error loading user data in PatientSelectionScreen:", e);
-        setUserData({ name: "John Doe", age: 48, gender: "Male" });
+        setUserData(null);
       }
     };
     loadUserData();

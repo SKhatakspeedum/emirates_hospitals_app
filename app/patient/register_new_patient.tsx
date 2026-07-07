@@ -40,9 +40,7 @@ const hasReturnData = (res: any): boolean => {
   return (
     ok &&
     Array.isArray(res.returnData) &&
-    res.returnData.some(
-      (item: any) => item && Object.keys(item).length > 0,
-    )
+    res.returnData.some((item: any) => item && Object.keys(item).length > 0)
   );
 };
 
@@ -85,15 +83,17 @@ export default function RegisterNewPatient() {
     checkedValue: "",
   });
 
-  const isIdProvided =
-    emiratesId.trim().length > 0 || passportNo.trim().length > 0;
   const hasExistsError =
     emiratesIdCheck.status === "exists" || passportCheck.status === "exists";
   const isChecking =
     emiratesIdCheck.status === "checking" ||
     passportCheck.status === "checking";
+  // At least one ID field must be verified (available) before other fields unlock
+  const idVerified =
+    emiratesIdCheck.status === "available" ||
+    passportCheck.status === "available";
   const isFormValid =
-    isIdProvided &&
+    idVerified &&
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
     gender !== "" &&
@@ -207,7 +207,8 @@ export default function RegisterNewPatient() {
           Toast.show({
             type: "error",
             text1: "Patient Already Exists",
-            text2: "A patient with this Emirates ID or Passport is already registered.",
+            text2:
+              "A patient with this Emirates ID or Passport is already registered.",
           });
           return;
         }
@@ -281,8 +282,7 @@ export default function RegisterNewPatient() {
             p_user_id: userId ?? "",
             p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
             p_entity_reference_id: patientId,
-            p_entity_reference_code:
-              "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_entity_reference_code: "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
             p_active_status: "Y",
             p_process_flag: "Y",
             p_additional_attribites: {},
@@ -305,7 +305,8 @@ export default function RegisterNewPatient() {
       Toast.show({
         type: "error",
         text1: "Something Went Wrong",
-        text2: "Unable to save your details. Please check your connection and try again.",
+        text2:
+          "Unable to save your details. Please check your connection and try again.",
       });
     } finally {
       setLoading(false);
@@ -317,14 +318,10 @@ export default function RegisterNewPatient() {
       return <ActivityIndicator size="small" color={Colors.secondary} />;
     }
     if (check.status === "available") {
-      return (
-        <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
-      );
+      return <Ionicons name="checkmark-circle" size={20} color="#22C55E" />;
     }
     if (check.status === "exists" || check.status === "error") {
-      return (
-        <Ionicons name="close-circle" size={20} color="#EF4444" />
-      );
+      return <Ionicons name="close-circle" size={20} color="#EF4444" />;
     }
     return null;
   };
@@ -385,7 +382,7 @@ export default function RegisterNewPatient() {
                 >
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="123-0000-5505123-1"
+                    placeholder="000-0000-0000000-0"
                     placeholderTextColor={Colors.inactive}
                     value={emiratesId}
                     onChangeText={(t) => {
@@ -449,7 +446,7 @@ export default function RegisterNewPatient() {
                 >
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="K5012250"
+                    placeholder="ABC123456"
                     placeholderTextColor={Colors.inactive}
                     value={passportNo}
                     onChangeText={(t) => {
@@ -491,9 +488,16 @@ export default function RegisterNewPatient() {
               </View>
             </View>
 
+            {/* First Name, Last Name, DOB, Gender — locked until one ID is verified */}
+            <View
+              pointerEvents={idVerified ? "auto" : "none"}
+              style={!idVerified && styles.fieldsDisabled}
+            >
             {/* First Name & Last Name */}
             <View style={styles.rowContainer}>
-              <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
+              <View
+                style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
+              >
                 <Text style={styles.inputLabel}>First name</Text>
                 <View
                   style={[
@@ -513,7 +517,7 @@ export default function RegisterNewPatient() {
                   />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="John"
+                    // placeholder="John"
                     placeholderTextColor={Colors.inactive}
                     value={firstName}
                     onChangeText={setFirstName}
@@ -544,7 +548,7 @@ export default function RegisterNewPatient() {
                   />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="Doe"
+                    // placeholder="Doe"
                     placeholderTextColor={Colors.inactive}
                     value={lastName}
                     onChangeText={setLastName}
@@ -586,9 +590,7 @@ export default function RegisterNewPatient() {
                         const today = new Date();
                         const minDate = new Date(1900, 0, 1);
                         if (d.getFullYear() >= 1000) {
-                          setDob(
-                            d < minDate ? minDate : d > today ? today : d,
-                          );
+                          setDob(d < minDate ? minDate : d > today ? today : d);
                         } else {
                           setDob(d);
                         }
@@ -681,6 +683,8 @@ export default function RegisterNewPatient() {
                 </TouchableOpacity>
               </View>
             </View>
+
+            </View>{/* end fieldsDisabled wrapper */}
 
             {/* Continue Button */}
             <TouchableOpacity
@@ -936,6 +940,9 @@ const styles: any = StyleSheet.create({
   },
   continueBtnDisabled: {
     backgroundColor: Colors.inactive,
+  },
+  fieldsDisabled: {
+    opacity: 0.4,
   },
   continueBtnText: {
     color: Colors.background,

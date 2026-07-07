@@ -768,6 +768,11 @@ export default function PersonalDetailsScreen() {
                     Unable to verify — please try again
                   </Text>
                 )}
+                {emiratesIdCheck.status === "available" && linkedPatientId ? (
+                  <Text style={styles.fieldInfo}>
+                    {`Patient with the same "${emiratesId}" already exists. Click Register to continue with the existing patient.`}
+                  </Text>
+                ) : null}
               </View>
             ) : (
               <View style={styles.inputContainer}>
@@ -827,6 +832,11 @@ export default function PersonalDetailsScreen() {
                     Unable to verify — please try again
                   </Text>
                 )}
+                {passportCheck.status === "available" && linkedPatientId ? (
+                  <Text style={styles.fieldInfo}>
+                    {`Patient with the same "${passportNo}" already exists. Click Register to continue with the existing patient.`}
+                  </Text>
+                ) : null}
               </View>
             )}
 
@@ -1173,6 +1183,12 @@ const styles: any = StyleSheet.create({
     fontSize: 12,
     fontFamily: FontFamilies.medium,
     color: "#EF4444",
+    marginTop: 6,
+  },
+  fieldInfo: {
+    fontSize: 12,
+    fontFamily: FontFamilies.medium,
+    color: "#F59E0B",
     marginTop: 6,
   },
   inputIcon: {

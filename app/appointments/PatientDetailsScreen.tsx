@@ -37,7 +37,13 @@ export default function PatientDetailsScreen() {
   } = route.params ?? {};
 
   const [patients, setPatients] = useState<
-    { id: string; name: string; age: string; gender: string; relationship: string }[]
+    {
+      id: string;
+      name: string;
+      age: string;
+      gender: string;
+      relationship: string;
+    }[]
   >([]);
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -153,15 +159,21 @@ export default function PatientDetailsScreen() {
       const emiratesIdToCheck = "";
       const passportToCheck = "";
       if (emiratesIdToCheck || passportToCheck) {
+        let _mobile = "";
+        try {
+          const _d = await fetchDataFromLocalStorage(USER_FULL_DATA);
+          if (_d) {
+            const _j = JSON.parse(_d);
+            _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
+          }
+        } catch (_) {}
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
             p_user_id: userId,
-            // // p_patient_id: p_patient_id,
-            // p_search_text: "",
-            // p_search_additional_attributes: "",
-            // p_process_flag: "user_patients",
+
             p_additional_attribute: {
+              p_ptm_mobile_number: _mobile,
               p_emirates_id: emiratesIdToCheck,
               p_passport_no: passportToCheck,
             },

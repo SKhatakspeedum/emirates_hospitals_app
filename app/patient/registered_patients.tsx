@@ -89,10 +89,18 @@ export default function RegisteredPatientsScreen() {
 
         // Fetch mapped patients
 
+        let _listMobile = "";
+        try {
+          if (fullDataStr) {
+            const _j = JSON.parse(fullDataStr);
+            _listMobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
+          }
+        } catch (_) {}
         const response = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
             p_user_id: userId,
+            p_ptm_mobile_number: _listMobile,
             p_search_text: "",
             p_search_additional_attributes: "",
             p_process_flag: "user_patients",
@@ -167,11 +175,17 @@ export default function RegisteredPatientsScreen() {
 
       const emiratesIdToCheck = attrs.p_emirates_id ?? "";
       const passportToCheck = attrs.p_identification_num ?? "";
+      const _selfUserId =
+        (await fetchDataFromLocalStorage("sg_userId")) ?? parsed?.usr_id ?? "";
+      const _selfMobile =
+        parsed?.usr_phone ?? parsed?.usr_mobile ?? parsed?.p_mobile_no ?? "";
       if (emiratesIdToCheck || passportToCheck) {
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
+            p_user_id: _selfUserId,
             p_additional_attribute: {
+              p_ptm_mobile_number: _selfMobile,
               p_emirates_id: emiratesIdToCheck,
               p_passport_no: passportToCheck,
             },
@@ -232,7 +246,7 @@ export default function RegisteredPatientsScreen() {
             USER_FULL_DATA,
             JSON.stringify(stored),
           );
-        } catch (_) { }
+        } catch (_) {}
 
         let userId = await fetchDataFromLocalStorage("sg_userId");
         if (!userId) {
@@ -307,7 +321,7 @@ export default function RegisteredPatientsScreen() {
           JSON.stringify({ name, age, gender }),
         );
       }
-    } catch (_) { }
+    } catch (_) {}
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 

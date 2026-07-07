@@ -23,7 +23,7 @@ import {
 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { SPD_USER_NAME, SPD_SELECTED_PATIENT } from "@/app/config/config";
+import { SPD_USER_NAME, SPD_SELECTED_PATIENT, USER_FULL_DATA } from "@/app/config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
@@ -158,10 +158,16 @@ export default function DashboardScreen() {
         } else {
           try {
             const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+            let _mobile = "";
+            try {
+              const _d = await fetchDataFromLocalStorage(USER_FULL_DATA);
+              if (_d) { const _j = JSON.parse(_d); _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? ""; }
+            } catch (_) {}
             const response = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
                 p_user_id: userId,
+                p_ptm_mobile_number: _mobile,
                 p_search_text: "",
                 p_search_additional_attributes: "",
                 p_process_flag: "user_patients",

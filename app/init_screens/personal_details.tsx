@@ -30,6 +30,7 @@ import {
   setEncryptedID,
   getDecryptedID,
   saveDataFromLocalStorage,
+  fetchDataFromLocalStorage,
 } from "../suggestus_plugin/util/util_functions";
 import {
   callSuggestusAPI,
@@ -41,7 +42,13 @@ import {
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 
-type CheckStatus = "idle" | "checking" | "exists" | "available" | "error" | "invalid";
+type CheckStatus =
+  | "idle"
+  | "checking"
+  | "exists"
+  | "available"
+  | "error"
+  | "invalid";
 interface FieldCheck {
   status: CheckStatus;
   checkedValue: string;
@@ -162,13 +169,28 @@ export default function PersonalDetailsScreen() {
           setCheck({ status: "available", checkedValue: value });
           // Background: check if a patient record already exists for this ID
           try {
+            const _userId =
+              (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+            let _mobile = "";
+            try {
+              const _d = await getDecryptedID(USER_FULL_DATA);
+              if (_d) {
+                const _j = JSON.parse(_d);
+                _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
+              }
+            } catch (_) {}
+            if (!_mobile) _mobile = (route.params as any)?.phone_number ?? "";
             const patientRes = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
+                p_user_id: _userId,
+
                 p_additional_attribute: {
+                  p_ptm_mobile_number: _mobile,
                   p_emirates_id: field === "emirates" ? clean : "",
                   p_passport_no: field === "passport" ? clean : "",
                 },
+                p_process_flag: "validate_duplicate",
               },
             );
             if (hasReturnData(patientRes)) {
@@ -176,12 +198,15 @@ export default function PersonalDetailsScreen() {
               setLinkedPatientId(String(p?.p_patient_id ?? ""));
 
               // Prefill form with patient data
-              const pFirst =
-                p?.ptm_first_name ?? p?.p_patient_first_name ?? "";
+              const pFirst = p?.ptm_first_name ?? p?.p_patient_first_name ?? "";
               const pLast = p?.ptm_last_name ?? p?.p_patient_last_name ?? "";
               const pGender: string =
                 p?.ptm_gender ??
-                (p?.p_gender === "2" ? "Female" : p?.p_gender === "1" ? "Male" : "");
+                (p?.p_gender === "2"
+                  ? "Female"
+                  : p?.p_gender === "1"
+                    ? "Male"
+                    : "");
               const pDobRaw: string = p?.ptm_date_of_birth ?? p?.p_dob ?? "";
 
               if (pFirst) setFirstName(pFirst);
@@ -219,7 +244,11 @@ export default function PersonalDetailsScreen() {
       return <ActivityIndicator size="small" color={Colors.secondary} />;
     if (check.status === "available")
       return <Ionicons name="checkmark-circle" size={20} color="#22C55E" />;
-    if (check.status === "exists" || check.status === "error" || check.status === "invalid")
+    if (
+      check.status === "exists" ||
+      check.status === "error" ||
+      check.status === "invalid"
+    )
       return <Ionicons name="close-circle" size={20} color="#EF4444" />;
     return null;
   };
@@ -295,7 +324,9 @@ export default function PersonalDetailsScreen() {
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
+            p_user_id: userId,
             p_additional_attribute: {
+              p_ptm_mobile_number: rawPhone,
               p_emirates_id: emiratesIdClean,
               p_passport_no: passportClean,
             },
@@ -482,10 +513,13 @@ export default function PersonalDetailsScreen() {
           passportCheck.checkedValue === passportNo;
 
       if (!alreadyVerified) {
+        const regUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
+            p_user_id: regUserId,
             p_additional_attribute: {
+              p_ptm_mobile_number: rawPhone,
               p_emirates_id: isResident ? emiratesIdClean : "",
               p_passport_no: !isResident ? passportNo.trim() : "",
             },
@@ -754,7 +788,10 @@ export default function PersonalDetailsScreen() {
                           setGender("Male");
                           setLinkedPatientId("");
                         }
-                        setEmiratesIdCheck({ status: "idle", checkedValue: "" });
+                        setEmiratesIdCheck({
+                          status: "idle",
+                          checkedValue: "",
+                        });
                       }
                     }}
                     onFocus={() => setFocusedField("emiratesId")}

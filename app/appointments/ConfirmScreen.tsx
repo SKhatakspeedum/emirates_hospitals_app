@@ -318,7 +318,7 @@ export default function ConfirmScreen() {
             <View style={styles.divider} />
 
             {/* Payment / Self Pay with Add Button */}
-            <View style={[styles.listItem, styles.listItemSpaceBetween]}>
+            {/* <View style={[styles.listItem, styles.listItemSpaceBetween]}>
               <View style={styles.listItemLeft}>
                 <Ionicons
                   name="card-outline"
@@ -339,7 +339,7 @@ export default function ConfirmScreen() {
               >
                 <Text style={styles.addButtonText}>Add</Text>
               </Pressable>
-            </View>
+            </View> */}
           </View>
         </ScrollView>
 

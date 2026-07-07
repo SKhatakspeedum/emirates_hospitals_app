@@ -384,7 +384,7 @@ export default function SignupScreen() {
         styles.containerNew,
         { marginLeft: horizontalMargin, marginRight: horizontalMargin },
         Platform.OS === "web" &&
-          screenWidth >= 1024 && { justifyContent: "center", flexGrow: 1 },
+        screenWidth >= 1024 && { justifyContent: "center", flexGrow: 1 },
       ]}
     >
       <View
@@ -392,9 +392,9 @@ export default function SignupScreen() {
           styles.container,
           isWeb && styles.webContainer,
           Platform.OS === "web" &&
-            screenWidth >= 1024 && {
-              flex: "0 0 auto",
-            },
+          screenWidth >= 1024 && {
+            flex: "0 0 auto",
+          },
         ]}
       >
         <View style={styles.logoContainer}>
@@ -421,9 +421,9 @@ export default function SignupScreen() {
             style={[
               { paddingBottom: 30, width: "100%" },
               Platform.OS === "web" &&
-                screenWidth >= 1024 && {
-                  paddingBottom: "0",
-                },
+              screenWidth >= 1024 && {
+                paddingBottom: "0",
+              },
             ]}
           >
             <View style={styles.inputContainer}>
@@ -541,7 +541,7 @@ export default function SignupScreen() {
                 style={[
                   styles.inputWrapper,
                   focusedField === "confirmPassword" &&
-                    styles.inputWrapperFocused,
+                  styles.inputWrapperFocused,
                 ]}
               >
                 <Image
@@ -570,10 +570,10 @@ export default function SignupScreen() {
                   onKeyPress={
                     isWeb
                       ? (e) => {
-                          if (e.nativeEvent.key === "Enter") {
-                            handleSignup();
-                          }
+                        if (e.nativeEvent.key === "Enter") {
+                          handleSignup();
                         }
+                      }
                       : undefined
                   }
                 />

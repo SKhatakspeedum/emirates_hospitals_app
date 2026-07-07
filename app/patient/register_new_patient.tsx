@@ -17,7 +17,7 @@ import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { IS_LOGGED_IN, USER_FULL_DATA } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -260,7 +260,7 @@ export default function RegisterNewPatient() {
         if (fullDataStr) {
           try {
             userId = JSON.parse(fullDataStr)?.usr_id ?? "";
-          } catch (_) {}
+          } catch (_) { }
         }
       }
 
@@ -370,7 +370,7 @@ export default function RegisterNewPatient() {
             <View style={styles.unifiedCard}>
               {/* Emirates ID */}
               <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: "#7D8A9D" }]}>
+                <Text style={[styles.inputLabel]}>
                   Emirates ID
                 </Text>
                 <View
@@ -378,9 +378,9 @@ export default function RegisterNewPatient() {
                     styles.cardInputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
                     emiratesIdCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     emiratesIdCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -434,7 +434,7 @@ export default function RegisterNewPatient() {
 
               {/* Passport */}
               <View style={[styles.inputContainer, { marginBottom: 0 }]}>
-                <Text style={[styles.inputLabel, { color: Colors.label }]}>
+                <Text style={[styles.inputLabel]}>
                   Passport no.
                 </Text>
                 <View
@@ -442,9 +442,9 @@ export default function RegisterNewPatient() {
                     styles.cardInputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
                     passportCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     passportCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -504,11 +504,7 @@ export default function RegisterNewPatient() {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={
-                      focusedField === "firstName"
-                        ? Colors.secondary
-                        : Colors.label
-                    }
+                    color={Colors.secondary}
                     style={styles.inputIcon}
                   />
                   <TextInput
@@ -535,11 +531,7 @@ export default function RegisterNewPatient() {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={
-                      focusedField === "lastName"
-                        ? Colors.secondary
-                        : Colors.label
-                    }
+                    color={Colors.secondary}
                     style={styles.inputIcon}
                   />
                   <TextInput
@@ -567,35 +559,52 @@ export default function RegisterNewPatient() {
                     focusedField === "dob" && styles.inputWrapperFocused,
                   ]}
                 >
+                  <style type="text/css">{`
+                    .hide-calendar-icon::-webkit-calendar-picker-indicator {
+                      display: none;
+                      -webkit-appearance: none;
+                    }
+                  `}</style>
                   <Ionicons
                     name="calendar-outline"
                     size={20}
-                    color={
-                      focusedField === "dob" ? Colors.secondary : Colors.label
-                    }
+                    color={Colors.secondary}
                     style={styles.inputIcon}
                   />
                   <input
+                    id="web-dob-picker"
+                    className="hide-calendar-icon"
                     type="date"
                     value={dayjs(dob).format("YYYY-MM-DD")}
                     min="1900-01-01"
                     max={dayjs().format("YYYY-MM-DD")}
                     onChange={(e) => {
                       if (e.target.value) {
-                        const d = new Date(e.target.value);
+                        const selectedDate = new Date(e.target.value);
+                        const year = selectedDate.getFullYear();
                         const today = new Date();
                         const minDate = new Date(1900, 0, 1);
-                        if (d.getFullYear() >= 1000) {
+                        if (year >= 1000) {
                           setDob(
-                            d < minDate ? minDate : d > today ? today : d,
+                            selectedDate < minDate
+                              ? minDate
+                              : year > today.getFullYear()
+                                ? today
+                                : selectedDate,
                           );
                         } else {
-                          setDob(d);
+                          setDob(selectedDate);
                         }
                       }
                     }}
                     onFocus={() => setFocusedField("dob")}
-                    onBlur={() => setFocusedField("")}
+                    onBlur={() => {
+                      setFocusedField("");
+                      const today = new Date();
+                      const minDate = new Date(1900, 0, 1);
+                      if (dob > today) setDob(today);
+                      else if (dob < minDate) setDob(minDate);
+                    }}
                     style={{
                       flex: 1,
                       border: "none",
@@ -607,6 +616,16 @@ export default function RegisterNewPatient() {
                       height: "100%",
                     }}
                   />
+                  <TouchableOpacity
+                    onPress={() => {
+                      const inputEl = document.getElementById("web-dob-picker") as any;
+                      if (inputEl && typeof inputEl.showPicker === 'function') {
+                        inputEl.showPicker();
+                      }
+                    }}
+                  >
+                    <Text style={styles.changeLinkText}>Change</Text>
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <TouchableOpacity
@@ -704,20 +723,29 @@ export default function RegisterNewPatient() {
         </KeyboardAvoidingView>
       </View>
 
-      <DateTimePickerModal
-        isVisible={showDatePicker}
-        mode="date"
-        date={dob}
-        minimumDate={new Date(1900, 0, 1)}
-        maximumDate={new Date()}
-        onConfirm={(date) => {
-          const today = new Date();
-          const minDate = new Date(1900, 0, 1);
-          setDob(date > today ? today : date < minDate ? minDate : date);
-          setShowDatePicker(false);
-        }}
-        onCancel={() => setShowDatePicker(false)}
-      />
+      {showDatePicker && (
+        <DateTimePicker
+          value={dob}
+          mode="date"
+          display="default"
+          minimumDate={new Date(1900, 0, 1)}
+          maximumDate={new Date()}
+          onChange={(event: any, date?: Date) => {
+            if (Platform.OS === 'android') {
+              setShowDatePicker(false);
+            }
+            if (event.type === 'dismissed') {
+              setShowDatePicker(false);
+              return;
+            }
+            if (date) {
+              const today = new Date();
+              const minDate = new Date(1900, 0, 1);
+              setDob(date > today ? today : date < minDate ? minDate : date);
+            }
+          }}
+        />
+      )}
       <Toast />
     </Modal>
   );
@@ -755,7 +783,7 @@ const styles: any = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   sheetTitle: {
-    fontSize: 17,
+    fontSize: 22,
     fontFamily: FontFamilies.bold,
     color: Colors.text,
   },
@@ -773,7 +801,7 @@ const styles: any = StyleSheet.create({
     paddingBottom: 12,
   },
   subtext: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 20,
@@ -808,7 +836,7 @@ const styles: any = StyleSheet.create({
     height: 1,
   },
   orText: {
-    fontSize: 12,
+    fontSize: 16,
     fontFamily: FontFamilies.bold,
     color: Colors.label,
     marginHorizontal: 12,
@@ -817,9 +845,9 @@ const styles: any = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 16,
     fontFamily: FontFamilies.semiBold,
-    color: Colors.label,
+    color: Colors.textLabel,
     marginBottom: 8,
   },
   inputWrapper: {

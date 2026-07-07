@@ -208,7 +208,7 @@ export default function ForgotPasswordScreen() {
         styles.containerNew,
         { marginLeft: horizontalMargin, marginRight: horizontalMargin },
         Platform.OS === "web" &&
-          screenWidth >= 1024 && { justifyContent: "center", flexGrow: 1 },
+        screenWidth >= 1024 && { justifyContent: "center", flexGrow: 1 },
       ]}
     >
       <KeyboardAvoidingView
@@ -225,9 +225,9 @@ export default function ForgotPasswordScreen() {
               styles.container,
               isWeb && styles.webContainer,
               Platform.OS === "web" &&
-                screenWidth >= 1024 && {
-                  flex: "0 0 auto",
-                },
+              screenWidth >= 1024 && {
+                flex: "0 0 auto",
+              },
             ]}
           >
             <View style={styles.logoContainer}>
@@ -268,10 +268,10 @@ export default function ForgotPasswordScreen() {
                   onKeyPress={
                     isWeb
                       ? (e) => {
-                          if (e.nativeEvent.key === "Enter") {
-                            handlePasswordReset();
-                          }
+                        if (e.nativeEvent.key === "Enter") {
+                          handlePasswordReset();
                         }
+                      }
                       : undefined
                   }
                 />

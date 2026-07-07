@@ -153,7 +153,7 @@ export default function PatientSelectionScreen() {
         if (!userId) {
           try {
             userId = parsed?.usr_id ?? "";
-          } catch (_) {}
+          } catch (_) { }
         }
 
         await callSuggestusAPI(
@@ -193,7 +193,7 @@ export default function PatientSelectionScreen() {
   const handleSkip = async () => {
     try {
       const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
-      
+
       const response = await callSuggestusAPI(
         spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
         {
@@ -207,17 +207,17 @@ export default function PatientSelectionScreen() {
       if (response?.returnCode === true && response.returnData?.length > 0) {
         const firstPatient = response.returnData[0];
         const patientId = String(firstPatient.p_patient_id ?? firstPatient.patient_id ?? "");
-        
+
         const name = firstPatient.p_patient_name ??
-            firstPatient.ptm_name ??
-            [
-              firstPatient.p_patient_first_name,
-              firstPatient.p_patient_middle_name,
-              firstPatient.p_patient_last_name,
-            ]
-              .filter(Boolean)
-              .join(" ") ??
-            "Unknown";
+          firstPatient.ptm_name ??
+          [
+            firstPatient.p_patient_first_name,
+            firstPatient.p_patient_middle_name,
+            firstPatient.p_patient_last_name,
+          ]
+            .filter(Boolean)
+            .join(" ") ??
+          "Unknown";
         const age = parseInt(String(firstPatient.ptm_age ?? firstPatient.p_age ?? "0"), 10) || 0;
         const gender = firstPatient.ptm_gender ?? (firstPatient.p_gender === "2" ? "Female" : "Male");
 
@@ -237,26 +237,26 @@ export default function PatientSelectionScreen() {
       console.error("Error in handleSkip:", e);
       try {
         await AsyncStorage.removeItem("sg_patientId");
-      } catch (_) {}
+      } catch (_) { }
     }
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      {/* <StatusBar barStyle="dark-content" backgroundColor={Colors.background} /> */}
       <View
         style={[
           styles.header,
           {
             paddingTop: isSmallScreen ? 55 : 130, // 80 (content) + 50 (logo margin)
-            paddingBottom: isSmallScreen ? 15 : 50,
+            paddingBottom: isSmallScreen ? 10 : 25,
           },
         ]}
       >
         <Image
           source={require("@/assets/images/logo.png")}
-          style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
+          style={[styles.logoImg, { height: isSmallScreen ? 40 : 60 }]}
           resizeMode="contain"
         />
       </View>
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
+    // paddingTop: 10,
   },
   userCard: {
     backgroundColor: "#F2F7FC",
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   registerInnerBtnText: {
     fontSize: 15,
     fontFamily: FontFamilies.bold,
-    color: Colors.secondary,
+    color: Colors.primary,
     marginRight: 6,
   },
   footer: {
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   addNewPatientBtnText: {
     fontSize: 16,
     fontFamily: FontFamilies.bold,
-    color: Colors.secondary,
+    color: Colors.primary,
   },
   skipBtn: {
     alignItems: "center",

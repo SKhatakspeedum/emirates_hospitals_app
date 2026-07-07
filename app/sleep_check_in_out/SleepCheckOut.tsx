@@ -14,7 +14,7 @@ import {
   ImageBackground,
   ActivityIndicator,
 } from "react-native";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import WebTimePicker from "../components/WebTimePicker";
 import { Calendar, DateData } from "react-native-calendars";
 import { Ionicons } from "@expo/vector-icons";
@@ -709,17 +709,26 @@ const SleepCheckOut: React.FC = () => {
                   </View>
                 </Modal>
               ) : (
-                <DateTimePickerModal
-                  isVisible={showTimePicker}
-                  mode="time"
-                  date={bedTime || new Date()}
-                  is24Hour={false}
-                  onConfirm={selectedDate => {
-                    setShowTimePicker(false);
-                    if (selectedDate) setBedTime(selectedDate);
-                  }}
-                  onCancel={() => setShowTimePicker(false)}
-                />
+                <>
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={bedTime || new Date()}
+                      mode="time"
+                      display="default"
+                      is24Hour={false}
+                      onChange={(event: any, selectedDate?: Date) => {
+                        if (Platform.OS === 'android') {
+                          setShowTimePicker(false);
+                        }
+                        if (event.type === 'dismissed') {
+                          setShowTimePicker(false);
+                          return;
+                        }
+                        if (selectedDate) setBedTime(selectedDate);
+                      }}
+                    />
+                  )}
+                </>
               )}
             {/* Fall Asleep Duration */}
             <TouchableOpacity
@@ -790,17 +799,26 @@ const SleepCheckOut: React.FC = () => {
                 </View>
               </Modal>
             ) : (
-              <DateTimePickerModal
-                isVisible={showWakeTimePicker}
-                mode="time"
-                date={wakeTime || new Date()}
-                is24Hour={false}
-                onConfirm={selectedDate => {
-                  setShowWakeTimePicker(false);
-                  if (selectedDate) setWakeTime(selectedDate);
-                }}
-                onCancel={() => setShowWakeTimePicker(false)}
-              />
+              <>
+                {showWakeTimePicker && (
+                  <DateTimePicker
+                    value={wakeTime || new Date()}
+                    mode="time"
+                    display="default"
+                    is24Hour={false}
+                    onChange={(event: any, selectedDate?: Date) => {
+                      if (Platform.OS === 'android') {
+                        setShowWakeTimePicker(false);
+                      }
+                      if (event.type === 'dismissed') {
+                        setShowWakeTimePicker(false);
+                        return;
+                      }
+                      if (selectedDate) setWakeTime(selectedDate);
+                    }}
+                  />
+                )}
+              </>
             )}
 
             {/* Get Out of Bed Duration */}

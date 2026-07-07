@@ -166,7 +166,7 @@ export default function LoginScreen() {
                   activeOpacity={0.7}
                 >
                   <CountryFlag isoCode={selectedCountry.flag.toLowerCase()} size={18} />
-                  <MaterialIcons name="keyboard-arrow-down" size={16} color={Colors.label} style={styles.chevron} />
+                  <MaterialIcons name="keyboard-arrow-down" size={18} color={Colors.label} style={styles.chevron} />
                 </TouchableOpacity>
                 <View style={styles.separator} />
 
@@ -297,14 +297,14 @@ const styles: any = StyleSheet.create({
     height: 70,
   },
   startTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 8,
     textAlign: "left",
   },
   startSubtitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 40,
@@ -316,9 +316,9 @@ const styles: any = StyleSheet.create({
     marginBottom: 16,
   },
   phoneLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FontFamilies.semiBold,
-    color: Colors.label,
+    color: Colors.textLabel,
     marginBottom: 8,
   },
   phoneInputContainer: {
@@ -341,7 +341,7 @@ const styles: any = StyleSheet.create({
     paddingVertical: 8,
   },
   selectedFlagEmoji: {
-    fontSize: 22,
+    fontSize: 21,
   },
   chevron: {
     marginLeft: 6,

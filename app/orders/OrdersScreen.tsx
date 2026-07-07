@@ -17,6 +17,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../config/colors';
+import { FontFamilies } from '../config/fonts';
 import CustomHeader from '../components/CustomHeader';
 
 const { width } = Dimensions.get('window');
@@ -210,7 +211,7 @@ export default function OrdersScreen() {
                         onPress={() => handleCall(order.department)}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="call-outline" size={14} color={Colors.primary} style={styles.actionIcon} />
+                        <Ionicons name="call" size={14} color={Colors.secondary} style={styles.actionIcon} />
                         <Text style={styles.cardActionText}>Call</Text>
                     </TouchableOpacity>
                 );
@@ -222,7 +223,7 @@ export default function OrdersScreen() {
                         activeOpacity={0.7}
                     >
                         <Text style={styles.cardActionText}>Book appointment</Text>
-                        <Ionicons name="arrow-forward" size={14} color={Colors.primary} style={styles.actionIconRight} />
+                        <Ionicons name="arrow-forward" size={14} color={Colors.secondary} style={styles.actionIconRight} />
                     </TouchableOpacity>
                 );
             case 'view_result':
@@ -238,7 +239,7 @@ export default function OrdersScreen() {
                         activeOpacity={0.7}
                     >
                         <Text style={styles.cardActionText}>View Result</Text>
-                        <Ionicons name="arrow-forward" size={14} color={Colors.primary} style={styles.actionIconRight} />
+                        <Ionicons name="arrow-forward" size={14} color={Colors.secondary} style={styles.actionIconRight} />
                     </TouchableOpacity>
                 );
             case 'view_details':
@@ -316,7 +317,7 @@ export default function OrdersScreen() {
                     <Ionicons
                         name="options-outline"
                         size={20}
-                        color={selectedDepartment !== 'All' ? '#fff' : Colors.primary}
+                        color={selectedDepartment !== 'All' ? Colors.background : Colors.primary}
                     />
                 </TouchableOpacity>
             </View>
@@ -328,7 +329,7 @@ export default function OrdersScreen() {
             >
                 {filteredOrders.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="document-text-outline" size={80} color="#D0D4DF" style={{ marginBottom: 16 }} />
+                        <Ionicons name="document-text-outline" size={80} color={Colors.inactive} style={{ marginBottom: 16 }} />
                         <Text style={styles.emptyTitle}>No Orders Found</Text>
                         <Text style={styles.emptySubtext}>
                             {selectedDepartment !== 'All'
@@ -503,7 +504,7 @@ export default function OrdersScreen() {
                                             Alert.alert('Support Helpline', 'Routing to Emirates Hospital support helpline at +971 800 444.');
                                         }}
                                     >
-                                        <Ionicons name="chatbubble-ellipses-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+                                        <Ionicons name="chatbubble-ellipses-outline" size={18} color={Colors.background} style={{ marginRight: 8 }} />
                                         <Text style={styles.detailsActionSupportTxt}>Contact Support</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -555,13 +556,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 12,
         marginVertical: 15,
-        backgroundColor: Colors.background,
+        backgroundColor: Colors.inactive,
     },
     headerTitle: {
         fontSize: 20,
         color: Colors.text,
         marginLeft: 5,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
     },
     tabWrapper: {
         flexDirection: 'row',
@@ -574,7 +575,7 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         height: 42,
-        backgroundColor: '#EBEBEF',
+        backgroundColor: "#EBEBEF",
         borderRadius: 10,
         padding: 3,
     },
@@ -585,7 +586,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     tabSegmentButtonActive: {
-        backgroundColor: '#fff',
+        backgroundColor: Colors.background,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
@@ -593,13 +594,13 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     tabSegmentText: {
-        fontSize: 14,
-        color: '#757575',
-        fontFamily: 'QuicksandSemiBold',
+        fontSize: 15,
+        color: Colors.label,
+        fontFamily: FontFamilies.semiBold,
     },
     tabSegmentTextActive: {
-        color: '#232323',
-        fontFamily: 'QuicksandBold',
+        color: Colors.text,
+        fontFamily: FontFamilies.bold,
     },
     filterButton: {
         width: 42,
@@ -641,9 +642,9 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     cardTitle: {
-        fontSize: 17,
+        fontSize: 14,
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
         flexShrink: 1,
         marginRight: 8,
     },
@@ -656,7 +657,7 @@ const styles = StyleSheet.create({
     },
     badgeText: {
         fontSize: 11,
-        fontFamily: 'QuicksandSemiBold',
+        fontFamily: FontFamilies.semiBold,
     },
     cardDetailsRow: {
         flexDirection: 'row',
@@ -673,20 +674,19 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     detailText: {
-        fontSize: 13.5,
-        color: '#4B5563',
-        fontFamily: 'QuicksandMedium',
+        fontSize: 12,
+        color: Colors.text,
+        fontFamily: FontFamilies.medium,
         flexShrink: 1,
     },
     bottomStrip: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: Colors.lightgray,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderTopWidth: 1,
-        borderTopColor: Colors.border,
+        backgroundColor: Colors.inactive,
+        padding: 5,
+        margin: 7,
+        borderRadius: 8,
     },
     bottomLeftCol: {
         flexDirection: 'row',
@@ -695,8 +695,8 @@ const styles = StyleSheet.create({
     },
     bottomLeftText: {
         fontSize: 14,
-        color: Colors.primary,
-        fontFamily: 'QuicksandSemiBold',
+        color: Colors.text,
+        fontFamily: FontFamilies.semiBold,
     },
     bottomRightCol: {
         justifyContent: 'center',
@@ -704,17 +704,15 @@ const styles = StyleSheet.create({
     cardActionButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1.2,
-        borderColor: Colors.primary,
         borderRadius: 8,
         paddingVertical: 6,
         paddingHorizontal: 14,
         backgroundColor: Colors.background,
     },
     cardActionText: {
-        fontSize: 13,
+        fontSize: 12,
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.semiBold,
     },
     actionIcon: {
         marginRight: 6,
@@ -731,13 +729,13 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 18,
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
         marginBottom: 8,
     },
     emptySubtext: {
         fontSize: 14,
-        color: '#6B7280',
-        fontFamily: 'QuicksandMedium',
+        color: Colors.label,
+        fontFamily: FontFamilies.medium,
         textAlign: 'center',
         lineHeight: 20,
         marginBottom: 20,
@@ -752,7 +750,7 @@ const styles = StyleSheet.create({
     clearFilterButtonText: {
         fontSize: 14,
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
     },
     // Modal Styles
     modalOverlay: {
@@ -777,7 +775,7 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 18,
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
     },
     closeButton: {
         padding: 4,
@@ -795,12 +793,12 @@ const styles = StyleSheet.create({
     },
     filterOptionText: {
         fontSize: 15,
-        color: '#4B5563',
-        fontFamily: 'QuicksandMedium',
+        color: Colors.text,
+        fontFamily: FontFamilies.medium,
     },
     filterOptionTextSelected: {
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
     },
     // Details Modal Styles
     detailsModalOverlay: {
@@ -838,7 +836,7 @@ const styles = StyleSheet.create({
     detailsModalTitle: {
         fontSize: 17,
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
     },
     detailsModalCloseButton: {
         padding: 4,
@@ -849,7 +847,7 @@ const styles = StyleSheet.create({
     detailsModalOrderTitle: {
         fontSize: 19,
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
         marginBottom: 12,
     },
     detailsModalMetaRow: {
@@ -859,14 +857,14 @@ const styles = StyleSheet.create({
     detailsModalMetaLabel: {
         width: 100,
         fontSize: 13.5,
-        color: '#6B7280',
-        fontFamily: 'QuicksandMedium',
+        color: Colors.label,
+        fontFamily: FontFamilies.medium,
     },
     detailsModalMetaVal: {
         flex: 1,
         fontSize: 13.5,
         color: Colors.text,
-        fontFamily: 'QuicksandSemiBold',
+        fontFamily: FontFamilies.semiBold,
     },
     detailsModalDivider: {
         height: 1,
@@ -876,13 +874,13 @@ const styles = StyleSheet.create({
     detailsSectionTitle: {
         fontSize: 15,
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
         marginBottom: 8,
     },
     detailsSectionBody: {
         fontSize: 14,
-        color: '#4B5563',
-        fontFamily: 'QuicksandRegular',
+        color: Colors.text,
+        fontFamily: FontFamilies.regular,
         lineHeight: 22,
         marginBottom: 20,
     },
@@ -901,7 +899,7 @@ const styles = StyleSheet.create({
     detailsActionDownloadTxt: {
         fontSize: 14,
         color: Colors.primary,
-        fontFamily: 'QuicksandBold',
+        fontFamily: FontFamilies.bold,
     },
     detailsActionSupportBtn: {
         flexDirection: 'row',
@@ -915,7 +913,7 @@ const styles = StyleSheet.create({
     },
     detailsActionSupportTxt: {
         fontSize: 14,
-        color: '#fff',
-        fontFamily: 'QuicksandBold',
+        color: Colors.background,
+        fontFamily: FontFamilies.bold,
     },
 });

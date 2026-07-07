@@ -11,7 +11,11 @@ import {
   SafeAreaView,
   Pressable,
 } from "react-native";
-import { useNavigation, DrawerActions, useFocusEffect } from "@react-navigation/native";
+import {
+  useNavigation,
+  DrawerActions,
+  useFocusEffect,
+} from "@react-navigation/native";
 import {
   Ionicons,
   FontAwesome5,
@@ -31,11 +35,11 @@ const { width, height } = Dimensions.get("window");
 const getGreetingTime = () => {
   const currentHour = new Date().getHours();
   if (currentHour < 12) {
-    return 'Morning';
+    return "Morning";
   } else if (currentHour < 18) {
-    return 'Afternoon';
+    return "Afternoon";
   } else {
-    return 'Evening';
+    return "Evening";
   }
 };
 
@@ -43,7 +47,10 @@ export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const [userProfileName, setUserProfileName] = useState<string>("John");
   const [patientId, setPatientId] = useState<string | null>(null);
-  const [patientMeta, setPatientMeta] = useState<{ age: number; gender: string } | null>(null);
+  const [patientMeta, setPatientMeta] = useState<{
+    age: number;
+    gender: string;
+  } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,8 +60,9 @@ export default function DashboardScreen() {
           try {
             const p = JSON.parse(patStr);
             if (p.name) setUserProfileName(p.name);
-            if (p.age || p.gender) setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-          } catch (_) { }
+            if (p.age || p.gender)
+              setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
+          } catch (_) {}
         } else {
           const name = await AsyncStorage.getItem(SPD_USER_NAME);
           if (name) setUserProfileName(name);
@@ -63,11 +71,11 @@ export default function DashboardScreen() {
         setPatientId(pid);
       };
       load();
-    }, [])
+    }, []),
   );
 
-  const handleSeeAllProviders = () => { };
-  const handleSeeAllSpecialties = () => { };
+  const handleSeeAllProviders = () => {};
+  const handleSeeAllSpecialties = () => {};
 
   const Providers = [
     {
@@ -123,7 +131,12 @@ export default function DashboardScreen() {
   ];
 
   const healthSummary = [
-    { title: "Blood pressure", value: "--", color: "#E74C3C", bgColor: "#FDEDEC" },
+    {
+      title: "Blood pressure",
+      value: "--",
+      color: "#E74C3C",
+      bgColor: "#FDEDEC",
+    },
     { title: "Heart rate", value: "--", color: "#3498DB", bgColor: "#EBF5FB" },
     { title: "BMI", value: "--", color: "#E91E63", bgColor: "#FCE4EC" },
     { title: "Medications", value: "--", color: "#2ECC71", bgColor: "#EAF6F0" },
@@ -152,13 +165,16 @@ export default function DashboardScreen() {
                 p_search_text: "",
                 p_search_additional_attributes: "",
                 p_process_flag: "user_patients",
-              }
+              },
             );
 
-            if (response?.returnCode === true && response.returnData?.length > 0) {
+            if (
+              response?.returnCode === true &&
+              response.returnData?.length > 0
+            ) {
               router.push({
                 pathname: "/patient/registered_patients",
-                params: { hideSkip: "true" }
+                params: { hideSkip: "true" },
               });
               return;
             }
@@ -173,11 +189,16 @@ export default function DashboardScreen() {
               const parsed = JSON.parse(fullDataStr);
               phone = parsed.contact || "";
             }
-          } catch (e) { }
+          } catch (e) {}
+
           router.push({
-            pathname: "/patient/register_new_patient",
-            params: { phone_number: phone },
+            pathname: "/patient/registered_patients",
+            params: { hideSkip: "true" },
           });
+          // router.push({
+          //   pathname: "/patient/register_new_patient",
+          //   params: { phone_number: phone },
+          // });
         }
       },
     },
@@ -195,7 +216,7 @@ export default function DashboardScreen() {
       IconFamily: Ionicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
-      onPress: () => { },
+      onPress: () => {},
     },
     {
       label: "Rx refill",
@@ -203,7 +224,7 @@ export default function DashboardScreen() {
       IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
-      onPress: () => { },
+      onPress: () => {},
     },
   ];
 
@@ -216,18 +237,43 @@ export default function DashboardScreen() {
         <SafeAreaView style={styles.headerSafeArea}>
           <View style={styles.headerTopRow}>
             <Pressable
-              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, padding: 4 })}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.7 : 1,
+                padding: 4,
+              })}
               onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
             >
-              <Ionicons name="menu-outline" size={32} color={Colors.background} />
+              <Ionicons
+                name="menu-outline"
+                size={32}
+                color={Colors.background}
+              />
             </Pressable>
             <View style={styles.headerIconsRight}>
-              <Pressable style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.6 : 1 }]}>
-                <Ionicons name="search-outline" size={24} color={Colors.background} />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              >
+                <Ionicons
+                  name="search-outline"
+                  size={24}
+                  color={Colors.background}
+                />
               </Pressable>
-              <Pressable style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.6 : 1 }]}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              >
                 <View>
-                  <Ionicons name="notifications-outline" size={24} color={Colors.background} />
+                  <Ionicons
+                    name="notifications-outline"
+                    size={24}
+                    color={Colors.background}
+                  />
                   <View style={styles.badgeDot} />
                 </View>
               </Pressable>
@@ -236,7 +282,10 @@ export default function DashboardScreen() {
         </SafeAreaView>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.stickyHeaderSpacer} />
 
         {/* Greeting Section */}
@@ -247,7 +296,9 @@ export default function DashboardScreen() {
 
           <View style={styles.greetingContainer}>
             <Text style={styles.greetingText}>
-              {noPatient ? `Welcome, ${userProfileName}!` : `${getGreetingTime()}, ${userProfileName}!`}
+              {noPatient
+                ? `Welcome, ${userProfileName}!`
+                : `${getGreetingTime()}, ${userProfileName}!`}
             </Text>
 
             <Text style={styles.subGreetingText}>
@@ -255,7 +306,6 @@ export default function DashboardScreen() {
                 ? "Start exploring healthcare services\n& specialist - all in one place."
                 : "Welcome back. How can we support\nyour health today?"}
             </Text>
-
           </View>
         </View>
 
@@ -268,9 +318,16 @@ export default function DashboardScreen() {
                 <Text style={styles.promoBadgeText}>SAVE 20%</Text>
               </View>
               <Text style={styles.promoTitle}>20% off on Health Checkups</Text>
-              <Text style={styles.promoSub}>Book before July 20th • All branches</Text>
+              <Text style={styles.promoSub}>
+                Book before July 20th • All branches
+              </Text>
             </View>
-            <FontAwesome5 name="hospital" size={80} color="rgba(255,255,255,0.15)" style={styles.promoIcon} />
+            <FontAwesome5
+              name="hospital"
+              size={80}
+              color="rgba(255,255,255,0.15)"
+              style={styles.promoIcon}
+            />
           </View>
 
           {/* Pagination dots */}
@@ -289,12 +346,24 @@ export default function DashboardScreen() {
                   key={index}
                   style={({ pressed }) => [
                     styles.quickActionItem,
-                    { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] },
+                    {
+                      opacity: pressed ? 0.8 : 1,
+                      transform: [{ scale: pressed ? 0.95 : 1 }],
+                    },
                   ]}
                   onPress={action.onPress}
                 >
-                  <View style={[styles.quickActionIconBg, { backgroundColor: action.bgColor }]}>
-                    <Icon name={action.icon as any} size={24} color={action.color} />
+                  <View
+                    style={[
+                      styles.quickActionIconBg,
+                      { backgroundColor: action.bgColor },
+                    ]}
+                  >
+                    <Icon
+                      name={action.icon as any}
+                      size={24}
+                      color={action.color}
+                    />
                   </View>
                   <Text style={styles.quickActionText}>{action.label}</Text>
                 </Pressable>
@@ -307,22 +376,36 @@ export default function DashboardScreen() {
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionTitle}>Upcoming appointments</Text>
-                <Pressable style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
+                <Pressable
+                  style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+                >
                   <Text style={styles.seeAllText}>
-                    See all <Ionicons name="chevron-forward" size={12} color={Colors.secondary} />
+                    See all{" "}
+                    <Ionicons
+                      name="chevron-forward"
+                      size={12}
+                      color={Colors.secondary}
+                    />
                   </Text>
                 </Pressable>
               </View>
 
               <View style={styles.noAppointmentsCard}>
                 <View style={styles.noAppointmentsIconContainer}>
-                  <Ionicons name="calendar" size={24} color={Colors.secondary} />
+                  <Ionicons
+                    name="calendar"
+                    size={24}
+                    color={Colors.secondary}
+                  />
                   <View style={styles.noApptBadgeDot} />
                 </View>
                 <View style={styles.noAppointmentsTextContainer}>
-                  <Text style={styles.noAppointmentsTitle}>No Appointments Yet</Text>
+                  <Text style={styles.noAppointmentsTitle}>
+                    No Appointments Yet
+                  </Text>
                   <Text style={styles.noAppointmentsDesc}>
-                    Book an appointment to get started. Your upcoming visits will appear here.
+                    Book an appointment to get started. Your upcoming visits
+                    will appear here.
                   </Text>
                 </View>
               </View>
@@ -333,12 +416,26 @@ export default function DashboardScreen() {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="play" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
-                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Health awareness</Text>
+                <Ionicons
+                  name="play"
+                  size={20}
+                  color={Colors.secondary}
+                  style={styles.sectionHeaderIcon}
+                />
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
+                  Health awareness
+                </Text>
               </View>
-              <Pressable style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
+              <Pressable
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
                 <Text style={styles.seeAllText}>
-                  See all <Ionicons name="chevron-forward" size={12} color={Colors.secondary} />
+                  See all{" "}
+                  <Ionicons
+                    name="chevron-forward"
+                    size={12}
+                    color={Colors.secondary}
+                  />
                 </Text>
               </Pressable>
             </View>
@@ -346,11 +443,16 @@ export default function DashboardScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.videoCard,
-                { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                {
+                  opacity: pressed ? 0.9 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
               ]}
             >
               <Image
-                source={{ uri: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" }}
+                source={{
+                  uri: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+                }}
                 style={styles.videoThumbnail}
               />
               <View style={styles.playButtonOverlay}>
@@ -363,13 +465,28 @@ export default function DashboardScreen() {
           {!noPatient && (
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="heart" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
+                <Ionicons
+                  name="heart"
+                  size={20}
+                  color={Colors.secondary}
+                  style={styles.sectionHeaderIcon}
+                />
                 <Text style={styles.sectionTitle}>My health summary</Text>
               </View>
               <View style={styles.healthSummaryGrid}>
                 {healthSummary.map((item, index) => (
-                  <View key={index} style={[styles.healthSummaryItem, { backgroundColor: item.bgColor }]}>
-                    <Text style={[styles.healthSummaryTitle, { color: item.color }]}>{item.title}</Text>
+                  <View
+                    key={index}
+                    style={[
+                      styles.healthSummaryItem,
+                      { backgroundColor: item.bgColor },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.healthSummaryTitle, { color: item.color }]}
+                    >
+                      {item.title}
+                    </Text>
                     <Text style={styles.healthSummaryValue}>{item.value}</Text>
                   </View>
                 ))}
@@ -381,35 +498,65 @@ export default function DashboardScreen() {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="person" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
-                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Providers</Text>
+                <Ionicons
+                  name="person"
+                  size={20}
+                  color={Colors.secondary}
+                  style={styles.sectionHeaderIcon}
+                />
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
+                  Providers
+                </Text>
               </View>
-              <Pressable onPress={handleSeeAllProviders} style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
+              <Pressable
+                onPress={handleSeeAllProviders}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
                 <Text style={styles.seeAllText}>
-                  See all <Ionicons name="chevron-forward" size={12} color={Colors.secondary} />
+                  See all{" "}
+                  <Ionicons
+                    name="chevron-forward"
+                    size={12}
+                    color={Colors.secondary}
+                  />
                 </Text>
               </Pressable>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.providersScrollList}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.providersScrollList}
+            >
               {Providers.map((provider, index) => (
                 <Pressable
                   key={index}
                   style={({ pressed }) => [
                     styles.providerCard,
                     {
-                      backgroundColor: pressed ? Colors.pressed : Colors.background,
-                      borderColor: pressed ? Colors.activeBorder : Colors.border,
+                      backgroundColor: pressed
+                        ? Colors.pressed
+                        : Colors.background,
+                      borderColor: pressed
+                        ? Colors.activeBorder
+                        : Colors.border,
                       opacity: pressed ? 0.9 : 1,
                       transform: [{ scale: pressed ? 0.97 : 1 }],
                     },
                   ]}
                 >
                   <View style={styles.providerAvatarBg}>
-                    <Image source={{ uri: provider.uri }} style={styles.providerAvatar} />
+                    <Image
+                      source={{ uri: provider.uri }}
+                      style={styles.providerAvatar}
+                    />
                   </View>
-                  <Text style={styles.providerName} numberOfLines={1}>{provider.name}</Text>
-                  <Text style={styles.providerSpecialty} numberOfLines={2}>{provider.specialty}</Text>
+                  <Text style={styles.providerName} numberOfLines={1}>
+                    {provider.name}
+                  </Text>
+                  <Text style={styles.providerSpecialty} numberOfLines={2}>
+                    {provider.specialty}
+                  </Text>
                 </Pressable>
               ))}
             </ScrollView>
@@ -419,17 +566,36 @@ export default function DashboardScreen() {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="medkit" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
-                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Specialties</Text>
+                <Ionicons
+                  name="medkit"
+                  size={20}
+                  color={Colors.secondary}
+                  style={styles.sectionHeaderIcon}
+                />
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
+                  Specialties
+                </Text>
               </View>
-              <Pressable onPress={handleSeeAllSpecialties} style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
+              <Pressable
+                onPress={handleSeeAllSpecialties}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
                 <Text style={styles.seeAllText}>
-                  See all <Ionicons name="chevron-forward" size={12} color={Colors.secondary} />
+                  See all{" "}
+                  <Ionicons
+                    name="chevron-forward"
+                    size={12}
+                    color={Colors.secondary}
+                  />
                 </Text>
               </Pressable>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.specialtiesScrollList}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.specialtiesScrollList}
+            >
               {specialties.map((item, index) => {
                 const Icon = item.Icon;
                 return (
@@ -437,11 +603,23 @@ export default function DashboardScreen() {
                     key={index}
                     style={({ pressed }) => [
                       styles.specialtyItem,
-                      { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] },
+                      {
+                        opacity: pressed ? 0.7 : 1,
+                        transform: [{ scale: pressed ? 0.95 : 1 }],
+                      },
                     ]}
                   >
-                    <View style={[styles.specialtyIconCircle, { backgroundColor: item.bgColor }]}>
-                      <Icon name={item.iconName as any} size={item.iconSize} color={item.iconColor} />
+                    <View
+                      style={[
+                        styles.specialtyIconCircle,
+                        { backgroundColor: item.bgColor },
+                      ]}
+                    >
+                      <Icon
+                        name={item.iconName as any}
+                        size={item.iconSize}
+                        color={item.iconColor}
+                      />
                     </View>
                     <Text style={styles.specialtyLabel}>{item.label}</Text>
                   </Pressable>
@@ -472,12 +650,14 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: Colors.primary,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 50,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 50,
     paddingBottom: 12,
     zIndex: 10,
   },
   stickyHeaderSpacer: {
-    height: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 72 : 110,
+    height:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 72 : 110,
     backgroundColor: Colors.primary,
   },
   headerSafeArea: {

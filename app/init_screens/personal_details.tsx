@@ -107,21 +107,17 @@ export default function PersonalDetailsScreen() {
     ? emiratesId.trim().length > 0
     : passportNo.trim().length > 0;
 
-  // Exists path needs only the ID; normal registration path needs all fields
-  const isFormValid =
-    activeCheck.status === "checking"
-      ? false
-      : activeCheck.status === "exists"
-        ? idFieldFilled
-        : idFieldFilled &&
-          firstName.trim().length > 0 &&
-          lastName.trim().length > 0 &&
-          gender !== "";
+  const idVerified = activeCheck.status === "available";
 
-  const userAlreadyExists = activeCheck.status === "exists";
-  const buttonLabel = userAlreadyExists
-    ? "Continue with My Account"
-    : "Register";
+  const isFormValid =
+    activeCheck.status !== "checking" &&
+    activeCheck.status !== "exists" &&
+    idFieldFilled &&
+    firstName.trim().length > 0 &&
+    lastName.trim().length > 0 &&
+    gender !== "";
+
+  const buttonLabel = "Register";
 
   // Inline existence check — fires on blur of the ID field
   const checkExistence = useCallback(
@@ -739,6 +735,11 @@ export default function PersonalDetailsScreen() {
               </View>
             )}
 
+            {/* First Name, Last Name, DOB, Gender — locked until ID is verified */}
+            <View
+              pointerEvents={idVerified ? "auto" : "none"}
+              style={!idVerified && styles.fieldsDisabled}
+            >
             {/* First Name & Last Name */}
             <View style={styles.rowContainer}>
               <View
@@ -940,6 +941,7 @@ export default function PersonalDetailsScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+            </View>{/* end fieldsDisabled wrapper */}
           </View>
         </ScrollView>
 
@@ -1163,6 +1165,9 @@ const styles: any = StyleSheet.create({
   },
   continueBtnDisabled: {
     backgroundColor: Colors.inactive,
+  },
+  fieldsDisabled: {
+    opacity: 0.4,
   },
   continueBtnText: {
     color: Colors.lightgray,

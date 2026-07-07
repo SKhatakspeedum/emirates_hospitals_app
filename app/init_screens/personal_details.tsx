@@ -99,6 +99,8 @@ export default function PersonalDetailsScreen() {
   const [emiratesIdCheck, setEmiratesIdCheck] =
     useState<FieldCheck>(IDLE_CHECK);
   const [passportCheck, setPassportCheck] = useState<FieldCheck>(IDLE_CHECK);
+  // Patient record found via xcelpat_get_trn_patient_details_ehg_pntapp after ID is verified
+  const [linkedPatientId, setLinkedPatientId] = useState("");
 
   // The active check is whichever tab is open
   const activeCheck = isResident ? emiratesIdCheck : passportCheck;
@@ -143,8 +145,49 @@ export default function PersonalDetailsScreen() {
 
         if (res?.returnCode) {
           setCheck({ status: "available", checkedValue: value });
+          // Background: check if a patient record already exists for this ID
+          try {
+            const patientRes = await callSuggestusAPI(
+              spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+              {
+                p_additional_attribute: {
+                  p_emirates_id: field === "emirates" ? clean : "",
+                  p_passport_no: field === "passport" ? clean : "",
+                },
+              },
+            );
+            if (hasReturnData(patientRes)) {
+              const p = patientRes.returnData[0];
+              setLinkedPatientId(String(p?.p_patient_id ?? ""));
+
+              // Prefill form with patient data
+              const pFirst =
+                p?.ptm_first_name ?? p?.p_patient_first_name ?? "";
+              const pLast = p?.ptm_last_name ?? p?.p_patient_last_name ?? "";
+              const pGender: string =
+                p?.ptm_gender ??
+                (p?.p_gender === "2" ? "Female" : p?.p_gender === "1" ? "Male" : "");
+              const pDobRaw: string = p?.ptm_date_of_birth ?? p?.p_dob ?? "";
+
+              if (pFirst) setFirstName(pFirst);
+              if (pLast) setLastName(pLast);
+              if (pGender === "Male" || pGender === "Female")
+                setGender(pGender);
+              if (pDobRaw) {
+                // API sends "Jul,07 1980" — normalize comma to space for Date
+                const normalized = pDobRaw.replace(/,/g, " ").trim();
+                const parsed = new Date(normalized);
+                if (!isNaN(parsed.getTime())) setDob(parsed);
+              }
+            } else {
+              setLinkedPatientId("");
+            }
+          } catch {
+            setLinkedPatientId("");
+          }
           return;
         } else {
+          setLinkedPatientId("");
           setCheck({ status: "exists", checkedValue: value });
           return;
         }
@@ -507,6 +550,7 @@ export default function PersonalDetailsScreen() {
 
       // Fetch full user profile
       const phoneE164 = rawPhone.replace(/\s+/g, "");
+      let newUserId = "";
       try {
         const validateRes = await callSuggestusAPI(
           spd_processId_config.sgconf_util_validate_user_v2,
@@ -518,13 +562,16 @@ export default function PersonalDetailsScreen() {
           },
         );
 
-        if (
-          validateRes?.returnCode === true &&
-          validateRes?.returnData?.length > 0
-        ) {
+        const validateOk =
+          (validateRes?.returnCode === true ||
+            validateRes?.returnCode === "true") &&
+          validateRes?.returnData?.length > 0;
+
+        if (validateOk) {
           const u = validateRes.returnData[0];
+          newUserId = String(u.usr_id ?? "");
           await Promise.all([
-            setUserId(String(u.usr_id ?? "")),
+            setUserId(newUserId),
             setRoleId(String(u.rol_id ?? "")),
             setUserName(u.usr_name ?? ""),
             saveDataFromLocalStorage("sg_userEmail", u.usr_email ?? ""),
@@ -545,13 +592,53 @@ export default function PersonalDetailsScreen() {
 
       await AsyncStorage.setItem(IS_LOGGED_IN, "true");
 
-      Toast.show({
-        type: "success",
-        text1: "Profile Updated Successfully",
-        text2: "Welcome to Emirates Hospitals Group",
-      });
-
-      router.replace("/patient/patient_selection");
+      // If a patient record already existed for this Emirates ID / Passport,
+      // link it to the new user account and go straight to HomeScreen.
+      if (linkedPatientId && newUserId) {
+        try {
+          await setPatientId(linkedPatientId);
+          await Promise.all([
+            callSuggestusAPI(
+              spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
+              {
+                p_patient_id: linkedPatientId,
+                p_user_id: newUserId,
+                p_additional_attribites: {},
+              },
+            ),
+            callSuggestusAPI(
+              spd_processId_config.xcelpat_save_mst_user_entity_mapping_common,
+              {
+                p_patient_id: linkedPatientId,
+                p_user_id: newUserId,
+                p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
+                p_entity_reference_id: linkedPatientId,
+                p_entity_reference_code:
+                  "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+                p_active_status: "Y",
+                p_process_flag: "Y",
+                p_additional_attribites: {},
+                p_internal_flag: "N",
+              },
+            ),
+          ]);
+        } catch (linkErr) {
+          console.error("[PersonalDetails] patient linking failed:", linkErr);
+        }
+        Toast.show({
+          type: "success",
+          text1: "Registration Complete",
+          text2: "Welcome to Emirates Hospitals Group",
+        });
+        router.replace("/(drawer)/tab_bar_home/HomeScreen");
+      } else {
+        Toast.show({
+          type: "success",
+          text1: "Profile Updated Successfully",
+          text2: "Welcome to Emirates Hospitals Group",
+        });
+        router.replace("/patient/patient_selection");
+      }
     } catch (error) {
       console.error("[PersonalDetails] registration error:", error);
       Toast.show({

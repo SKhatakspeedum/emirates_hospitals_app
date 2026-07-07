@@ -39,10 +39,6 @@ type Appointment = {
   appSubtypeId: string;
 };
 
-const HISTORY_APPOINTMENTS: Appointment[] = [
-  { id: "3", doctorName: "Dr. Sheena Cherry", specialty: "Specialist Medicine", avatar: "https://randomuser.me/api/portraits/women/68.jpg", date: "20 Feb 2026", time: "02:00 PM", status: "Completed", statusHtml: "", type: "Video Consult", apptypName: "", patientDet: "", resourceId: "", appSubtypeId: "" },
-  { id: "4", doctorName: "Dr. Yanal Salam", specialty: "Consultant Medicine", avatar: "https://randomuser.me/api/portraits/men/46.jpg", date: "15 Feb 2026", time: "10:30 AM", status: "Cancelled", statusHtml: "", type: "In-Clinic", apptypName: "", patientDet: "", resourceId: "", appSubtypeId: "" },
-];
 
 // Strips HTML tags: "<div class="badge-success">BOOKED</div>" → "BOOKED"
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
@@ -84,7 +80,7 @@ export default function AppointmentScreen() {
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<"upcoming" | "history">("upcoming");
   const [upcomingList, setUpcomingList] = useState<Appointment[]>([]);
-  const [historyList, setHistoryList] = useState(HISTORY_APPOINTMENTS);
+  const [historyList, setHistoryList] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const appointments = activeTab === "upcoming" ? upcomingList : historyList;
@@ -135,7 +131,7 @@ export default function AppointmentScreen() {
           });
 
           setUpcomingList(upcoming);
-          if (history.length > 0) setHistoryList(history);
+          setHistoryList(history);
         }
       } catch (_) {
         // keep fallback lists on error

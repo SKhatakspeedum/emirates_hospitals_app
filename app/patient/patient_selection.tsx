@@ -91,13 +91,16 @@ export default function PatientSelectionScreen() {
       // Fetch registered patients from API
       let _listMobile = "";
       try {
-        if (fullDataStr) { const _j = JSON.parse(fullDataStr); _listMobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? ""; }
+        if (fullDataStr) {
+          const _j = JSON.parse(fullDataStr);
+          _listMobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
+        }
       } catch (_) {}
       const response = await callSuggestusAPI(
         spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
         {
           p_user_id: userId,
-          p_ptm_mobile_number: _listMobile,
+          // p_ptm_mobile_number: _listMobile,
           p_search_text: "",
           p_search_additional_attributes: "",
           p_process_flag: "user_patients",
@@ -110,7 +113,11 @@ export default function PatientSelectionScreen() {
             const name =
               p.p_patient_name ??
               p.ptm_name ??
-              [p.p_patient_first_name, p.p_patient_middle_name, p.p_patient_last_name]
+              [
+                p.p_patient_first_name,
+                p.p_patient_middle_name,
+                p.p_patient_last_name,
+              ]
                 .filter(Boolean)
                 .join(" ") ??
               "Unknown";
@@ -133,6 +140,9 @@ export default function PatientSelectionScreen() {
           },
         );
         setPatients(mapped);
+        // If patients already exist (possibly registered via a different mobile),
+        // treat the user as already registered — hide the "Register as a patient" card
+        setIsAlreadyPatient(true);
       }
     } catch (e) {
       console.error("Error loading patient selection screen:", e);
@@ -149,7 +159,8 @@ export default function PatientSelectionScreen() {
     setRegisteringAsSelf(true);
     try {
       let fullDataStr = await getDecryptedID(USER_FULL_DATA);
-      if (!fullDataStr) fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
+      if (!fullDataStr)
+        fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
       if (!fullDataStr) {
         router.replace("/(drawer)/tab_bar_home/HomeScreen");
         return;
@@ -170,15 +181,17 @@ export default function PatientSelectionScreen() {
 
       const emiratesIdToCheck = attrs.p_emirates_id ?? "";
       const passportToCheck = attrs.p_identification_num ?? "";
-      const _selfUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? parsed?.usr_id ?? "";
-      const _selfMobile = parsed?.usr_phone ?? parsed?.usr_mobile ?? parsed?.p_mobile_no ?? "";
+      const _selfUserId =
+        (await fetchDataFromLocalStorage("sg_userId")) ?? parsed?.usr_id ?? "";
+      const _selfMobile =
+        parsed?.usr_phone ?? parsed?.usr_mobile ?? parsed?.p_mobile_no ?? "";
       if (emiratesIdToCheck || passportToCheck) {
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
             p_user_id: _selfUserId,
-            p_ptm_mobile_number: _selfMobile,
             p_additional_attribute: {
+              // p_ptm_mobile_number: _selfMobile,
               p_emirates_id: emiratesIdToCheck,
               p_passport_no: passportToCheck,
             },
@@ -232,10 +245,14 @@ export default function PatientSelectionScreen() {
         try {
           const stored = JSON.parse(
             (await getDecryptedID(USER_FULL_DATA)) ??
-            (await fetchDataFromLocalStorage(USER_FULL_DATA)) ?? "{}",
+              (await fetchDataFromLocalStorage(USER_FULL_DATA)) ??
+              "{}",
           );
           stored.usr_patient_id = patientId;
-          await saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(stored));
+          await saveDataFromLocalStorage(
+            USER_FULL_DATA,
+            JSON.stringify(stored),
+          );
         } catch (_) {}
 
         let userId = await fetchDataFromLocalStorage("sg_userId");
@@ -279,7 +296,11 @@ export default function PatientSelectionScreen() {
       await setPatientId(patient.id);
       await AsyncStorage.setItem(
         SPD_SELECTED_PATIENT,
-        JSON.stringify({ name: patient.name, age: patient.age, gender: patient.gender }),
+        JSON.stringify({
+          name: patient.name,
+          age: patient.age,
+          gender: patient.gender,
+        }),
       );
     } catch (e) {
       console.error("Error setting patient:", e);
@@ -298,14 +319,20 @@ export default function PatientSelectionScreen() {
         await setPatientId(first.id);
         await AsyncStorage.setItem(
           SPD_SELECTED_PATIENT,
-          JSON.stringify({ name: first.name, age: first.age, gender: first.gender }),
+          JSON.stringify({
+            name: first.name,
+            age: first.age,
+            gender: first.gender,
+          }),
         );
       } else {
         await AsyncStorage.removeItem("sg_patientId");
       }
     } catch (e) {
       console.error("Error in handleSkip:", e);
-      try { await AsyncStorage.removeItem("sg_patientId"); } catch (_) {}
+      try {
+        await AsyncStorage.removeItem("sg_patientId");
+      } catch (_) {}
     }
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
@@ -394,7 +421,9 @@ export default function PatientSelectionScreen() {
                           { backgroundColor: patient.bgColor },
                         ]}
                       >
-                        <Text style={styles.avatarText}>{patient.initials}</Text>
+                        <Text style={styles.avatarText}>
+                          {patient.initials}
+                        </Text>
                       </View>
                       <View style={styles.patientInfoCol}>
                         <Text style={styles.patientName}>{patient.name}</Text>

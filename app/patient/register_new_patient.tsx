@@ -147,7 +147,7 @@ export default function RegisterNewPatient() {
           {
             p_user_id: _userId,
             p_additional_attribute: {
-              p_ptm_mobile_number: _mobile,
+              // p_ptm_mobile_number: _mobile,
               p_emirates_id: field === "emirates" ? clean : "",
               p_passport_no: field === "passport" ? clean : "",
             },
@@ -235,7 +235,7 @@ export default function RegisterNewPatient() {
           {
             p_user_id: _userId2,
             p_additional_attribute: {
-              p_ptm_mobile_number: _mobile2,
+              // p_ptm_mobile_number: _mobile2,
               p_emirates_id: emiratesIdClean,
               p_passport_no: passportNo.trim(),
             },

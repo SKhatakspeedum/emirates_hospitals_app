@@ -326,7 +326,7 @@ export default function PersonalDetailsScreen() {
           {
             p_user_id: userId,
             p_additional_attribute: {
-              p_ptm_mobile_number: rawPhone,
+              // p_ptm_mobile_number: rawPhone,
               p_emirates_id: emiratesIdClean,
               p_passport_no: passportClean,
             },
@@ -519,7 +519,7 @@ export default function PersonalDetailsScreen() {
           {
             p_user_id: regUserId,
             p_additional_attribute: {
-              p_ptm_mobile_number: rawPhone,
+              // p_ptm_mobile_number: rawPhone,
               p_emirates_id: isResident ? emiratesIdClean : "",
               p_passport_no: !isResident ? passportNo.trim() : "",
             },

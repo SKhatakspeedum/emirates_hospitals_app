@@ -111,7 +111,7 @@ export default function PatientDetailsScreen() {
           p_search_text: "",
           p_search_additional_attributes: "",
           p_process_flag: "user_patients",
-          ...(mobileNumber ? { p_ptm_mobile_number: mobileNumber } : {}),
+          // ...(mobileNumber ? { p_ptm_mobile_number: mobileNumber } : {}),
         },
         "",
         "",
@@ -173,7 +173,7 @@ export default function PatientDetailsScreen() {
             p_user_id: userId,
 
             p_additional_attribute: {
-              p_ptm_mobile_number: _mobile,
+              // p_ptm_mobile_number: _mobile,
               p_emirates_id: emiratesIdToCheck,
               p_passport_no: passportToCheck,
             },

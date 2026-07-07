@@ -100,7 +100,7 @@ export default function RegisteredPatientsScreen() {
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
             p_user_id: userId,
-            p_ptm_mobile_number: _listMobile,
+            // p_ptm_mobile_number: _listMobile,
             p_search_text: "",
             p_search_additional_attributes: "",
             p_process_flag: "user_patients",
@@ -141,6 +141,9 @@ export default function RegisteredPatientsScreen() {
             },
           );
           setPatients(mapped);
+          // If patients already exist (possibly registered via a different mobile),
+          // treat the user as already registered — hide the "Register as a patient" card
+          setIsAlreadyPatient(true);
         }
       } catch (e) {
         console.error("Error loading registered patients screen:", e);
@@ -185,7 +188,7 @@ export default function RegisteredPatientsScreen() {
           {
             p_user_id: _selfUserId,
             p_additional_attribute: {
-              p_ptm_mobile_number: _selfMobile,
+              // p_ptm_mobile_number: _selfMobile,
               p_emirates_id: emiratesIdToCheck,
               p_passport_no: passportToCheck,
             },

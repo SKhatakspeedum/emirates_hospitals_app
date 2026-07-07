@@ -142,10 +142,13 @@ export default function RegisterNewPatient() {
             _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
           }
         } catch (_) {}
+        console.log(77777777777777);
+
         const res = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
-            p_user_id: _userId,
+            // p_process_flag: "user_patients",
+            // p_user_id: _userId,
             p_additional_attribute: {
               // p_ptm_mobile_number: _mobile,
               p_emirates_id: field === "emirates" ? clean : "",
@@ -230,6 +233,8 @@ export default function RegisterNewPatient() {
             _mobile2 = _j2.usr_phone ?? _j2.usr_mobile ?? _j2.p_mobile_no ?? "";
           }
         } catch (_) {}
+        console.log(8888888888888);
+
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {

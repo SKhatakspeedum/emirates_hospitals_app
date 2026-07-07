@@ -62,6 +62,7 @@ export default function RegisteredPatientsScreen() {
     gender: string;
   } | null>(null);
   const [isAlreadyPatient, setIsAlreadyPatient] = useState(false);
+  const [alreadyAssigned, setAlreadyAssigned] = useState(false);
   const [registeringAsSelf, setRegisteringAsSelf] = useState(false);
   const { height: screenHeight } = Dimensions.get("window");
   const isSmallScreen = screenHeight < 680;
@@ -69,7 +70,10 @@ export default function RegisteredPatientsScreen() {
   useEffect(() => {
     const init = async () => {
       try {
-        const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+        let userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+        let emiratesIdToCheck = "";
+        let passportToCheck = "";
+        let selfMobile = "";
 
         // Load user profile to check if already registered as patient
         const fullDataStr = await getDecryptedID(USER_FULL_DATA);
@@ -81,28 +85,51 @@ export default function RegisteredPatientsScreen() {
           const age = dob ? dayjs().diff(dob, "year") : 0;
           const gender = attrs.user_gender ?? parsed.usr_gender ?? "Male";
           setUserData({ name, age, gender });
-          // If usr_patient_id is already set, user is already registered as a patient
+          if (!userId) userId = parsed.usr_id ?? "";
+          selfMobile =
+            parsed.usr_phone ?? parsed.usr_mobile ?? parsed.p_mobile_no ?? "";
+          emiratesIdToCheck = attrs.p_emirates_id ?? "";
+          passportToCheck = attrs.p_identification_num ?? "";
+
           if (parsed.usr_patient_id) {
             setIsAlreadyPatient(true);
           }
+
+          // Check by Emirates ID / Passport — catches patient registered via different mobile
+          if (emiratesIdToCheck || passportToCheck) {
+            const idCheckRes = await callSuggestusAPI(
+              spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+              {
+                p_user_id: userId,
+                p_ptm_mobile_number: selfMobile,
+                p_additional_attribute: {
+                  p_emirates_id: emiratesIdToCheck,
+                  p_passport_no: passportToCheck,
+                },
+                p_process_flag: "user_patients",
+              },
+            );
+            if (
+              idCheckRes?.returnCode === true &&
+              idCheckRes.returnData?.length > 0
+            ) {
+              setAlreadyAssigned(true);
+            }
+          }
         }
 
-        // Fetch mapped patients
-
-        let _listMobile = "";
-        try {
-          if (fullDataStr) {
-            const _j = JSON.parse(fullDataStr);
-            _listMobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
-          }
-        } catch (_) {}
+        // Fetch mapped patients — pass user's ID credentials so backend can cross-check
         const response = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
             p_user_id: userId,
-            // p_ptm_mobile_number: _listMobile,
-            p_search_text: "",
-            p_search_additional_attributes: "",
+            // p_ptm_mobile_number: selfMobile,
+            p_additional_attribute: {
+              p_emirates_id: emiratesIdToCheck,
+              p_passport_no: passportToCheck,
+            },
+            // p_search_text: "",
+            // p_search_additional_attributes: "",
             p_process_flag: "user_patients",
           },
         );
@@ -183,6 +210,8 @@ export default function RegisteredPatientsScreen() {
       const _selfMobile =
         parsed?.usr_phone ?? parsed?.usr_mobile ?? parsed?.p_mobile_no ?? "";
       if (emiratesIdToCheck || passportToCheck) {
+        console.log(14141414141414144141414141);
+
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
@@ -350,7 +379,7 @@ export default function RegisteredPatientsScreen() {
           />
         </View>
 
-        {/* Self-registration card — above the title, only if not already a patient */}
+        {/* Self-registration card — only if not already a patient */}
         {!loading && !isAlreadyPatient && userData && (
           <View style={styles.userCard}>
             <View style={styles.cardHeaderRow}>
@@ -365,27 +394,36 @@ export default function RegisteredPatientsScreen() {
               </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.registerInnerBtn}
-              onPress={handleRegisterAsPatient}
-              disabled={registeringAsSelf}
-              activeOpacity={0.8}
-            >
-              {registeringAsSelf ? (
-                <ActivityIndicator color={Colors.secondary} size="small" />
-              ) : (
-                <>
-                  <Text style={styles.registerInnerBtnText}>
-                    Register as a patient
-                  </Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={Colors.secondary}
-                  />
-                </>
-              )}
-            </TouchableOpacity>
+            {alreadyAssigned ? (
+              <View style={styles.alreadyAssignedBadge}>
+                <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
+                <Text style={styles.alreadyAssignedText}>
+                  Already assigned as a patient
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.registerInnerBtn}
+                onPress={handleRegisterAsPatient}
+                disabled={registeringAsSelf}
+                activeOpacity={0.8}
+              >
+                {registeringAsSelf ? (
+                  <ActivityIndicator color={Colors.secondary} size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.registerInnerBtnText}>
+                      Register as a patient
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={Colors.secondary}
+                    />
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -616,5 +654,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FontFamilies.bold,
     color: Colors.secondary,
+  },
+  alreadyAssignedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    gap: 8,
+  },
+  alreadyAssignedText: {
+    fontSize: 14,
+    fontFamily: FontFamilies.semiBold,
+    color: "#16A34A",
   },
 });

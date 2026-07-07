@@ -732,6 +732,13 @@ export default function PersonalDetailsScreen() {
                       const formatted = formatEmiratesId(text);
                       setEmiratesId(formatted);
                       if (formatted !== emiratesIdCheck.checkedValue) {
+                        if (emiratesIdCheck.status === "available") {
+                          setFirstName("");
+                          setLastName("");
+                          setDob(new Date());
+                          setGender("Male");
+                          setLinkedPatientId("");
+                        }
                         setEmiratesIdCheck((prev) => ({
                           ...prev,
                           status: "idle",
@@ -787,6 +794,13 @@ export default function PersonalDetailsScreen() {
                       const formatted = formatPassport(text);
                       setPassportNo(formatted);
                       if (formatted !== passportCheck.checkedValue) {
+                        if (passportCheck.status === "available") {
+                          setFirstName("");
+                          setLastName("");
+                          setDob(new Date());
+                          setGender("Male");
+                          setLinkedPatientId("");
+                        }
                         setPassportCheck((prev) => ({
                           ...prev,
                           status: "idle",

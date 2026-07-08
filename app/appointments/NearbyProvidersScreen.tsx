@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,9 +12,11 @@ import {
   Platform,
   Pressable,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -123,6 +125,11 @@ function DoctorAvatar({ uri, name }: { uri: string; name: string }) {
 export default function NearbyProvidersScreen() {
   const navigation = useNavigation<any>();
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [showCategoriesScrollHint, setShowCategoriesScrollHint] =
+    useState(false);
+  const categoriesScrollRef = useRef<ScrollView>(null);
+  const categoriesScrollOffsetRef = useRef(0);
+  const categoriesScrollMaxRef = useRef(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [providers, setProviders] = useState(PROVIDERS);
   const [categories, setCategories] = useState(CATEGORIES);
@@ -196,9 +203,30 @@ export default function NearbyProvidersScreen() {
       {/* Categories Horizontal Scroll */}
       <View style={styles.categoriesContainer}>
         <ScrollView
+          ref={categoriesScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesScroll}
+          scrollEventThrottle={32}
+          onContentSizeChange={(contentWidth, _h) => {
+            const containerWidth = Dimensions.get("window").width;
+            categoriesScrollMaxRef.current = Math.max(
+              0,
+              contentWidth - containerWidth,
+            );
+            setShowCategoriesScrollHint((prev) =>
+              contentWidth > containerWidth ? true : prev && false,
+            );
+          }}
+          onScroll={({ nativeEvent }) => {
+            const { contentOffset, contentSize, layoutMeasurement } =
+              nativeEvent;
+            categoriesScrollOffsetRef.current = contentOffset.x;
+            const distanceFromEnd =
+              contentSize.width -
+              (contentOffset.x + layoutMeasurement.width);
+            setShowCategoriesScrollHint(distanceFromEnd > 16);
+          }}
         >
           {categories.map((category) => (
             <TouchableOpacity
@@ -220,6 +248,35 @@ export default function NearbyProvidersScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {showCategoriesScrollHint && (
+          <Pressable
+            style={styles.categoriesScrollHint}
+            onPress={() => {
+              const nextOffset = Math.min(
+                categoriesScrollOffsetRef.current + 120,
+                categoriesScrollMaxRef.current,
+              );
+              categoriesScrollRef.current?.scrollTo({
+                x: nextOffset,
+                animated: true,
+              });
+            }}
+          >
+            <LinearGradient
+              colors={["rgba(255,255,255,0)", Colors.background]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.categoriesScrollHintGradient}
+            >
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={Colors.primary}
+              />
+            </LinearGradient>
+          </Pressable>
+        )}
       </View>
 
       {/* Providers List */}
@@ -388,6 +445,20 @@ const styles = StyleSheet.create({
 
   categoriesContainer: {
     paddingVertical: 8,
+    position: "relative",
+  },
+  categoriesScrollHint: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 36,
+  },
+  categoriesScrollHintGradient: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-end",
+    paddingRight: 4,
   },
   categoriesScroll: {
     paddingHorizontal: 16,

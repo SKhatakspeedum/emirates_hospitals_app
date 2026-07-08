@@ -632,6 +632,13 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginRight: 6,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: FontFamilies.bold,
+    color: Colors.secondary,
+    marginBottom: 16,
+    marginTop: 20,
+  },
   patientsList: {
     width: "100%",
   },

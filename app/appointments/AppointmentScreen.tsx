@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
+import CustomTabs from "../components/CustomTabs";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
@@ -173,42 +174,11 @@ export default function AppointmentScreen() {
 
         {/* Tab Segment Controls */}
         <View style={styles.tabWrapper}>
-          <View style={styles.tabSegmentContainer}>
-            <TouchableOpacity
-              style={[
-                styles.tabSegmentButton,
-                activeTab === "upcoming" && styles.tabSegmentButtonActive,
-              ]}
-              onPress={() => setActiveTab("upcoming")}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.tabSegmentText,
-                  activeTab === "upcoming" && styles.tabSegmentTextActive,
-                ]}
-              >
-                Upcoming
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.tabSegmentButton,
-                activeTab === "history" && styles.tabSegmentButtonActive,
-              ]}
-              onPress={() => setActiveTab("history")}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.tabSegmentText,
-                  activeTab === "history" && styles.tabSegmentTextActive,
-                ]}
-              >
-                History
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <CustomTabs
+            tabs={["Upcoming", "History"]}
+            activeTab={activeTab === "upcoming" ? "Upcoming" : "History"}
+            onTabChange={(tab) => setActiveTab(tab === "Upcoming" ? "upcoming" : "history")}
+          />
         </View>
 
         {/* Scroll Content */}
@@ -374,36 +344,6 @@ const styles = StyleSheet.create({
   tabWrapper: {
     paddingHorizontal: 16,
     marginBottom: 10,
-  },
-  tabSegmentContainer: {
-    flexDirection: "row",
-    height: 42,
-    backgroundColor: "#EBEBEF",
-    borderRadius: 10,
-    padding: 3,
-  },
-  tabSegmentButton: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 8,
-  },
-  tabSegmentButtonActive: {
-    backgroundColor: Colors.background,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  tabSegmentText: {
-    fontSize: 14,
-    color: Colors.label,
-    fontFamily: FontFamilies.semiBold,
-  },
-  tabSegmentTextActive: {
-    color: Colors.text,
-    fontFamily: FontFamilies.bold,
   },
   scrollContent: {
     paddingBottom: 100,

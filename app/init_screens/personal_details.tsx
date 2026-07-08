@@ -43,7 +43,6 @@ import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 import CustomTabs from "../components/CustomTabs";
 
-
 type CheckStatus =
   | "idle"
   | "checking"
@@ -360,7 +359,7 @@ export default function PersonalDetailsScreen() {
                 USER_FULL_DATA,
                 JSON.stringify(stored),
               );
-            } catch (_) { }
+            } catch (_) {}
           }
           Toast.show({
             type: "success",
@@ -416,7 +415,7 @@ export default function PersonalDetailsScreen() {
               USER_FULL_DATA,
               JSON.stringify(stored),
             );
-          } catch (_) { }
+          } catch (_) {}
 
           await callSuggestusAPI(
             spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
@@ -515,9 +514,9 @@ export default function PersonalDetailsScreen() {
       // Final existence check — skip if already verified as available for this value
       const alreadyVerified = isResident
         ? emiratesIdCheck.status === "available" &&
-        emiratesIdCheck.checkedValue === emiratesId
+          emiratesIdCheck.checkedValue === emiratesId
         : passportCheck.status === "available" &&
-        passportCheck.checkedValue === passportNo;
+          passportCheck.checkedValue === passportNo;
 
       if (!alreadyVerified) {
         const regUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
@@ -569,7 +568,7 @@ export default function PersonalDetailsScreen() {
       if (currentDataStr) {
         try {
           updatedData = { ...JSON.parse(currentDataStr), ...updatedData };
-        } catch (_) { }
+        } catch (_) {}
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
@@ -748,9 +747,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
                     emiratesIdCheck.status === "exists" &&
-                    styles.inputWrapperError,
+                      styles.inputWrapperError,
                     emiratesIdCheck.status === "available" &&
-                    styles.inputWrapperSuccess,
+                      styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -820,9 +819,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
                     passportCheck.status === "exists" &&
-                    styles.inputWrapperError,
+                      styles.inputWrapperError,
                     passportCheck.status === "available" &&
-                    styles.inputWrapperSuccess,
+                      styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -898,7 +897,7 @@ export default function PersonalDetailsScreen() {
                     style={[
                       styles.inputWrapper,
                       focusedField === "firstName" &&
-                      styles.inputWrapperFocused,
+                        styles.inputWrapperFocused,
                     ]}
                   >
                     <Ionicons
@@ -1012,8 +1011,13 @@ export default function PersonalDetailsScreen() {
                     />
                     <TouchableOpacity
                       onPress={() => {
-                        const inputEl = document.getElementById("web-dob-picker") as any;
-                        if (inputEl && typeof inputEl.showPicker === 'function') {
+                        const inputEl = document.getElementById(
+                          "web-dob-picker",
+                        ) as any;
+                        if (
+                          inputEl &&
+                          typeof inputEl.showPicker === "function"
+                        ) {
                           inputEl.showPicker();
                         }
                       }}
@@ -1138,10 +1142,10 @@ export default function PersonalDetailsScreen() {
           minimumDate={new Date(1900, 0, 1)}
           maximumDate={new Date()}
           onChange={(event: any, date?: Date) => {
-            if (Platform.OS === 'android') {
+            if (Platform.OS === "android") {
               setShowDatePicker(false);
             }
-            if (event.type === 'dismissed') {
+            if (event.type === "dismissed") {
               setShowDatePicker(false);
               return;
             }

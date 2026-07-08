@@ -141,7 +141,7 @@ export default function RegisterNewPatient() {
             const _j = JSON.parse(_d);
             _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
           }
-        } catch (_) {}
+        } catch (_) { }
         console.log(77777777777777);
 
         const res = await callSuggestusAPI(
@@ -232,7 +232,7 @@ export default function RegisterNewPatient() {
             const _j2 = JSON.parse(_d2);
             _mobile2 = _j2.usr_phone ?? _j2.usr_mobile ?? _j2.p_mobile_no ?? "";
           }
-        } catch (_) {}
+        } catch (_) { }
         console.log(8888888888888);
 
         const checkRes = await callSuggestusAPI(
@@ -308,7 +308,7 @@ export default function RegisterNewPatient() {
         if (fullDataStr) {
           try {
             userId = JSON.parse(fullDataStr)?.usr_id ?? "";
-          } catch (_) {}
+          } catch (_) { }
         }
       }
 
@@ -424,9 +424,9 @@ export default function RegisterNewPatient() {
                     styles.cardInputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
                     emiratesIdCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     emiratesIdCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -491,9 +491,9 @@ export default function RegisterNewPatient() {
                     styles.cardInputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
                     passportCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     passportCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -709,200 +709,52 @@ export default function RegisterNewPatient() {
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Gender</Text>
               <View style={styles.rowContainer}>
-                <View
-                  style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
+                <TouchableOpacity
+                  style={[
+                    styles.genderBox,
+                    gender === "Male" && styles.genderBoxActive,
+                    { marginRight: 8 },
+                  ]}
+                  onPress={() => setGender("Male")}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.inputLabel}>First name</Text>
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      focusedField === "firstName" &&
-                        styles.inputWrapperFocused,
-                    ]}
-                  >
-                    <Ionicons
-                      name="person-outline"
-                      size={20}
-                      color={
-                        focusedField === "firstName"
-                          ? Colors.secondary
-                          : Colors.label
-                      }
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={[styles.input, styles.inputNoOutline]}
-                      // placeholder="John"
-                      placeholderTextColor={Colors.inactive}
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      onFocus={() => setFocusedField("firstName")}
-                      onBlur={() => setFocusedField("")}
-                      autoCapitalize="words"
-                      returnKeyType="next"
-                    />
+                  <View style={styles.radioContainer}>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        gender === "Male" && styles.radioOuterActive,
+                      ]}
+                    >
+                      {gender === "Male" && (
+                        <View style={styles.radioInner} />
+                      )}
+                    </View>
+                    <Text style={styles.genderText}>Male</Text>
                   </View>
-                </View>
-                <View
-                  style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.genderBox,
+                    gender === "Female" && styles.genderBoxActive,
+                    { marginLeft: 8 },
+                  ]}
+                  onPress={() => setGender("Female")}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.inputLabel}>Last name</Text>
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      focusedField === "lastName" && styles.inputWrapperFocused,
-                    ]}
-                  >
-                    <Ionicons
-                      name="person-outline"
-                      size={20}
-                      color={
-                        focusedField === "lastName"
-                          ? Colors.secondary
-                          : Colors.label
-                      }
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={[styles.input, styles.inputNoOutline]}
-                      // placeholder="Doe"
-                      placeholderTextColor={Colors.inactive}
-                      value={lastName}
-                      onChangeText={setLastName}
-                      onFocus={() => setFocusedField("lastName")}
-                      onBlur={() => setFocusedField("")}
-                      autoCapitalize="words"
-                      returnKeyType="next"
-                    />
-                  </View>
-                </View>
-              </View>
-
-              {/* Date of Birth */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Date of birth</Text>
-                {Platform.OS === "web" ? (
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      focusedField === "dob" && styles.inputWrapperFocused,
-                    ]}
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color={
-                        focusedField === "dob" ? Colors.secondary : Colors.label
-                      }
-                      style={styles.inputIcon}
-                    />
-                    <input
-                      type="date"
-                      value={dayjs(dob).format("YYYY-MM-DD")}
-                      min="1900-01-01"
-                      max={dayjs().format("YYYY-MM-DD")}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          const d = new Date(e.target.value);
-                          const today = new Date();
-                          const minDate = new Date(1900, 0, 1);
-                          if (d.getFullYear() >= 1000) {
-                            setDob(
-                              d < minDate ? minDate : d > today ? today : d,
-                            );
-                          } else {
-                            setDob(d);
-                          }
-                        }
-                      }}
-                      onFocus={() => setFocusedField("dob")}
-                      onBlur={() => setFocusedField("")}
-                      style={{
-                        flex: 1,
-                        border: "none",
-                        outline: "none",
-                        fontSize: "16px",
-                        fontFamily: FontFamilies.medium,
-                        color: Colors.text,
-                        backgroundColor: "transparent",
-                        height: "100%",
-                      }}
-                    />
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={[
-                      styles.inputWrapper,
-                      showDatePicker && styles.inputWrapperFocused,
-                    ]}
-                    onPress={() => setShowDatePicker(true)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color={showDatePicker ? Colors.secondary : Colors.label}
-                      style={styles.inputIcon}
-                    />
-                    <Text style={styles.input}>
-                      {dayjs(dob).format("MMM DD, YYYY")}
-                    </Text>
-                    <Text style={styles.changeLinkText}>Change</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Gender */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Gender</Text>
-                <View style={styles.rowContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.genderBox,
-                      gender === "Male" && styles.genderBoxActive,
-                      { marginRight: 8 },
-                    ]}
-                    onPress={() => setGender("Male")}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.radioContainer}>
-                      <View
-                        style={[
-                          styles.radioOuter,
-                          gender === "Male" && styles.radioOuterActive,
-                        ]}
-                      >
-                        {gender === "Male" && (
-                          <View style={styles.radioInner} />
-                        )}
-                      </View>
-                      <Text style={styles.genderText}>Male</Text>
+                  <View style={styles.radioContainer}>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        gender === "Female" && styles.radioOuterActive,
+                      ]}
+                    >
+                      {gender === "Female" && (
+                        <View style={styles.radioInner} />
+                      )}
                     </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.genderBox,
-                      gender === "Female" && styles.genderBoxActive,
-                      { marginLeft: 8 },
-                    ]}
-                    onPress={() => setGender("Female")}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.radioContainer}>
-                      <View
-                        style={[
-                          styles.radioOuter,
-                          gender === "Female" && styles.radioOuterActive,
-                        ]}
-                      >
-                        {gender === "Female" && (
-                          <View style={styles.radioInner} />
-                        )}
-                      </View>
-                      <Text style={styles.genderText}>Female</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
+                    <Text style={styles.genderText}>Female</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
             </View>
             {/* end fieldsDisabled wrapper */}

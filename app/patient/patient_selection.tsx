@@ -208,7 +208,6 @@ export default function PatientSelectionScreen() {
         parsed.usr_passport_no ||
         "";
 
-      console.log(":>>>>>>>>>>", emiratesId, passportNo);
       if (!emiratesId && !passportNo) return;
 
       const idCheckRes = await callSuggestusAPI(

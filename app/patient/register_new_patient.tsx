@@ -703,81 +703,8 @@ export default function RegisterNewPatient() {
               )}
             </View>
 
-            {/* Gender */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Gender</Text>
-              <View style={styles.rowContainer}>
-                <View
-                  style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
-                >
-                  <Text style={styles.inputLabel}>First name</Text>
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      focusedField === "firstName" &&
-                        styles.inputWrapperFocused,
-                    ]}
-                  >
-                    <Ionicons
-                      name="person-outline"
-                      size={20}
-                      color={
-                        focusedField === "firstName"
-                          ? Colors.secondary
-                          : Colors.label
-                      }
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={[styles.input, styles.inputNoOutline]}
-                      // placeholder="John"
-                      placeholderTextColor={Colors.inactive}
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      onFocus={() => setFocusedField("firstName")}
-                      onBlur={() => setFocusedField("")}
-                      autoCapitalize="words"
-                      returnKeyType="next"
-                    />
-                  </View>
-                </View>
-                <View
-                  style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}
-                >
-                  <Text style={styles.inputLabel}>Last name</Text>
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      focusedField === "lastName" && styles.inputWrapperFocused,
-                    ]}
-                  >
-                    <Ionicons
-                      name="person-outline"
-                      size={20}
-                      color={
-                        focusedField === "lastName"
-                          ? Colors.secondary
-                          : Colors.label
-                      }
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={[styles.input, styles.inputNoOutline]}
-                      // placeholder="Doe"
-                      placeholderTextColor={Colors.inactive}
-                      value={lastName}
-                      onChangeText={setLastName}
-                      onFocus={() => setFocusedField("lastName")}
-                      onBlur={() => setFocusedField("")}
-                      autoCapitalize="words"
-                      returnKeyType="next"
-                    />
-                  </View>
-                </View>
-              </View>
-
-              {/* Date of Birth */}
-              <View style={styles.inputContainer}>
+            {/* Date of Birth */}
+            {/* <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Date of birth</Text>
                 {Platform.OS === "web" ? (
                   <View
@@ -848,59 +775,56 @@ export default function RegisterNewPatient() {
                     <Text style={styles.changeLinkText}>Change</Text>
                   </TouchableOpacity>
                 )}
-              </View>
+              </View> */}
 
-              {/* Gender */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Gender</Text>
-                <View style={styles.rowContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.genderBox,
-                      gender === "Male" && styles.genderBoxActive,
-                      { marginRight: 8 },
-                    ]}
-                    onPress={() => setGender("Male")}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.radioContainer}>
-                      <View
-                        style={[
-                          styles.radioOuter,
-                          gender === "Male" && styles.radioOuterActive,
-                        ]}
-                      >
-                        {gender === "Male" && (
-                          <View style={styles.radioInner} />
-                        )}
-                      </View>
-                      <Text style={styles.genderText}>Male</Text>
+            {/* Gender */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Gender</Text>
+              <View style={styles.rowContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.genderBox,
+                    gender === "Male" && styles.genderBoxActive,
+                    { marginRight: 8 },
+                  ]}
+                  onPress={() => setGender("Male")}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.radioContainer}>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        gender === "Male" && styles.radioOuterActive,
+                      ]}
+                    >
+                      {gender === "Male" && <View style={styles.radioInner} />}
                     </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.genderBox,
-                      gender === "Female" && styles.genderBoxActive,
-                      { marginLeft: 8 },
-                    ]}
-                    onPress={() => setGender("Female")}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.radioContainer}>
-                      <View
-                        style={[
-                          styles.radioOuter,
-                          gender === "Female" && styles.radioOuterActive,
-                        ]}
-                      >
-                        {gender === "Female" && (
-                          <View style={styles.radioInner} />
-                        )}
-                      </View>
-                      <Text style={styles.genderText}>Female</Text>
+                    <Text style={styles.genderText}>Male</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.genderBox,
+                    gender === "Female" && styles.genderBoxActive,
+                    { marginLeft: 8 },
+                  ]}
+                  onPress={() => setGender("Female")}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.radioContainer}>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        gender === "Female" && styles.radioOuterActive,
+                      ]}
+                    >
+                      {gender === "Female" && (
+                        <View style={styles.radioInner} />
+                      )}
                     </View>
-                  </TouchableOpacity>
-                </View>
+                    <Text style={styles.genderText}>Female</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
             </View>
             {/* end fieldsDisabled wrapper */}

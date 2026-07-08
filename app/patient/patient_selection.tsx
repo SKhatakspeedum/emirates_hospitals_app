@@ -181,6 +181,65 @@ export default function PatientSelectionScreen() {
     loadData();
   }, [loadData]);
 
+  // Runs on every screen focus — fresh isolated check using only Emirates ID / Passport
+  const UserAsPatient = async () => {
+    try {
+      let fullDataStr = await getDecryptedID(USER_FULL_DATA);
+      if (!fullDataStr)
+        fullDataStr = await fetchDataFromLocalStorage(USER_FULL_DATA);
+      if (!fullDataStr) return;
+
+      const parsed = JSON.parse(fullDataStr);
+      const attrs = parseAdditionalAttributes(parsed.additional_attributes);
+
+      const emiratesId = (
+        attrs.p_emirates_id ||
+        attrs.user_emirates_id ||
+        attrs.emirates_id ||
+        parsed.emirates_id ||
+        parsed.usr_emirates_id ||
+        ""
+      ).replace(/-/g, "");
+      const passportNo =
+        attrs.p_identification_num ||
+        attrs.user_passport_no ||
+        attrs.passport_no ||
+        parsed.passport_no ||
+        parsed.usr_passport_no ||
+        "";
+
+      console.log(":>>>>>>>>>>", emiratesId, passportNo);
+      if (!emiratesId && !passportNo) return;
+
+      const idCheckRes = await callSuggestusAPI(
+        spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+        {
+          p_additional_attribute: {
+            p_emirates_id: emiratesId,
+            p_passport_no: passportNo,
+          },
+        },
+      );
+
+      if (
+        idCheckRes?.returnCode === true &&
+        idCheckRes.returnData?.length > 0
+      ) {
+        setAlreadyAssigned(true);
+        Alert.alert(
+          "Patient Found",
+          "A patient already exists with this Emirates ID / Passport number.",
+        );
+      }
+    } catch (e) {
+      console.error("UserAsPatient check error:", e);
+    }
+  };
+
+  useEffect(() => {
+    UserAsPatient();
+  }, []);
+
   const handleRegisterAsPatient = async () => {
     setRegisteringAsSelf(true);
     try {

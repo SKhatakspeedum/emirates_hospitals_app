@@ -68,6 +68,8 @@ export default function NearbyProvidersScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [showCategoriesScrollHint, setShowCategoriesScrollHint] =
     useState(false);
+  const [showCategoriesScrollHintLeft, setShowCategoriesScrollHintLeft] =
+    useState(false);
   const categoriesScrollRef = useRef<ScrollView>(null);
   const categoriesScrollOffsetRef = useRef(0);
   const categoriesScrollMaxRef = useRef(0);
@@ -167,6 +169,7 @@ export default function NearbyProvidersScreen() {
               contentSize.width -
               (contentOffset.x + layoutMeasurement.width);
             setShowCategoriesScrollHint(distanceFromEnd > 16);
+            setShowCategoriesScrollHintLeft(contentOffset.x > 16);
           }}
         >
           {categories.map((category) => (
@@ -190,9 +193,46 @@ export default function NearbyProvidersScreen() {
           ))}
         </ScrollView>
 
+        {showCategoriesScrollHintLeft && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.categoriesScrollHintLeft,
+              { opacity: pressed ? 0.6 : 1 },
+            ]}
+            onPress={() => {
+              const nextOffset = Math.max(
+                categoriesScrollOffsetRef.current - 120,
+                0,
+              );
+              categoriesScrollRef.current?.scrollTo({
+                x: nextOffset,
+                animated: true,
+              });
+            }}
+          >
+            <LinearGradient
+              colors={[Colors.background, "rgba(255,255,255,0)"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.categoriesScrollHintGradientLeft}
+            >
+              <View style={styles.scrollHintBadge}>
+                <Ionicons
+                  name="chevron-back"
+                  size={18}
+                  color={Colors.background}
+                />
+              </View>
+            </LinearGradient>
+          </Pressable>
+        )}
+
         {showCategoriesScrollHint && (
           <Pressable
-            style={styles.categoriesScrollHint}
+            style={({ pressed }) => [
+              styles.categoriesScrollHint,
+              { opacity: pressed ? 0.6 : 1 },
+            ]}
             onPress={() => {
               const nextOffset = Math.min(
                 categoriesScrollOffsetRef.current + 120,
@@ -210,11 +250,13 @@ export default function NearbyProvidersScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.categoriesScrollHintGradient}
             >
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={Colors.primary}
-              />
+              <View style={styles.scrollHintBadge}>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={Colors.background}
+                />
+              </View>
             </LinearGradient>
           </Pressable>
         )}
@@ -393,13 +435,41 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
-    width: 36,
+    width: 48,
   },
   categoriesScrollHintGradient: {
     flex: 1,
     justifyContent: "center",
     alignItems: "flex-end",
-    paddingRight: 4,
+    paddingRight: 8,
+  },
+  categoriesScrollHintLeft: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 48,
+    zIndex: 2,
+  },
+  categoriesScrollHintGradientLeft: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingLeft: 8,
+  },
+  scrollHintBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.secondary,
+    opacity: 0.85,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: Colors.secondary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   categoriesScroll: {
     paddingHorizontal: 16,

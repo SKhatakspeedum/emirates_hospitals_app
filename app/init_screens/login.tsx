@@ -202,7 +202,7 @@ export default function LoginScreen() {
             activeOpacity={0.8}
           >
             {phoneLoading ? (
-              <ActivityIndicator color={Colors.label} />
+              <ActivityIndicator color={Colors.lightgray} />
             ) : (
               <Text style={styles.continueBtnText}>Continue</Text>
             )}

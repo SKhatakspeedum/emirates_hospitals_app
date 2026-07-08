@@ -8,8 +8,11 @@ import {
   SafeAreaView,
   ScrollView,
   Platform,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
+import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -63,6 +66,11 @@ const drawerItems = [
     screen: "phr",
   },
   {
+    label: "Patient",
+    icon: <Ionicons name="people-outline" size={22} color={Colors.primary} />,
+    screen: "PatientSelection",
+  },
+  {
     label: "Explore",
     icon: <MaterialCommunityIcons name="compass-outline" size={22} color={Colors.primary} />,
     screen: "explore",
@@ -90,9 +98,11 @@ const drawerItems = [
 ];
 
 export default function CustomDrawer(props: DrawerContentComponentProps) {
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [avatarError, setAvatarError] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const loadProfile = useCallback(async () => {
     setLoadingProfile(true);
@@ -161,6 +171,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 
   const handleNav = async (screen: string) => {
     if (screen === "SignOut") {
+      setIsSigningOut(true);
       try {
         await AsyncStorage.clear();
         try {
@@ -200,7 +211,14 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           text1: "Sign-out failed",
           text2: "Please try again.",
         });
+        setIsSigningOut(false);
       }
+      return;
+    }
+
+    if (screen === "PatientSelection") {
+      props.navigation.closeDrawer();
+      router.push("/patient/patient_selection");
       return;
     }
 
@@ -316,6 +334,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             style={styles.logoutRow}
             onPress={() => handleNav("SignOut")}
             activeOpacity={0.7}
+            disabled={isSigningOut}
           >
             <View style={styles.linkIconWrapper}>
               <Ionicons name="log-out-outline" size={22} color={Colors.primary} />
@@ -325,6 +344,16 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Sign-out loading overlay */}
+      <Modal visible={isSigningOut} transparent animationType="fade">
+        <View style={styles.loaderOverlay}>
+          <View style={styles.loaderCard}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loaderText}>Logging out...</Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -448,5 +477,30 @@ const styles = StyleSheet.create({
     marginLeft: 14,
     fontFamily: FontFamilies.semiBold,
     flex: 1,
+  },
+  loaderOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loaderCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    minWidth: 160,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  loaderText: {
+    marginTop: 14,
+    fontSize: 15,
+    color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
   },
 });

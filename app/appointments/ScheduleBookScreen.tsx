@@ -1,20 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
-  SafeAreaView,
-  StatusBar,
-  Dimensions,
   Image,
-  Platform,
   Pressable,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { Calendar } from "react-native-calendars";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -23,79 +20,85 @@ import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 import Toast from "react-native-toast-message";
 
-const getDynamicScheduleData = () => {
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  const days = [
-    "SUNDAY",
-    "MONDAY",
-    "TUESDAY",
-    "WEDNESDAY",
-    "THURSDAY",
-    "FRIDAY",
-    "SATURDAY",
-  ];
-
-  const formatDateStr = (d: Date) => {
-    const monthStr = months[d.getMonth()];
-    const dayNum = String(d.getDate()).padStart(2, "0");
-    const year = d.getFullYear();
-    return `${monthStr} ${dayNum}, ${year}`;
-  };
-
-  const formatFullDate = (d: Date) => {
-    const dayNum = String(d.getDate()).padStart(2, "0");
-    const monthStr = months[d.getMonth()];
-    const year = d.getFullYear();
-    return `${dayNum} ${monthStr} ${year}`;
-  };
-
-  const formatAPIDate = (d: Date) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
-  return [
-    {
-      dateId: "1",
-      dateStr: formatDateStr(today),
-      dayLabel: days[today.getDay()],
-      fullDate: formatFullDate(today),
-      apiDate: formatAPIDate(today),
-      showDoctor: true,
-      slots: [] as { display: string; id: string }[],
-    },
-    {
-      dateId: "2",
-      dateStr: formatDateStr(tomorrow),
-      dayLabel: days[tomorrow.getDay()],
-      fullDate: formatFullDate(tomorrow),
-      apiDate: formatAPIDate(tomorrow),
-      showDoctor: false,
-      slots: [] as { display: string; id: string }[],
-    },
-  ];
+const formatDateStr = (d: Date) => {
+  const monthStr = MONTHS[d.getMonth()];
+  const dayNum = String(d.getDate()).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${monthStr} ${dayNum}, ${year}`;
 };
 
-const SCHEDULE_DATA = getDynamicScheduleData();
+const formatFullDate = (d: Date) => {
+  const dayNum = String(d.getDate()).padStart(2, "0");
+  const monthStr = MONTHS[d.getMonth()];
+  const year = d.getFullYear();
+  return `${dayNum} ${monthStr} ${year}`;
+};
+
+const formatAPIDate = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const buildDateInfo = (apiDate: string) => {
+  const d = new Date(`${apiDate}T00:00:00`);
+  return {
+    apiDate,
+    dateStr: formatDateStr(d),
+    fullDate: formatFullDate(d),
+  };
+};
+
+const TODAY_API_DATE = formatAPIDate(new Date());
+
+const MONTHS_PATTERN = MONTHS.join("|");
+const DATE_TEXT_REGEX = new RegExp(
+  `(${MONTHS_PATTERN})[a-z]*\\s+(\\d{1,2})\\D{0,3}(\\d{4})`,
+  "i",
+);
+
+const parseFullDateToAPIDate = (fullDate: string): string | null => {
+  const raw = (fullDate || "").trim();
+  if (!raw) return null;
+
+  // Already an ISO date, e.g. "2026-07-10"
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return raw.slice(0, 10);
+
+  // Free-text formats like "Friday, Jul 10 2026", "Jul 10, 2026", "10 Jul 2026"
+  const textMatch = raw.match(DATE_TEXT_REGEX);
+  if (textMatch) {
+    const [, monthStr, dayStr, yearStr] = textMatch;
+    const monthIndex = MONTHS.findIndex(
+      (m) => m.toLowerCase() === monthStr.slice(0, 3).toLowerCase(),
+    );
+    const day = parseInt(dayStr, 10);
+    const year = parseInt(yearStr, 10);
+    if (monthIndex !== -1 && !Number.isNaN(day) && !Number.isNaN(year)) {
+      return formatAPIDate(new Date(year, monthIndex, day));
+    }
+  }
+
+  return null;
+};
+
+type Slot = { display: string; id: string };
 
 export default function ScheduleBookScreen() {
   const navigation = useNavigation<any>();
@@ -115,6 +118,7 @@ export default function ScheduleBookScreen() {
     symptoms,
     type,
     appSubtypeId,
+    rescheduleDate,
   } = route.params || {
     doctorId: "1",
     doctorName: "Dr. Harry Dewson",
@@ -131,52 +135,63 @@ export default function ScheduleBookScreen() {
     appSubtypeId: "",
   };
 
-  const [scheduleData, setScheduleData] = useState(SCHEDULE_DATA);
-  const [selectedDate, setSelectedDate] = useState(SCHEDULE_DATA[0]);
-  const [selectedSlot, setSelectedSlot] = useState<{
-    display: string;
-    id: string;
-  } | null>(null);
+  const initialAPIDate =
+    parseFullDateToAPIDate(rescheduleDate) || TODAY_API_DATE;
+  const [selectedDate, setSelectedDate] = useState(
+    buildDateInfo(initialAPIDate),
+  );
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchSchedule = async () => {
+  const fetchSlots = useCallback(
+    async (apiDate: string) => {
       setIsLoading(true);
+      setSelectedSlot(null);
       try {
-        const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "3";
-        const results = await Promise.all(
-          SCHEDULE_DATA.map((item) =>
-            callSuggestusAPI(spd_processId_config.hospapp_get_doctor_schedule, {
-              p_resource_id: doctorId ?? "",
-              p_date: item.apiDate,
-              p_org_id: orgId,
-              p_appt_subtype: appSubtypeId ?? "",
-            }).then((res) => {
-              if (res?.returnCode === true && res.returnData?.length > 0) {
-                const slots = res.returnData
-                  .filter((s: any) => s.valid_flag === "Y")
-                  .map((s: any) => ({
-                    display: s.appt_start_time ?? "",
-                    id: s.id ?? "",
-                  }))
-                  .filter((s: { display: string; id: string }) => s.display);
-                return { ...item, slots };
-              }
-              return item;
-            }),
-          ),
+        const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "";
+        const res = await callSuggestusAPI(
+          spd_processId_config.hospapp_get_doctor_schedule,
+          {
+            p_resource_id: doctorId ?? "",
+            p_date: apiDate,
+            p_org_id: orgId,
+            p_appt_subtype: appSubtypeId ?? "",
+          },
         );
-        setScheduleData(results);
-        setSelectedDate(results[0]);
-        if (results[0].slots.length > 0) setSelectedSlot(results[0].slots[0]);
+
+        if (res?.returnCode === true && res.returnData?.length > 0) {
+          const availableSlots = res.returnData
+            .filter((s: any) => s.valid_flag === "Y")
+            .map((s: any) => ({
+              display: s.appt_start_time ?? "",
+              id: s.id ?? "",
+            }))
+            .filter((s: Slot) => s.display);
+          setSlots(availableSlots);
+          if (availableSlots.length > 0) setSelectedSlot(availableSlots[0]);
+        } else {
+          setSlots([]);
+        }
       } catch (_) {
-        // keep empty slots on error
+        setSlots([]);
       } finally {
         setIsLoading(false);
       }
-    };
-    fetchSchedule();
-  }, []);
+    },
+    [doctorId, appSubtypeId],
+  );
+
+  useEffect(() => {
+    fetchSlots(selectedDate.apiDate);
+  }, [selectedDate.apiDate, fetchSlots]);
+
+  const handleDayPress = (day: { dateString: string }) => {
+    if (day.dateString < TODAY_API_DATE) return;
+    setSelectedDate(buildDateInfo(day.dateString));
+    setIsCalendarVisible(false);
+  };
 
   const handleConfirm = () => {
     if (!selectedSlot) {
@@ -209,18 +224,7 @@ export default function ScheduleBookScreen() {
     });
   };
 
-  const isSlotActive = (
-    dateId: string,
-    slot: { display: string; id: string },
-  ) => {
-    return selectedDate.dateId === dateId && selectedSlot?.id === slot.id;
-  };
-
-  const handleSlotSelect = (
-    dateItem: (typeof SCHEDULE_DATA)[0],
-    slot: { display: string; id: string },
-  ) => {
-    setSelectedDate(dateItem);
+  const handleSlotSelect = (slot: Slot) => {
     setSelectedSlot(slot);
   };
 
@@ -238,7 +242,6 @@ export default function ScheduleBookScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Title Header */}
       <CustomHeader title="Date & Time" />
 
       <ScrollView
@@ -266,67 +269,78 @@ export default function ScheduleBookScreen() {
           </Text>
         </View>
 
-        {/* Date and Slots Sections */}
-        {scheduleData.map((item) => (
-          <View key={item.dateId} style={styles.dateSection}>
-            {/* Date Header Row */}
-            <View style={styles.dateHeaderRow}>
-              <View style={styles.dateHeaderLeft}>
-                <View style={styles.verticalBar} />
-                <Text style={styles.dateStrText}>{item.dateStr}</Text>
-              </View>
-              <Text style={styles.dayLabelText}>{item.dayLabel}</Text>
-            </View>
-
-            {/* Doctor Info Row (only if showDoctor is true) */}
-            {item.showDoctor && (
-              <View style={styles.doctorRow}>
-                <Image source={{ uri: avatar }} style={styles.doctorAvatar} />
-                <Text style={styles.doctorNameText}>{doctorName}</Text>
-              </View>
-            )}
-
-            {/* Slots Grid */}
-            {isLoading ? (
-              <ActivityIndicator
-                size="small"
-                color={Colors.primary}
-                style={{ marginVertical: 16 }}
-              />
-            ) : item.slots.length === 0 ? (
-              <Text style={styles.noSlotsText}>No slots available</Text>
-            ) : (
-              <View style={styles.slotsGrid}>
-                {item.slots.map((slot) => {
-                  const active = isSlotActive(item.dateId, slot);
-                  return (
-                    <Pressable
-                      key={slot.id || slot.display}
-                      style={({ pressed }) => [
-                        styles.slotButton,
-                        active && styles.slotButtonActive,
-                        {
-                          transform: [{ scale: pressed ? 0.95 : 1 }],
-                          opacity: pressed ? 0.8 : 1,
-                        },
-                      ]}
-                      onPress={() => handleSlotSelect(item, slot)}
-                    >
-                      <Text
-                        style={[
-                          styles.slotText,
-                          active && styles.slotTextActive,
-                        ]}
-                      >
-                        {slot.display}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
+        {/* Doctor + Date Summary Card */}
+        <View style={styles.summaryCard}>
+          <View style={styles.doctorRow}>
+            <Image source={{ uri: avatar }} style={styles.doctorAvatar} />
+            <Text style={styles.doctorNameText}>{doctorName}</Text>
           </View>
-        ))}
+
+          <Pressable
+            style={styles.dateRow}
+            onPress={() => setIsCalendarVisible(true)}
+          >
+            <View style={styles.dateRowLeft}>
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={Colors.primary}
+              />
+              <Text style={styles.dateRowText}>{selectedDate.dateStr}</Text>
+            </View>
+            <Text style={styles.changeText}>Change</Text>
+          </Pressable>
+        </View>
+
+        {/* Slots Grid */}
+        {isLoading ? (
+          <ActivityIndicator
+            size="small"
+            color={Colors.primary}
+            style={{ marginVertical: 24 }}
+          />
+        ) : slots.length === 0 ? (
+          <View style={styles.emptyStateContainer}>
+            <View style={styles.emptyStateIconWrap}>
+              <Ionicons
+                name="calendar-clear-outline"
+                size={40}
+                color={Colors.primary}
+              />
+            </View>
+            <Text style={styles.emptyStateTitle}>No Available Slots</Text>
+            <Text style={styles.emptyStateSubtitle}>
+              We couldn't find any available slots for your selected date.
+              Please choose another day.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.slotsGrid}>
+            {slots.map((slot) => {
+              const active = selectedSlot?.id === slot.id;
+              return (
+                <Pressable
+                  key={slot.id || slot.display}
+                  style={({ pressed }) => [
+                    styles.slotButton,
+                    active && styles.slotButtonActive,
+                    {
+                      transform: [{ scale: pressed ? 0.95 : 1 }],
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}
+                  onPress={() => handleSlotSelect(slot)}
+                >
+                  <Text
+                    style={[styles.slotText, active && styles.slotTextActive]}
+                  >
+                    {slot.display}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
 
       {/* Footer / Confirm CTA */}
@@ -345,6 +359,51 @@ export default function ScheduleBookScreen() {
           <Ionicons name="arrow-forward" size={18} color={Colors.background} />
         </Pressable>
       </View>
+
+      {/* Calendar Modal */}
+      <Modal
+        visible={isCalendarVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setIsCalendarVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Calendar
+              current={selectedDate.apiDate}
+              onDayPress={handleDayPress}
+              minDate={TODAY_API_DATE}
+              markedDates={{
+                [selectedDate.apiDate]: {
+                  selected: true,
+                  selectedColor: Colors.primary,
+                },
+              }}
+              theme={{
+                backgroundColor: Colors.background,
+                calendarBackground: Colors.background,
+                todayTextColor: Colors.primary,
+                selectedDayBackgroundColor: Colors.primary,
+                selectedDayTextColor: Colors.background,
+                dayTextColor: Colors.text,
+                textDisabledColor: Colors.inactive,
+                arrowColor: Colors.primary,
+                monthTextColor: Colors.text,
+                textMonthFontWeight: "700",
+                textDayFontFamily: FontFamilies.regular,
+                textMonthFontFamily: FontFamilies.semiBold,
+                textDayHeaderFontFamily: FontFamilies.medium,
+              }}
+            />
+            <Pressable
+              onPress={() => setIsCalendarVisible(false)}
+              style={styles.modalCancelButton}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -353,21 +412,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop:
-      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
-    marginVertical: 15,
-    backgroundColor: Colors.background,
-  },
-  headerTitle: {
-    fontSize: 20,
-    color: Colors.text,
-    marginLeft: 5,
-    fontFamily: FontFamilies.bold,
   },
   scrollContent: {
     paddingBottom: 120,
@@ -388,7 +432,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 20,
     gap: 8,
   },
   serviceText: {
@@ -396,58 +440,58 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontFamily: FontFamilies.bold,
   },
-  dateSection: {
-    marginBottom: 28,
-    paddingHorizontal: 20,
-  },
-  dateHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  dateHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  verticalBar: {
-    width: 2.5,
-    height: 18,
-    backgroundColor: Colors.primary,
-    marginRight: 8,
-    borderRadius: 1,
-  },
-  dateStrText: {
-    fontSize: 15,
-    color: Colors.primary,
-    fontFamily: FontFamilies.bold,
-  },
-  dayLabelText: {
-    fontSize: 13,
-    color: Colors.primary,
-    letterSpacing: 0.5,
-    fontFamily: FontFamilies.bold,
+  summaryCard: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    backgroundColor: Colors.pressed,
+    borderRadius: 12,
+    padding: 12,
   },
   doctorRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
     gap: 8,
   },
   doctorAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   doctorNameText: {
+    fontSize: 15,
+    color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  dateRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  dateRowText: {
     fontSize: 14,
     color: Colors.text,
     fontFamily: FontFamilies.semiBold,
+  },
+  changeText: {
+    fontSize: 14,
+    color: Colors.secondary,
+    fontFamily: FontFamilies.bold,
   },
   slotsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    paddingHorizontal: 20,
   },
   slotButton: {
     width: "48%",
@@ -461,11 +505,6 @@ const styles = StyleSheet.create({
   slotButtonActive: {
     backgroundColor: Colors.primary,
   },
-  noSlotsText: {
-    fontSize: 13,
-    color: Colors.label,
-    marginVertical: 12,
-  },
   slotText: {
     fontSize: 14,
     color: Colors.primary,
@@ -473,6 +512,33 @@ const styles = StyleSheet.create({
   },
   slotTextActive: {
     color: Colors.background,
+  },
+  emptyStateContainer: {
+    alignItems: "center",
+    paddingHorizontal: 32,
+    paddingTop: 40,
+  },
+  emptyStateIconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: Colors.lightgray,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    color: Colors.primary,
+    fontFamily: FontFamilies.bold,
+    marginBottom: 8,
+  },
+  emptyStateSubtitle: {
+    fontSize: 13,
+    color: Colors.label,
+    textAlign: "center",
+    lineHeight: 18,
+    fontFamily: FontFamilies.medium,
   },
   footerContainer: {
     position: "absolute",
@@ -502,5 +568,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.background,
     fontFamily: FontFamilies.bold,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 16,
+    minWidth: 320,
+    elevation: 4,
+  },
+  modalCancelButton: {
+    marginTop: 10,
+    alignSelf: "flex-end",
+  },
+  modalCancelText: {
+    color: Colors.primary,
+    fontFamily: FontFamilies.semiBold,
+    fontSize: 15,
   },
 });

@@ -296,8 +296,8 @@ export default function PersonalDetailsScreen() {
           setRoleId(String(u.rol_id ?? "")),
           setUserName(u.usr_name ?? ""),
           saveDataFromLocalStorage("sg_userEmail", u.usr_email ?? ""),
-          saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
-          saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
+          // saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
+          // saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
           saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(u)),
           u.usr_patient_id
             ? setPatientId(String(u.usr_patient_id))
@@ -629,8 +629,8 @@ export default function PersonalDetailsScreen() {
             setRoleId(String(u.rol_id ?? "")),
             setUserName(u.usr_name ?? ""),
             saveDataFromLocalStorage("sg_userEmail", u.usr_email ?? ""),
-            saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
-            saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
+            // saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
+            // saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
             saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(u)),
             u.usr_patient_id
               ? setPatientId(String(u.usr_patient_id))

@@ -85,6 +85,7 @@ export default function AppointmentDetailsScreen() {
         patientName: patientDet,
         type,
         appSubtypeId,
+        rescheduleDate: date,
       });
     }
   };

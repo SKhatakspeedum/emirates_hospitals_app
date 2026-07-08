@@ -128,7 +128,7 @@ export default function AppointmentTypeScreen() {
   const fetchServices = async () => {
     setIsLoading(true);
     try {
-      const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "3";
+      const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "";
       const response = await callSuggestusAPI(
         spd_processId_config.hospapp_get_patient_appointment_category,
         { p_org_id: orgId },

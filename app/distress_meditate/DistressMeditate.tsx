@@ -243,7 +243,6 @@ const DistressMeditate = () => {
     if (Array.isArray(sessionData) && sessionData.length > 1) {
       // If array length > 1, log the information for now
       // In the future, this could navigate to a session selection screen
-      console.log("Multiple sessions available:", sessionData.length);
       // For now, navigate with the first session
       navigation.navigate("music_player/MusicPlayerScreen", {
         itemData: item,

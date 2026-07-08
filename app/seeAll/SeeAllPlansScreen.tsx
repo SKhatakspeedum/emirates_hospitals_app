@@ -12,10 +12,18 @@ import {
   Platform,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
-import Toast from 'react-native-toast-message';
+import {
+  Ionicons,
+  MaterialIcons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 import { SiteConfig } from "@/app/config/site_config";
-import { COURSES_SUB_URL, BLOGS_SUB_URL, SPD_USER_SUBSCRIPTION } from "@/app/config/config";
+import {
+  COURSES_SUB_URL,
+  BLOGS_SUB_URL,
+  SPD_USER_SUBSCRIPTION,
+} from "@/app/config/config";
 import CustomTopHeader from "../(drawer)/tab_bar_home/CustomTopHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useResponsiveHorizontalMargin from "../hooks/useResponsiveHorizontalMargin";
@@ -45,7 +53,7 @@ export default function SeeAllPlansScreen() {
   const [loading, setLoading] = useState(false);
   const [allLoaded, setAllLoaded] = useState(initialPlans.length <= 20);
   // Responsive numColumns for FlatList (web)
-  const [numColumns, setNumColumns] = useState(Platform.OS === 'web' ? 7 : 2);
+  const [numColumns, setNumColumns] = useState(Platform.OS === "web" ? 7 : 2);
 
   const horizontalMargin = useResponsiveHorizontalMargin();
 
@@ -55,7 +63,7 @@ export default function SeeAllPlansScreen() {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -66,7 +74,7 @@ export default function SeeAllPlansScreen() {
   }, []);
 
   React.useEffect(() => {
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== "web") return;
     function updateColumns() {
       const width = window.innerWidth;
       if (width >= 1500) setNumColumns(6);
@@ -76,8 +84,8 @@ export default function SeeAllPlansScreen() {
       else setNumColumns(2);
     }
     updateColumns();
-    window.addEventListener('resize', updateColumns);
-    return () => window.removeEventListener('resize', updateColumns);
+    window.addEventListener("resize", updateColumns);
+    return () => window.removeEventListener("resize", updateColumns);
   }, []);
 
   // Get the appropriate title based on content type
@@ -100,10 +108,8 @@ export default function SeeAllPlansScreen() {
     }
   };
 
-
   // Filter plans based on search query
   useEffect(() => {
-    console.log("initialPlans", initialPlans);
     let filtered;
     if (searchQuery.trim() === "") {
       filtered = initialPlans;
@@ -165,45 +171,50 @@ export default function SeeAllPlansScreen() {
 
   const renderPlan = ({ item }: any) => {
     // Determine image and text params based on section/type
-    let imageUri = '';
-    let displayText = '';
-    if (sectionOrType === 'program') {
-      imageUri = item.media_value?.startsWith('http')
+    let imageUri = "";
+    let displayText = "";
+    if (sectionOrType === "program") {
+      imageUri = item.media_value?.startsWith("http")
         ? item.media_value
         : SiteConfig.on_mood9_ASSETS_URL + COURSES_SUB_URL + item.media_value;
       displayText = item.name;
-    } else if (sectionOrType === 'learn') {
+    } else if (sectionOrType === "learn") {
       const blogMedia = item.blog_media?.[0]?.media_file;
-      imageUri = blogMedia?.startsWith('http')
+      imageUri = blogMedia?.startsWith("http")
         ? blogMedia
         : SiteConfig.on_mood9_ASSETS_URL + BLOGS_SUB_URL + blogMedia;
       displayText = item.title;
     } else {
       // Fallback: music, de-stress, etc.
-      imageUri = SiteConfig.on_mood9_ASSETS_URL + COURSES_SUB_URL + (item.module_image || '');
+      imageUri =
+        SiteConfig.on_mood9_ASSETS_URL +
+        COURSES_SUB_URL +
+        (item.module_image || "");
       displayText = item.module_name || item.title;
     }
     return (
       <TouchableOpacity
         style={[styles.sleepPlansCard, getThumbSize()]}
         onPress={async () => {
-          let subscription_status = await AsyncStorage.getItem(SPD_USER_SUBSCRIPTION);
-          if (item.is_paid === 'paid' && subscription_status === "false") {
+          let subscription_status = await AsyncStorage.getItem(
+            SPD_USER_SUBSCRIPTION,
+          );
+          if (item.is_paid === "paid" && subscription_status === "false") {
             Toast.show({
-              type: 'info',
-              text1: 'You need to buy paid membership to view the content.'
+              type: "info",
+              text1: "You need to buy paid membership to view the content.",
             });
             return;
           }
-          if (sectionOrType === 'program') {
+          if (sectionOrType === "program") {
             navigation.navigate("explore_tab/ExploreDetailScreen", {
               itemData: item,
             });
-          } else if (sectionOrType === 'learn') {
+          } else if (sectionOrType === "learn") {
             const blogMedia = item.blog_media?.[0]?.media_file;
             navigation.navigate("blogs/BlogsScreen", {
               title: item.title,
-              image: blogMedia?.startsWith('http')
+              image: blogMedia?.startsWith("http")
                 ? blogMedia
                 : SiteConfig.on_mood9_ASSETS_URL + BLOGS_SUB_URL + blogMedia,
               html_content: item.read_more_descr,
@@ -213,7 +224,7 @@ export default function SeeAllPlansScreen() {
             // Process session data if available
             let sessionData = item.session_json_data;
             if (!!sessionData) {
-              if(typeof sessionData === 'string'){
+              if (typeof sessionData === "string") {
                 sessionData = JSON.parse(sessionData);
               }
             }
@@ -227,7 +238,9 @@ export default function SeeAllPlansScreen() {
               navigation.navigate("music_player/MusicPlayerScreen", {
                 itemData: item,
                 sessionData:
-                  sessionData && sessionData.length === 1 ? sessionData[0] : null,
+                  sessionData && sessionData.length === 1
+                    ? sessionData[0]
+                    : null,
               });
             }
           }
@@ -238,13 +251,13 @@ export default function SeeAllPlansScreen() {
           style={[styles.sleepPlansCardImage]}
           resizeMode="cover"
         >
-          {item.is_paid === 'paid' && (
+          {item.is_paid === "paid" && (
             <View style={styles.crownBadge}>
               <MaterialCommunityIcons name="crown" size={20} color="#FFD700" />
             </View>
           )}
-          
-                            <View style={styles.imageOverlay}></View>
+
+          <View style={styles.imageOverlay}></View>
           <View style={styles.titleOverlay}>
             <Text style={styles.cardTitle} numberOfLines={2}>
               {displayText}
@@ -254,7 +267,6 @@ export default function SeeAllPlansScreen() {
       </TouchableOpacity>
     );
   };
-
 
   // Render footer with loading indicator
   const renderFooter = () => {
@@ -269,113 +281,114 @@ export default function SeeAllPlansScreen() {
   };
 
   const mainContent = (
-      <View
-               style={[
-                 styles.containerNew,
-                 { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-               ]}>
-  <ImageBackground
-      source={require("@/assets/images/internal_screen_bg.png")}
-      style={styles.background}
-      resizeMode="cover"
+    <View
+      style={[
+        styles.containerNew,
+        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+      ]}
     >
-      {/* Top Header for screen */}
-      <CustomTopHeader title={getScreenTitle()} />
-      <View style={styles.container}>
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputContainer}>
-            <Ionicons
-              name="search"
-              size={20}
-              color="#8B4CFC"
-              style={styles.searchIcon}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={`Search ${getScreenTitle()}...`}
-              placeholderTextColor="#B3B7C6"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={clearSearch}
-                style={styles.clearButton}
-              >
-                <Ionicons name="close-circle" size={20} color="#B3B7C6" />
-              </TouchableOpacity>
-            )}
+      <ImageBackground
+        source={require("@/assets/images/internal_screen_bg.png")}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        {/* Top Header for screen */}
+        <CustomTopHeader title={getScreenTitle()} />
+        <View style={styles.container}>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputContainer}>
+              <Ionicons
+                name="search"
+                size={20}
+                color="#8B4CFC"
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={`Search ${getScreenTitle()}...`}
+                placeholderTextColor="#B3B7C6"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={clearSearch}
+                  style={styles.clearButton}
+                >
+                  <Ionicons name="close-circle" size={20} color="#B3B7C6" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        </View>
 
-        {plans.length > 0 ? (
-          <FlatList
-            data={plans}
-            keyExtractor={(_, idx) => `plan-${idx}`}
-            renderItem={renderPlan}
-            numColumns={numColumns}
-            key={"columns-" + numColumns}
-            contentContainerStyle={styles.listContent}
-            columnWrapperStyle={{ justifyContent: "flex-start", gap: 12 }}
-            onEndReached={loadMoreItems}
-            onEndReachedThreshold={0.3}
-            ListFooterComponent={renderFooter}
-          />
-        ) : (
-          <View style={styles.noResultsContainer}>
-            <Ionicons name="search-outline" size={48} color="#B3B7C6" />
-            <Text style={styles.noResultsText}>No results found</Text>
-            <Text style={styles.noResultsSubtext}>
-              Try a different search term
-            </Text>
-          </View>
-        )}
-      </View>
-      <Toast />
-    </ImageBackground>
-      </View>          
+          {plans.length > 0 ? (
+            <FlatList
+              data={plans}
+              keyExtractor={(_, idx) => `plan-${idx}`}
+              renderItem={renderPlan}
+              numColumns={numColumns}
+              key={"columns-" + numColumns}
+              contentContainerStyle={styles.listContent}
+              columnWrapperStyle={{ justifyContent: "flex-start", gap: 12 }}
+              onEndReached={loadMoreItems}
+              onEndReachedThreshold={0.3}
+              ListFooterComponent={renderFooter}
+            />
+          ) : (
+            <View style={styles.noResultsContainer}>
+              <Ionicons name="search-outline" size={48} color="#B3B7C6" />
+              <Text style={styles.noResultsText}>No results found</Text>
+              <Text style={styles.noResultsSubtext}>
+                Try a different search term
+              </Text>
+            </View>
+          )}
+        </View>
+        <Toast />
+      </ImageBackground>
+    </View>
   );
 
   if (Platform.OS === "web" && screenWidth >= 1024) {
-     return (
-       <ImageBackground
-         source={require("../../assets/images/background_new_web.png")}
-         style={{ flex: 1, width: "100%", height: "100%" }}
-         resizeMode="cover"
-       >
-         {mainContent}
-       </ImageBackground>
-     );
-   }
-   return mainContent;
+    return (
+      <ImageBackground
+        source={require("../../assets/images/background_new_web.png")}
+        style={{ flex: 1, width: "100%", height: "100%" }}
+        resizeMode="cover"
+      >
+        {mainContent}
+      </ImageBackground>
+    );
+  }
+  return mainContent;
 }
 
 const CARD_SIZE = (width - 45) / 2;
 function getThumbSize() {
-  if (typeof window === 'undefined') return { maxWidth: 200, maxHeight: 200 };
+  if (typeof window === "undefined") return { maxWidth: 200, maxHeight: 200 };
   const width = window.innerWidth;
   if (width >= 1500) return { maxWidth: 180, maxHeight: 188 };
   if (width >= 1400) return { maxWidth: 200, maxHeight: 200 };
   if (width >= 1200) return { maxWidth: 180, maxHeight: 180 };
   if (width >= 1000) return { maxWidth: 235, maxHeight: 235 };
-  if (width >= 900)  return { maxWidth: 220, maxHeight: 220 };
-  if (width >= 800)  return { maxWidth: 250, maxHeight: 250 };
-  if (width >= 600)  return { maxWidth: 235, maxHeight: 235 };
+  if (width >= 900) return { maxWidth: 220, maxHeight: 220 };
+  if (width >= 800) return { maxWidth: 250, maxHeight: 250 };
+  if (width >= 600) return { maxWidth: 235, maxHeight: 235 };
   return { maxWidth: 320, maxHeight: 320 };
 }
 const styles = StyleSheet.create({
   containerNew: { flex: 1 },
-  crownBadge: {   
-    position: 'absolute',
+  crownBadge: {
+    position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: "rgba(0,0,0,0.3)",
     borderRadius: 24,
     height: 24,
     width: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 1,
     zIndex: 2,
   },
@@ -423,7 +436,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     borderWidth: 1,
-    borderColor:'#e7e7e7',
+    borderColor: "#e7e7e7",
     shadowOffset: { width: 0, height: 5 },
     height: 48,
   },
@@ -476,7 +489,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   sleepPlansCard: {
-    width: '48%',
+    width: "48%",
     // flex: 1,
     height: CARD_SIZE * 1.1,
     marginBottom: 12,

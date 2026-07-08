@@ -45,22 +45,7 @@ export default function RootLayout() {
   const [loaded, error] = useFonts(Fonts);
   const [isReady, setIsReady] = useState(false);
 
-  console.log(
-    "[RootLayout] rendering. loaded:",
-    loaded,
-    "isReady:",
-    isReady,
-    "error:",
-    error,
-  );
-
   useEffect(() => {
-    console.log(
-      "[RootLayout] loaded or isReady changed. loaded:",
-      loaded,
-      "isReady:",
-      isReady,
-    );
     if (loaded && isReady) {
       SplashScreen.hideAsync().catch((err) =>
         console.error("[RootLayout] SplashScreen.hideAsync error:", err),
@@ -112,7 +97,6 @@ export default function RootLayout() {
 
   // useEffect(() => {
   //   const handleInitialRedirect = async () => {
-  //     console.log("[RootLayout] setting isReady to true");
   //     setIsReady(true); // Show the app now
   //   };
 
@@ -178,8 +162,6 @@ export default function RootLayout() {
             p_org_patient_portal_url: SiteConfig.ACTION_URL,
           },
         );
-
-        console.log("[RootLayout] org config fetched:", res);
 
         if (res?.returnCode === true && res?.returnData?.length > 0) {
           const final_org_data = res.returnData[0];
@@ -254,13 +236,6 @@ export default function RootLayout() {
 
           // ── Full org config JSON (used by login page config etc.) ─────
           await setEncryptedID("DEFAULT_JSON_DATA", responseData);
-
-          console.log(
-            "[RootLayout] org config stored. org_id:",
-            org_id,
-            "ai_code:",
-            org_ai_code,
-          );
         } else {
           console.warn(
             "[RootLayout] org config fetch failed or empty:",
@@ -271,7 +246,6 @@ export default function RootLayout() {
         console.error("[RootLayout] Error fetching org config:", error);
       }
 
-      console.log("[RootLayout] setting isReady to true");
       setIsReady(true); // Show the app now
     };
 
@@ -297,9 +271,6 @@ export default function RootLayout() {
   // }, []);
 
   if (!loaded || !isReady) {
-    console.log(
-      "[RootLayout] not loaded or not ready, rendering Splash Screen view",
-    );
     return (
       <View style={styles.splashContainer}>
         <Image

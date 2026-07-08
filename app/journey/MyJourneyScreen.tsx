@@ -392,7 +392,6 @@ const SessionCard = ({
                   ]}
                   onPress={() => {
                     // TODO: Play music or open media player for this module
-                    // console.log("Play music for module:", group.group_name);
                     navigation.navigate("music_player/MusicPlayerScreen", {
                       itemData: group,
                       sessionData: group.session_json_data?.[0] || null,
@@ -533,7 +532,6 @@ const SessionCard = ({
           style={[styles.sessionCard, styles.cardRight, styles.shadow]}
           onPress={() => {
             // TODO: Play music or open media player for this module
-            // console.log("Play music for module:", item.module_name);
           }}
         >
           <Text style={styles.cardTitle}>{item.module_name}</Text>

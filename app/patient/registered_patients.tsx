@@ -210,8 +210,6 @@ export default function RegisteredPatientsScreen() {
       const _selfMobile =
         parsed?.usr_phone ?? parsed?.usr_mobile ?? parsed?.p_mobile_no ?? "";
       if (emiratesIdToCheck || passportToCheck) {
-        console.log(14141414141414144141414141);
-
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {

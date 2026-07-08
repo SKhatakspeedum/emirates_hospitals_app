@@ -104,7 +104,6 @@ export default function PatientDetailsScreen() {
     } catch (_) {}
 
     try {
-      console.log(11111111111111111);
       const response = await callSuggestusAPI(
         spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
         {
@@ -168,7 +167,6 @@ export default function PatientDetailsScreen() {
             _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
           }
         } catch (_) {}
-        console.log(11111111111111111);
 
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,

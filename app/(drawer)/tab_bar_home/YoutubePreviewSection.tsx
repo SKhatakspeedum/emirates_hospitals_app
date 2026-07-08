@@ -41,7 +41,6 @@ export default function YoutubePreviewSection() {
   const handleGoToChannel = () => {
     // Replace with navigation or Linking.openURL as needed
     // Linking.openURL('https://youtube.com/channel/xyz');
-    console.log("Go to channel");
   };
 
   useEffect(() => {

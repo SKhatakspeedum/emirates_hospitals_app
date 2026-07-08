@@ -181,7 +181,6 @@ export default function PersonalDetailsScreen() {
               }
             } catch (_) {}
             if (!_mobile) _mobile = (route.params as any)?.phone_number ?? "";
-            console.log(444444444444444);
 
             const patientRes = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
@@ -324,7 +323,6 @@ export default function PersonalDetailsScreen() {
         const passportClean = !isResident ? passportNo.trim() : "";
 
         // Step 3: Check if a patient record already exists for this ID
-        console.log(55555555555555555555);
 
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
@@ -520,7 +518,6 @@ export default function PersonalDetailsScreen() {
 
       if (!alreadyVerified) {
         const regUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
-        console.log(66666666666666666);
 
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,

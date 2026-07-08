@@ -7,7 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,7 +16,6 @@ import { IS_LOGGED_IN } from "./config/config";
 import "react-native-get-random-values";
 import Toast from "react-native-toast-message";
 import useResponsiveHorizontalMargin from "./hooks/useResponsiveHorizontalMargin";
-
 
 export default function IndexRedirect() {
   const router = useRouter();
@@ -29,7 +28,7 @@ export default function IndexRedirect() {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -39,37 +38,30 @@ export default function IndexRedirect() {
     return () => window.removeEventListener("resize", updateScreenWidth);
   }, []);
 
-  console.log("[IndexRedirect] rendering. loading state:", loading);
-
   /// This use effect will init th suggestus in application
   useEffect(() => {
-    console.log("[IndexRedirect] init effect running");
     const init = async () => {
       try {
-        console.log("[IndexRedirect] Calling initializeSuggestus()...");
         await initializeSuggestus();
-        console.log("[IndexRedirect] initializeSuggestus() completed successfully.");
       } catch (err) {
         console.error("[IndexRedirect] Error in initializeSuggestus():", err);
       }
 
       // Check persistent login
-      console.log("[IndexRedirect] Setting up navigation timeout...");
       setTimeout(async () => {
         try {
-          console.log("[IndexRedirect] Checking stored isLoggedIn state...");
           const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
-          console.log("[IndexRedirect] isLoggedIn value fetched:", isLoggedIn);
           setLoading(false);
           if (isLoggedIn === "true") {
-            console.log("[IndexRedirect] Redirecting to /tab_bar_home/HomeScreen");
             router.replace("/tab_bar_home/HomeScreen");
           } else {
-            console.log("[IndexRedirect] Redirecting to /init_screens/login");
             router.replace("/init_screens/login");
           }
         } catch (err) {
-          console.error("[IndexRedirect] Error fetching stored login state:", err);
+          console.error(
+            "[IndexRedirect] Error fetching stored login state:",
+            err,
+          );
         }
       }, 1000);
     };
@@ -97,11 +89,7 @@ export default function IndexRedirect() {
 
         {loading && (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator
-              size="large"
-              color="#0177C8"
-            />
-
+            <ActivityIndicator size="large" color="#0177C8" />
           </View>
         )}
       </View>
@@ -116,10 +104,10 @@ const bgSize = screenWidth * 0.9;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   topBg: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     right: 0,
     width: bgSize,
@@ -127,12 +115,12 @@ const styles = StyleSheet.create({
     opacity: 0.2,
   },
   bottomBg: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     width: bgSize,
     height: bgSize,
-    transform: [{ rotate: '180deg' }],
+    transform: [{ rotate: "180deg" }],
     opacity: 0.2,
   },
   centerContent: {
@@ -143,7 +131,7 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    width: '80%',
+    width: "80%",
     maxWidth: 280,
     aspectRatio: 4,
     height: 70,
@@ -151,11 +139,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontFamily: 'QuicksandBold',
-    fontWeight: 'bold',
-    color: '#232323',
+    fontFamily: "QuicksandBold",
+    fontWeight: "bold",
+    color: "#232323",
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   loaderContainer: {
     marginTop: 16,

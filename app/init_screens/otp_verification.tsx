@@ -157,7 +157,6 @@ export default function OTPVerificationScreen() {
           validateRes?.returnData?.length > 0
         ) {
           const u = validateRes.returnData[0];
-          console.log("usr_id: ", u);
           await Promise.all([
             setUserId(u.usr_id ?? ""),
             setRoleId(u.rol_id ?? ""),

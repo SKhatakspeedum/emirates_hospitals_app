@@ -24,8 +24,14 @@ import {
 import Toast from "react-native-toast-message";
 import { Colors } from "@/app/config/colors";
 import { FontFamilies } from "@/app/config/fonts";
-import { initializeSuggestus, callSuggestusAPI } from "@/app/suggestus_plugin/suggestusClient";
-import { getDecryptedID, saveDataFromLocalStorage } from "@/app/suggestus_plugin/util/util_functions";
+import {
+  initializeSuggestus,
+  callSuggestusAPI,
+} from "@/app/suggestus_plugin/suggestusClient";
+import {
+  getDecryptedID,
+  saveDataFromLocalStorage,
+} from "@/app/suggestus_plugin/util/util_functions";
 import { spd_processId_config } from "@/app/config/process_id";
 import { SiteConfig } from "@/app/config/site_config";
 
@@ -68,26 +74,47 @@ const drawerItems = [
   {
     label: "Patient",
     icon: <Ionicons name="people-outline" size={22} color={Colors.primary} />,
-    screen: "PatientSelection",
+    // screen: "PatientSelection",
+    screen: "RegisteredPatients",
   },
   {
     label: "Explore",
-    icon: <MaterialCommunityIcons name="compass-outline" size={22} color={Colors.primary} />,
+    icon: (
+      <MaterialCommunityIcons
+        name="compass-outline"
+        size={22}
+        color={Colors.primary}
+      />
+    ),
     screen: "explore",
   },
   {
     label: "Orders",
-    icon: <Ionicons name="bag-handle-outline" size={22} color={Colors.primary} />,
+    icon: (
+      <Ionicons name="bag-handle-outline" size={22} color={Colors.primary} />
+    ),
     screen: "OrderScreen",
   },
   {
     label: "Medicines",
-    icon: <MaterialCommunityIcons name="prescription" size={22} color={Colors.primary} />,
+    icon: (
+      <MaterialCommunityIcons
+        name="prescription"
+        size={22}
+        color={Colors.primary}
+      />
+    ),
     screen: "MedicinesScreen",
   },
   {
     label: "Health Packages",
-    icon: <MaterialCommunityIcons name="briefcase-plus-outline" size={22} color={Colors.primary} />,
+    icon: (
+      <MaterialCommunityIcons
+        name="briefcase-plus-outline"
+        size={22}
+        color={Colors.primary}
+      />
+    ),
     screen: "HealthPackages",
   },
   {
@@ -139,18 +166,15 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         setProfile({ name, email, city, avatarUri });
       } else {
         // USER_FULL_DATA not available — fall back to individual cached keys
-        const name =
-          (await AsyncStorage.getItem(SPD_USER_NAME)) || "User";
-        const email =
-          (await AsyncStorage.getItem(SPD_USER_EMAIL)) || "";
+        const name = (await AsyncStorage.getItem(SPD_USER_NAME)) || "User";
+        const email = (await AsyncStorage.getItem(SPD_USER_EMAIL)) || "";
         setProfile({ ...DEFAULT_PROFILE, name, email });
       }
     } catch (error) {
       console.error("[CustomDrawer] Failed to load profile:", error);
       // Best-effort fallback — never crash the drawer
       try {
-        const name =
-          (await AsyncStorage.getItem(SPD_USER_NAME)) || "User";
+        const name = (await AsyncStorage.getItem(SPD_USER_NAME)) || "User";
         setProfile({ ...DEFAULT_PROFILE, name });
       } catch {
         setProfile(DEFAULT_PROFILE);
@@ -177,7 +201,10 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         try {
           await initializeSuggestus();
         } catch (err) {
-          console.warn("[CustomDrawer] initializeSuggestus after logout failed:", err);
+          console.warn(
+            "[CustomDrawer] initializeSuggestus after logout failed:",
+            err,
+          );
         }
         try {
           const orgRes = await callSuggestusAPI(
@@ -219,6 +246,12 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     if (screen === "PatientSelection") {
       props.navigation.closeDrawer();
       router.push("/patient/patient_selection");
+      return;
+    }
+
+    if (screen === "RegisteredPatients") {
+      props.navigation.closeDrawer();
+      router.push("/patient/registered_patients");
       return;
     }
 
@@ -292,7 +325,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
                 <Text style={styles.userName} numberOfLines={1}>
                   {profile.name}
                 </Text>
-                {(profile.email || profile.city) ? (
+                {profile.email || profile.city ? (
                   <Text style={styles.userSub} numberOfLines={1}>
                     {profile.city || profile.email}
                   </Text>
@@ -313,7 +346,10 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         <View style={styles.headerSeparator} />
 
         {/* Menu Items */}
-        <ScrollView style={styles.linksScroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.linksScroll}
+          showsVerticalScrollIndicator={false}
+        >
           {drawerItems.map((item) => (
             <TouchableOpacity
               key={item.label}
@@ -323,7 +359,11 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             >
               <View style={styles.linkIconWrapper}>{item.icon}</View>
               <Text style={styles.linkLabel}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.inactive} />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={Colors.inactive}
+              />
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -337,10 +377,18 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             disabled={isSigningOut}
           >
             <View style={styles.linkIconWrapper}>
-              <Ionicons name="log-out-outline" size={22} color={Colors.primary} />
+              <Ionicons
+                name="log-out-outline"
+                size={22}
+                color={Colors.primary}
+              />
             </View>
             <Text style={styles.logoutLabel}>Log out</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.inactive} />
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={Colors.inactive}
+            />
           </TouchableOpacity>
         </View>
       </View>

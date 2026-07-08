@@ -323,7 +323,7 @@ export default function OTPVerificationScreen() {
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color={Colors.label} />
+              <ActivityIndicator color={Colors.background} />
             ) : (
               <Text style={styles.verifyBtnText}>Verify</Text>
             )}

@@ -164,12 +164,12 @@ export default function PersonalDetailsScreen() {
             p_process_flag: "validate_duplicate",
             p_additional_attribute: {},
           },
-            "",
-            "",
-            "",
-            "",
-            "",
-            false
+          "",
+          "",
+          "",
+          "",
+          "",
+          false,
         );
 
         if (res?.returnCode) {
@@ -187,18 +187,17 @@ export default function PersonalDetailsScreen() {
               }
             } catch (_) {}
             if (!_mobile) _mobile = (route.params as any)?.phone_number ?? "";
-
             const patientRes = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
                 // p_user_id: _userId,
 
                 p_additional_attribute: {
-                  // p_ptm_mobile_number: _mobile,
+                  p_ptm_mobile_number: _mobile,
                   p_emirates_id: field === "emirates" ? clean : "",
                   p_passport_no: field === "passport" ? clean : "",
                 },
-                // p_process_flag: "validate_duplicate",
+                p_process_flag: "validate_duplicate",
               },
             );
             if (hasReturnData(patientRes)) {
@@ -525,15 +524,17 @@ export default function PersonalDetailsScreen() {
       if (!alreadyVerified) {
         const regUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
 
+        console.log("regUserId :>>", regUserId);
         const checkRes = await callSuggestusAPI(
           spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
           {
-            p_user_id: regUserId,
+            // p_user_id: regUserId,
             p_additional_attribute: {
               // p_ptm_mobile_number: rawPhone,
               p_emirates_id: isResident ? emiratesIdClean : "",
               p_passport_no: !isResident ? passportNo.trim() : "",
             },
+            // p_ptm_first_name: "validate_duplicate",
           },
         );
 

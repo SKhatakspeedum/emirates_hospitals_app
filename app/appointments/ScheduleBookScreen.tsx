@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   slotButton: {
     width: "48%",
     height: 48,
-    backgroundColor: Colors.lightgray,
+    backgroundColor: Colors.border,
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",

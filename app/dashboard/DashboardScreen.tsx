@@ -66,7 +66,7 @@ export default function DashboardScreen() {
             if (p.name) setUserProfileName(p.name);
             if (p.age || p.gender)
               setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-          } catch (_) { }
+          } catch (_) {}
         } else {
           const name = await AsyncStorage.getItem(SPD_USER_NAME);
           if (name) setUserProfileName(name);
@@ -78,6 +78,8 @@ export default function DashboardScreen() {
     }, []),
   );
 
+  const handleSeeAllProviders = () => {};
+  const handleSeeAllSpecialties = () => {};
 
   const Providers = [
     {
@@ -167,7 +169,7 @@ export default function DashboardScreen() {
                 const _j = JSON.parse(_d);
                 _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
               }
-            } catch (_) { }
+            } catch (_) {}
             const response = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
@@ -200,7 +202,7 @@ export default function DashboardScreen() {
               const parsed = JSON.parse(fullDataStr);
               phone = parsed.contact || "";
             }
-          } catch (e) { }
+          } catch (e) {}
 
           router.push({
             pathname: "/patient/registered_patients",
@@ -227,7 +229,7 @@ export default function DashboardScreen() {
       IconFamily: Ionicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
-      onPress: () => { },
+      onPress: () => {},
     },
     {
       label: "Rx refill",
@@ -235,7 +237,7 @@ export default function DashboardScreen() {
       IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
-      onPress: () => { },
+      onPress: () => {},
     },
   ];
 
@@ -254,9 +256,10 @@ export default function DashboardScreen() {
               })}
               onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
             >
-              <Image
-                source={require("../../assets/images/hamburger_icon.png")}
-                style={{ width: 24, height: 24, tintColor: Colors.background, resizeMode: "contain" }}
+              <Ionicons
+                name="menu-outline"
+                size={32}
+                color={Colors.background}
               />
             </Pressable>
             <View style={styles.headerIconsRight}>
@@ -578,7 +581,7 @@ export default function DashboardScreen() {
               <View style={styles.sectionHeaderTitleRow}>
                 <Ionicons
                   name="medkit"
-                  size={12}
+                  size={20}
                   color={Colors.secondary}
                   style={styles.sectionHeaderIcon}
                 />
@@ -919,7 +922,7 @@ const styles = StyleSheet.create({
   sectionHeaderTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    // marginBottom: 14,
+    marginBottom: 16,
   },
   sectionHeaderIcon: {
     marginRight: 8,
@@ -952,7 +955,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginTop: 8,
+    marginTop: -4,
   },
   healthSummaryItem: {
     width: "31%",

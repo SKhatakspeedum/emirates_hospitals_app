@@ -78,6 +78,8 @@ export default function DashboardScreen() {
     }, []),
   );
 
+  const handleSeeAllProviders = () => { };
+  const handleSeeAllSpecialties = () => { };
 
   const Providers = [
     {

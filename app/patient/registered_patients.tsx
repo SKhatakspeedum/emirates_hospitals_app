@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
   addNewPatientBtnText: {
     fontSize: 16,
     fontFamily: FontFamilies.bold,
-    color: Colors.secondary,
+    color: Colors.primary,
   },
   skipBtn: {
     alignItems: "center",

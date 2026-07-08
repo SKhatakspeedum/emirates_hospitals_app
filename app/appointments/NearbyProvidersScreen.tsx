@@ -242,10 +242,18 @@ export default function NearbyProvidersScreen() {
           </View>
         ) : (
           filteredProviders.map((provider) => (
-            <View
+            <Pressable
               key={provider.id}
-              style={styles.card}
-              onTouchEnd={() =>
+              style={({ pressed }) => [
+                styles.card,
+                {
+                  backgroundColor: pressed ? Colors.pressed : Colors.background,
+                  borderColor: pressed ? Colors.activeBorder : Colors.border,
+                  opacity: pressed ? 0.95 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+              ]}
+              onPress={() =>
                 navigation.navigate("PatientDetails", {
                   doctorId: provider.id,
                   doctorName: provider.name,
@@ -338,7 +346,7 @@ export default function NearbyProvidersScreen() {
                   </>
                 )}
               </Pressable> */}
-            </View>
+            </Pressable>
           ))
         )}
       </ScrollView>
@@ -429,10 +437,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     shadowColor: Colors.text,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
     shadowRadius: 1,
-    elevation: 2,
+    elevation: 5,
   },
   cardContent: {
     flexDirection: "row",

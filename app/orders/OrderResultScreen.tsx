@@ -14,6 +14,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../config/colors';
+import CustomHeader from '../components/CustomHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -27,12 +28,10 @@ export default function OrderResultScreen() {
             <StatusBar barStyle="dark-content" />
 
             {/* Report Header */}
-            <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="chevron-back" size={22} color="#262626" style={{ marginRight: 4 }} />
-                    <Text style={styles.headerTitle}>Orders</Text>
-                </TouchableOpacity>
-            </View>
+            <CustomHeader
+                title="Orders"
+                onBackPress={() => navigation.navigate('OrderScreen')}
+            />
 
             {/* PDF Viewer Page Frame */}
             <ScrollView

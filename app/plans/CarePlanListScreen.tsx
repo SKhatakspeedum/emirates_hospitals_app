@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 
 const { width } = Dimensions.get('window');
@@ -110,15 +110,15 @@ const CarePlanListScreen = ({ navigation }: any) => {
       colors={["#E0F2FE", "#F3E8FF"]}
       style={styles.gradientBg}
     >
-    <View style={styles.topBarContainer}>
-  <View style={styles.topBar}>
-    <Text style={styles.screenTitle}>Care plan</Text>
-    <TouchableOpacity onPress={() => navigation?.navigate('OldPlansScreen')}>
-      <Text style={styles.oldPlansLink}>Old plans</Text>
-    </TouchableOpacity>
-  </View>
-  <View style={styles.divider} />
-</View>
+      <View style={styles.topBarContainer}>
+        <View style={styles.topBar}>
+          <Text style={styles.screenTitle}>Care plan</Text>
+          <TouchableOpacity onPress={() => navigation?.navigate('OldPlansScreen')}>
+            <Text style={styles.oldPlansLink}>Old plans</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.divider} />
+      </View>
       <FlatList
         data={plans}
         keyExtractor={(item) => item.id}
@@ -156,17 +156,26 @@ const CarePlanListScreen = ({ navigation }: any) => {
           <TouchableOpacity style={styles.confirmBtn} onPress={confirmDateChange}>
             <Text style={styles.confirmBtnText}>Confirm</Text>
           </TouchableOpacity>
-          <DateTimePickerModal
-            isVisible={endDatePickerVisible}
-            mode="date"
-            date={tempEndDate}
-            minimumDate={today.toDate()}
-            onConfirm={(date) => {
-              setTempEndDate(date);
-              setEndDatePickerVisible(false);
-            }}
-            onCancel={() => setEndDatePickerVisible(false)}
-          />
+          {endDatePickerVisible && (
+            <DateTimePicker
+              value={tempEndDate}
+              mode="date"
+              display="default"
+              minimumDate={today.toDate()}
+              onChange={(event: any, date?: Date) => {
+                if (Platform.OS === 'android') {
+                  setEndDatePickerVisible(false);
+                }
+                if (event.type === 'dismissed') {
+                  setEndDatePickerVisible(false);
+                  return;
+                }
+                if (date) {
+                  setTempEndDate(date);
+                }
+              }}
+            />
+          )}
         </Animated.View>
       </Modal>
     </LinearGradient>
@@ -208,8 +217,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 32,
     paddingTop: 20,
-    paddingLeft:24,
-    paddingRight:24,
+    paddingLeft: 24,
+    paddingRight: 24,
   },
   card: {
     backgroundColor: '#fff',

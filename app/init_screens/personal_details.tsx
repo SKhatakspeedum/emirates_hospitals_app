@@ -17,7 +17,7 @@ import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   IS_LOGGED_IN,
   USER_FULL_DATA,
@@ -41,6 +41,8 @@ import {
 } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
+import CustomTabs from "../components/CustomTabs";
+
 
 type CheckStatus =
   | "idle"
@@ -358,7 +360,7 @@ export default function PersonalDetailsScreen() {
                 USER_FULL_DATA,
                 JSON.stringify(stored),
               );
-            } catch (_) {}
+            } catch (_) { }
           }
           Toast.show({
             type: "success",
@@ -414,7 +416,7 @@ export default function PersonalDetailsScreen() {
               USER_FULL_DATA,
               JSON.stringify(stored),
             );
-          } catch (_) {}
+          } catch (_) { }
 
           await callSuggestusAPI(
             spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
@@ -513,9 +515,9 @@ export default function PersonalDetailsScreen() {
       // Final existence check — skip if already verified as available for this value
       const alreadyVerified = isResident
         ? emiratesIdCheck.status === "available" &&
-          emiratesIdCheck.checkedValue === emiratesId
+        emiratesIdCheck.checkedValue === emiratesId
         : passportCheck.status === "available" &&
-          passportCheck.checkedValue === passportNo;
+        passportCheck.checkedValue === passportNo;
 
       if (!alreadyVerified) {
         const regUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
@@ -567,7 +569,7 @@ export default function PersonalDetailsScreen() {
       if (currentDataStr) {
         try {
           updatedData = { ...JSON.parse(currentDataStr), ...updatedData };
-        } catch (_) {}
+        } catch (_) { }
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
@@ -727,39 +729,11 @@ export default function PersonalDetailsScreen() {
             style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}
           >
             {/* Resident / Non-Resident tabs */}
-            <View style={styles.tabContainer}>
-              <TouchableOpacity
-                style={[styles.tabButton, isResident && styles.activeTabButton]}
-                onPress={() => setIsResident(true)}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.tabButtonText,
-                    isResident && styles.activeTabButtonText,
-                  ]}
-                >
-                  Resident
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.tabButton,
-                  !isResident && styles.activeTabButton,
-                ]}
-                onPress={() => setIsResident(false)}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.tabButtonText,
-                    !isResident && styles.activeTabButtonText,
-                  ]}
-                >
-                  Non-Resident
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <CustomTabs
+              tabs={["Resident", "Non-Resident"]}
+              activeTab={isResident ? "Resident" : "Non-Resident"}
+              onTabChange={(tab) => setIsResident(tab === "Resident")}
+            />
 
             <Text style={styles.subtext}>
               Complete your profile for a personalized healthcare experience.
@@ -774,9 +748,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
                     emiratesIdCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     emiratesIdCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -846,9 +820,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
                     passportCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     passportCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -924,17 +898,13 @@ export default function PersonalDetailsScreen() {
                     style={[
                       styles.inputWrapper,
                       focusedField === "firstName" &&
-                        styles.inputWrapperFocused,
+                      styles.inputWrapperFocused,
                     ]}
                   >
                     <Ionicons
                       name="person-outline"
                       size={20}
-                      color={
-                        focusedField === "firstName"
-                          ? Colors.secondary
-                          : Colors.label
-                      }
+                      color={Colors.secondary}
                       style={styles.inputIcon}
                     />
                     <TextInput
@@ -962,11 +932,7 @@ export default function PersonalDetailsScreen() {
                     <Ionicons
                       name="person-outline"
                       size={20}
-                      color={
-                        focusedField === "lastName"
-                          ? Colors.secondary
-                          : Colors.label
-                      }
+                      color={Colors.secondary}
                       style={styles.inputIcon}
                     />
                     <TextInput
@@ -993,15 +959,15 @@ export default function PersonalDetailsScreen() {
                       focusedField === "dob" && styles.inputWrapperFocused,
                     ]}
                   >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color={
-                        focusedField === "dob" ? Colors.secondary : Colors.label
+                    <style type="text/css">{`
+                      .hide-calendar-icon::-webkit-calendar-picker-indicator {
+                        display: none;
+                        -webkit-appearance: none;
                       }
-                      style={styles.inputIcon}
-                    />
+                    `}</style>
                     <input
+                      id="web-dob-picker"
+                      className="hide-calendar-icon"
                       type="date"
                       value={dayjs(dob).format("YYYY-MM-DD")}
                       min="1900-01-01"
@@ -1044,6 +1010,16 @@ export default function PersonalDetailsScreen() {
                         height: "100%",
                       }}
                     />
+                    <TouchableOpacity
+                      onPress={() => {
+                        const inputEl = document.getElementById("web-dob-picker") as any;
+                        if (inputEl && typeof inputEl.showPicker === 'function') {
+                          inputEl.showPicker();
+                        }
+                      }}
+                    >
+                      <Text style={styles.changeLinkText}>Change</Text>
+                    </TouchableOpacity>
                   </View>
                 ) : (
                   <TouchableOpacity
@@ -1054,12 +1030,12 @@ export default function PersonalDetailsScreen() {
                     onPress={() => setShowDatePicker(true)}
                     activeOpacity={0.8}
                   >
-                    <Ionicons
+                    {/* <Ionicons
                       name="calendar-outline"
                       size={20}
                       color={showDatePicker ? Colors.secondary : Colors.label}
                       style={styles.inputIcon}
-                    />
+                    /> */}
                     <Text style={styles.input}>
                       {dayjs(dob).format("MMM DD, YYYY")}
                     </Text>
@@ -1154,20 +1130,29 @@ export default function PersonalDetailsScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      <DateTimePickerModal
-        isVisible={showDatePicker}
-        mode="date"
-        date={dob}
-        minimumDate={new Date(1900, 0, 1)}
-        maximumDate={new Date()}
-        onConfirm={(date) => {
-          const today = new Date();
-          const minDate = new Date(1900, 0, 1);
-          setDob(date > today ? today : date < minDate ? minDate : date);
-          setShowDatePicker(false);
-        }}
-        onCancel={() => setShowDatePicker(false)}
-      />
+      {showDatePicker && (
+        <DateTimePicker
+          value={dob}
+          mode="date"
+          display="default"
+          minimumDate={new Date(1900, 0, 1)}
+          maximumDate={new Date()}
+          onChange={(event: any, date?: Date) => {
+            if (Platform.OS === 'android') {
+              setShowDatePicker(false);
+            }
+            if (event.type === 'dismissed') {
+              setShowDatePicker(false);
+              return;
+            }
+            if (date) {
+              const today = new Date();
+              const minDate = new Date(1900, 0, 1);
+              setDob(date > today ? today : date < minDate ? minDate : date);
+            }
+          }}
+        />
+      )}
       <Toast />
     </View>
   );
@@ -1183,34 +1168,9 @@ const styles: any = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 24,
   },
-  tabContainer: {
-    flexDirection: "row",
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 24,
-    padding: 4,
-    backgroundColor: Colors.background,
-    marginVertical: 16,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderRadius: 20,
-  },
-  activeTabButton: {
-    backgroundColor: "#E6F5FC",
-  },
-  tabButtonText: {
-    fontSize: 14,
-    fontFamily: FontFamilies.bold,
-    color: Colors.label,
-  },
-  activeTabButtonText: {
-    color: Colors.secondary,
-  },
+
   subtext: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 24,
@@ -1221,9 +1181,9 @@ const styles: any = StyleSheet.create({
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FontFamilies.semiBold,
-    color: Colors.label,
+    color: Colors.textLabel,
     marginBottom: 8,
     textAlign: "left",
   },

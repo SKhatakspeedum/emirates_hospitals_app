@@ -359,14 +359,14 @@ const styles: any = StyleSheet.create({
     height: 70,
   },
   startTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: FontFamilies.bold,
     color: Colors.text,
     marginBottom: 8,
     textAlign: "left",
   },
   startSubtitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 40,
@@ -378,9 +378,9 @@ const styles: any = StyleSheet.create({
     marginBottom: 16,
   },
   phoneLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FontFamilies.semiBold,
-    color: Colors.label,
+    color: Colors.textLabel,
     marginBottom: 16,
   },
   otpRow: {
@@ -390,8 +390,8 @@ const styles: any = StyleSheet.create({
     marginBottom: 12,
   },
   otpInput: {
-    width: 44,
-    height: 52,
+    width: 48,
+    height: 48,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -426,13 +426,13 @@ const styles: any = StyleSheet.create({
   },
   resendText: {
     color: Colors.label,
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FontFamilies.medium,
   },
   resendLink: {
     color: Colors.secondary,
     fontFamily: FontFamilies.bold,
-    fontSize: 14,
+    fontSize: 16,
   },
   bottomBtnContainer: {
     paddingHorizontal: 24,

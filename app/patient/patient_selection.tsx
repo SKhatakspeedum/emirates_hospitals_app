@@ -285,7 +285,11 @@ export default function PatientSelectionScreen() {
         } catch (_) {}
 
         let userId = await fetchDataFromLocalStorage("sg_userId");
-        if (!userId) userId = parsed?.usr_id ?? "";
+        if (!userId) {
+          try {
+            userId = parsed?.usr_id ?? "";
+          } catch (_) {}
+        }
 
         await callSuggestusAPI(
           spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
@@ -343,17 +347,53 @@ export default function PatientSelectionScreen() {
 
   const handleSkip = async () => {
     try {
-      if (patients.length > 0) {
-        const first = patients[0];
-        await setPatientId(first.id);
-        await AsyncStorage.setItem(
-          SPD_SELECTED_PATIENT,
-          JSON.stringify({
-            name: first.name,
-            age: first.age,
-            gender: first.gender,
-          }),
+      const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+
+      const response = await callSuggestusAPI(
+        spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+        {
+          p_user_id: userId,
+          p_search_text: "",
+          p_search_additional_attributes: "",
+          p_process_flag: "user_patients",
+        },
+      );
+
+      if (response?.returnCode === true && response.returnData?.length > 0) {
+        const firstPatient = response.returnData[0];
+        const patientId = String(
+          firstPatient.p_patient_id ?? firstPatient.patient_id ?? "",
         );
+
+        const name =
+          firstPatient.p_patient_name ??
+          firstPatient.ptm_name ??
+          [
+            firstPatient.p_patient_first_name,
+            firstPatient.p_patient_middle_name,
+            firstPatient.p_patient_last_name,
+          ]
+            .filter(Boolean)
+            .join(" ") ??
+          "Unknown";
+        const age =
+          parseInt(
+            String(firstPatient.ptm_age ?? firstPatient.p_age ?? "0"),
+            10,
+          ) || 0;
+        const gender =
+          firstPatient.ptm_gender ??
+          (firstPatient.p_gender === "2" ? "Female" : "Male");
+
+        if (patientId) {
+          await setPatientId(patientId);
+          await AsyncStorage.setItem(
+            SPD_SELECTED_PATIENT,
+            JSON.stringify({ name, age, gender }),
+          );
+        } else {
+          await AsyncStorage.removeItem("sg_patientId");
+        }
       } else {
         await AsyncStorage.removeItem("sg_patientId");
       }
@@ -368,19 +408,19 @@ export default function PatientSelectionScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      {/* <StatusBar barStyle="dark-content" backgroundColor={Colors.background} /> */}
       <View
         style={[
           styles.header,
           {
-            paddingTop: isSmallScreen ? 55 : 130,
-            paddingBottom: isSmallScreen ? 15 : 50,
+            paddingTop: isSmallScreen ? 55 : 130, // 80 (content) + 50 (logo margin)
+            paddingBottom: isSmallScreen ? 10 : 25,
           },
         ]}
       >
         <Image
           source={require("@/assets/images/logo.png")}
-          style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
+          style={[styles.logoImg, { height: isSmallScreen ? 40 : 60 }]}
           resizeMode="contain"
         />
       </View>
@@ -535,14 +575,7 @@ const styles = StyleSheet.create({
   },
   contentInner: {
     paddingHorizontal: 24,
-    paddingBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontFamily: FontFamilies.bold,
-    color: Colors.secondary,
-    marginBottom: 12,
-    marginTop: 20,
+    // paddingTop: 10,
   },
   userCard: {
     backgroundColor: "#F2F7FC",
@@ -596,7 +629,7 @@ const styles = StyleSheet.create({
   registerInnerBtnText: {
     fontSize: 15,
     fontFamily: FontFamilies.bold,
-    color: Colors.secondary,
+    color: Colors.primary,
     marginRight: 6,
   },
   patientsList: {
@@ -658,7 +691,7 @@ const styles = StyleSheet.create({
   addNewPatientBtnText: {
     fontSize: 16,
     fontFamily: FontFamilies.bold,
-    color: Colors.secondary,
+    color: Colors.primary,
   },
   skipBtn: {
     alignItems: "center",

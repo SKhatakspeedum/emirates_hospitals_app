@@ -17,7 +17,7 @@ import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { IS_LOGGED_IN, USER_FULL_DATA } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -418,9 +418,7 @@ export default function RegisterNewPatient() {
             <View style={styles.unifiedCard}>
               {/* Emirates ID */}
               <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: "#7D8A9D" }]}>
-                  Emirates ID
-                </Text>
+                <Text style={[styles.inputLabel]}>Emirates ID</Text>
                 <View
                   style={[
                     styles.cardInputWrapper,
@@ -487,9 +485,7 @@ export default function RegisterNewPatient() {
 
               {/* Passport */}
               <View style={[styles.inputContainer, { marginBottom: 0 }]}>
-                <Text style={[styles.inputLabel, { color: Colors.label }]}>
-                  Passport no.
-                </Text>
+                <Text style={[styles.inputLabel]}>Passport no.</Text>
                 <View
                   style={[
                     styles.cardInputWrapper,
@@ -546,12 +542,172 @@ export default function RegisterNewPatient() {
               </View>
             </View>
 
-            {/* First Name, Last Name, DOB, Gender — locked until one ID is verified */}
-            <View
-              pointerEvents={idVerified ? "auto" : "none"}
-              style={!idVerified && styles.fieldsDisabled}
-            >
-              {/* First Name & Last Name */}
+            {/* First Name & Last Name */}
+            <View style={styles.rowContainer}>
+              <View
+                style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
+              >
+                <Text style={styles.inputLabel}>First name</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === "firstName" && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={Colors.secondary}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.inputNoOutline]}
+                    placeholder="John"
+                    placeholderTextColor={Colors.inactive}
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    onFocus={() => setFocusedField("firstName")}
+                    onBlur={() => setFocusedField("")}
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
+              <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
+                <Text style={styles.inputLabel}>Last name</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === "lastName" && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={Colors.secondary}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.inputNoOutline]}
+                    placeholder="Doe"
+                    placeholderTextColor={Colors.inactive}
+                    value={lastName}
+                    onChangeText={setLastName}
+                    onFocus={() => setFocusedField("lastName")}
+                    onBlur={() => setFocusedField("")}
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Date of Birth */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Date of birth</Text>
+              {Platform.OS === "web" ? (
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    focusedField === "dob" && styles.inputWrapperFocused,
+                  ]}
+                >
+                  <style type="text/css">{`
+                    .hide-calendar-icon::-webkit-calendar-picker-indicator {
+                      display: none;
+                      -webkit-appearance: none;
+                    }
+                  `}</style>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={Colors.secondary}
+                    style={styles.inputIcon}
+                  />
+                  <input
+                    id="web-dob-picker"
+                    className="hide-calendar-icon"
+                    type="date"
+                    value={dayjs(dob).format("YYYY-MM-DD")}
+                    min="1900-01-01"
+                    max={dayjs().format("YYYY-MM-DD")}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const selectedDate = new Date(e.target.value);
+                        const year = selectedDate.getFullYear();
+                        const today = new Date();
+                        const minDate = new Date(1900, 0, 1);
+                        if (year >= 1000) {
+                          setDob(
+                            selectedDate < minDate
+                              ? minDate
+                              : year > today.getFullYear()
+                                ? today
+                                : selectedDate,
+                          );
+                        } else {
+                          setDob(selectedDate);
+                        }
+                      }
+                    }}
+                    onFocus={() => setFocusedField("dob")}
+                    onBlur={() => {
+                      setFocusedField("");
+                      const today = new Date();
+                      const minDate = new Date(1900, 0, 1);
+                      if (dob > today) setDob(today);
+                      else if (dob < minDate) setDob(minDate);
+                    }}
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      outline: "none",
+                      fontSize: "16px",
+                      fontFamily: FontFamilies.medium,
+                      color: Colors.text,
+                      backgroundColor: "transparent",
+                      height: "100%",
+                    }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      const inputEl = document.getElementById(
+                        "web-dob-picker",
+                      ) as any;
+                      if (inputEl && typeof inputEl.showPicker === "function") {
+                        inputEl.showPicker();
+                      }
+                    }}
+                  >
+                    <Text style={styles.changeLinkText}>Change</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.inputWrapper,
+                    showDatePicker && styles.inputWrapperFocused,
+                  ]}
+                  onPress={() => setShowDatePicker(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={showDatePicker ? Colors.secondary : Colors.label}
+                    style={styles.inputIcon}
+                  />
+                  <Text style={styles.input}>
+                    {dayjs(dob).format("MMM DD, YYYY")}
+                  </Text>
+                  <Text style={styles.changeLinkText}>Change</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Gender */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Gender</Text>
               <View style={styles.rowContainer}>
                 <View
                   style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
@@ -773,20 +929,29 @@ export default function RegisterNewPatient() {
         </KeyboardAvoidingView>
       </View>
 
-      <DateTimePickerModal
-        isVisible={showDatePicker}
-        mode="date"
-        date={dob}
-        minimumDate={new Date(1900, 0, 1)}
-        maximumDate={new Date()}
-        onConfirm={(date) => {
-          const today = new Date();
-          const minDate = new Date(1900, 0, 1);
-          setDob(date > today ? today : date < minDate ? minDate : date);
-          setShowDatePicker(false);
-        }}
-        onCancel={() => setShowDatePicker(false)}
-      />
+      {showDatePicker && (
+        <DateTimePicker
+          value={dob}
+          mode="date"
+          display="default"
+          minimumDate={new Date(1900, 0, 1)}
+          maximumDate={new Date()}
+          onChange={(event: any, date?: Date) => {
+            if (Platform.OS === "android") {
+              setShowDatePicker(false);
+            }
+            if (event.type === "dismissed") {
+              setShowDatePicker(false);
+              return;
+            }
+            if (date) {
+              const today = new Date();
+              const minDate = new Date(1900, 0, 1);
+              setDob(date > today ? today : date < minDate ? minDate : date);
+            }
+          }}
+        />
+      )}
       <Toast />
     </Modal>
   );
@@ -824,7 +989,7 @@ const styles: any = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   sheetTitle: {
-    fontSize: 17,
+    fontSize: 22,
     fontFamily: FontFamilies.bold,
     color: Colors.text,
   },
@@ -842,7 +1007,7 @@ const styles: any = StyleSheet.create({
     paddingBottom: 12,
   },
   subtext: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FontFamilies.medium,
     color: Colors.label,
     marginBottom: 20,
@@ -877,7 +1042,7 @@ const styles: any = StyleSheet.create({
     height: 1,
   },
   orText: {
-    fontSize: 12,
+    fontSize: 16,
     fontFamily: FontFamilies.bold,
     color: Colors.label,
     marginHorizontal: 12,
@@ -886,9 +1051,9 @@ const styles: any = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 16,
     fontFamily: FontFamilies.semiBold,
-    color: Colors.label,
+    color: Colors.textLabel,
     marginBottom: 8,
   },
   inputWrapper: {

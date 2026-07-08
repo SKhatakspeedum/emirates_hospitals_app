@@ -31,8 +31,10 @@ export default function CustomHeader({ title, onBackPress, showBackButton = true
 
   return (
     <View style={styles.headerContainer}>
-      <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-        <Ionicons name="chevron-back" size={22} color={Colors.text} style={styles.backIcon} />
+      <TouchableOpacity onPress={handleBack} style={styles.backButton} disabled={!showBackButton}>
+        {
+          showBackButton && <Ionicons name="chevron-back" size={22} color={Colors.text} style={styles.backIcon} />
+        }
         <Text style={styles.headerTitle}>{title}</Text>
       </TouchableOpacity>
     </View>

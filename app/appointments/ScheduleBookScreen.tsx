@@ -12,6 +12,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Calendar } from "react-native-calendars";
+import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -244,10 +245,8 @@ export default function ScheduleBookScreen() {
     <View style={styles.container}>
       <CustomHeader title="Date & Time" />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      {/* Fixed Top Section */}
+      <View style={styles.fixedTop}>
         {/* Notice/Disclaimer Box */}
         <View style={styles.disclaimerContainer}>
           <Text style={styles.disclaimerText}>
@@ -291,15 +290,19 @@ export default function ScheduleBookScreen() {
             <Text style={styles.changeText}>Change</Text>
           </Pressable>
         </View>
+      </View>
 
-        {/* Slots Grid */}
-        {isLoading ? (
+      {/* Slots Grid (scrollable area) */}
+      {isLoading ? (
+        <View style={styles.slotsScroll}>
           <ActivityIndicator
             size="small"
             color={Colors.primary}
             style={{ marginVertical: 24 }}
           />
-        ) : slots.length === 0 ? (
+        </View>
+      ) : slots.length === 0 ? (
+        <View style={styles.slotsScroll}>
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyStateIconWrap}>
               <Ionicons
@@ -314,8 +317,14 @@ export default function ScheduleBookScreen() {
               Please choose another day.
             </Text>
           </View>
+        </View>
         ) : (
-          <View style={styles.slotsGrid}>
+          <ScrollView
+            style={styles.slotsScroll}
+            contentContainerStyle={styles.slotsGrid}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+          >
             {slots.map((slot) => {
               const active = selectedSlot?.id === slot.id;
               return (
@@ -339,9 +348,15 @@ export default function ScheduleBookScreen() {
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
         )}
-      </ScrollView>
+
+      {/* Fade effect above footer */}
+      <LinearGradient
+        colors={["rgba(255,255,255,0)", Colors.background]}
+        style={styles.footerFade}
+        pointerEvents="none"
+      />
 
       {/* Footer / Confirm CTA */}
       <View style={styles.footerContainer}>
@@ -487,31 +502,40 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     fontFamily: FontFamilies.bold,
   },
+  fixedTop: {
+    paddingTop: 4,
+  },
+  slotsScroll: {
+    flex: 1,
+  },
   slotsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
     paddingHorizontal: 20,
+    paddingBottom: 90,
   },
   slotButton: {
     width: "48%",
     height: 48,
-    backgroundColor: Colors.border,
+    backgroundColor: Colors.lightgray,
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
   slotButtonActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.pressed,
+    borderWidth: 1.5,
+    borderColor: Colors.activeBorder,
   },
   slotText: {
     fontSize: 14,
-    color: Colors.primary,
+    color: Colors.text,
     fontFamily: FontFamilies.bold,
   },
   slotTextActive: {
-    color: Colors.background,
+    color: Colors.primary,
   },
   emptyStateContainer: {
     alignItems: "center",
@@ -539,6 +563,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 18,
     fontFamily: FontFamilies.medium,
+  },
+  footerFade: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 120,
   },
   footerContainer: {
     position: "absolute",

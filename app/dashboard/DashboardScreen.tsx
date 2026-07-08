@@ -333,7 +333,7 @@ export default function DashboardScreen() {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="play" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
+                <Ionicons name="play" size={13} color={Colors.secondary} style={styles.sectionHeaderIcon} />
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Health awareness</Text>
               </View>
               <Pressable style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
@@ -363,7 +363,7 @@ export default function DashboardScreen() {
           {!noPatient && (
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="heart" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
+                <Ionicons name="heart" size={13} color={Colors.secondary} style={styles.sectionHeaderIcon} />
                 <Text style={styles.sectionTitle}>My health summary</Text>
               </View>
               <View style={styles.healthSummaryGrid}>
@@ -381,7 +381,7 @@ export default function DashboardScreen() {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons name="person" size={20} color={Colors.secondary} style={styles.sectionHeaderIcon} />
+                <Ionicons name="person" size={13} color={Colors.secondary} style={styles.sectionHeaderIcon} />
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Providers</Text>
               </View>
               <Pressable onPress={handleSeeAllProviders} style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
@@ -519,11 +519,11 @@ const styles = StyleSheet.create({
   greetingText: {
     fontSize: 22,
     fontFamily: FontFamilies.bold,
-    color: "#fff",
+    color: Colors.background,
     marginBottom: 6,
   },
   subGreetingText: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FontFamilies.medium,
     color: "rgba(255, 255, 255, 0.8)",
   },
@@ -606,19 +606,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   promoBadgeText: {
-    color: "#fff",
-    fontSize: 10,
+    color: Colors.background,
+    fontSize: 12,
     fontFamily: FontFamilies.bold,
   },
   promoTitle: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 16,
     fontFamily: FontFamilies.bold,
     marginBottom: 6,
   },
   promoSub: {
     color: "rgba(255,255,255,0.8)",
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: FontFamilies.medium,
   },
   promoIcon: {
@@ -662,8 +662,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quickActionText: {
-    fontSize: 11,
-    fontFamily: FontFamilies.semiBold,
+    fontSize: 12,
+    fontFamily: FontFamilies.medium,
     color: Colors.text,
     textAlign: "center",
   },
@@ -677,13 +677,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontFamily: FontFamilies.bold,
+    fontSize: 14,
+    fontFamily: FontFamilies.semiBold,
     color: Colors.text,
   },
   seeAllText: {
     fontSize: 13,
-    fontFamily: FontFamilies.bold,
+    fontFamily: FontFamilies.semiBold,
     color: Colors.secondary,
   },
   noAppointmentsCard: {
@@ -715,8 +715,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   noAppointmentsTitle: {
-    fontSize: 15,
-    fontFamily: FontFamilies.bold,
+    fontSize: 16,
+    fontFamily: FontFamilies.semiBold,
     color: Colors.text,
     marginBottom: 4,
   },
@@ -733,6 +733,9 @@ const styles = StyleSheet.create({
   },
   sectionHeaderIcon: {
     marginRight: 8,
+    padding: 3,
+    backgroundColor: Colors.lightgray,
+    borderRadius: 3,
   },
   videoCard: {
     borderRadius: 16,

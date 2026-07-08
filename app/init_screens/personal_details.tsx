@@ -185,14 +185,14 @@ export default function PersonalDetailsScreen() {
             const patientRes = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
-                p_user_id: _userId,
+                // p_user_id: _userId,
 
                 p_additional_attribute: {
-                  p_ptm_mobile_number: _mobile,
+                  // p_ptm_mobile_number: _mobile,
                   p_emirates_id: field === "emirates" ? clean : "",
                   p_passport_no: field === "passport" ? clean : "",
                 },
-                p_process_flag: "validate_duplicate",
+                // p_process_flag: "validate_duplicate",
               },
             );
             if (hasReturnData(patientRes)) {

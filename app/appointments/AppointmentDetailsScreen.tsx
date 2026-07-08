@@ -116,7 +116,7 @@ export default function AppointmentDetailsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <SafeAreaView style={{ flex: 1 }}>
         {/* Title Header matching NearbyProviders styling */}
-        <CustomHeader title="Appointment details" />
+        <CustomHeader title="Appointment Details" />
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}

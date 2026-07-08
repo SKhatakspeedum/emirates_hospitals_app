@@ -164,6 +164,12 @@ export default function PersonalDetailsScreen() {
             p_process_flag: "validate_duplicate",
             p_additional_attribute: {},
           },
+            "",
+            "",
+            "",
+            "",
+            "",
+            false
         );
 
         if (res?.returnCode) {

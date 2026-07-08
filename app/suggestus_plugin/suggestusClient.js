@@ -201,11 +201,13 @@ export async function callSuggestusAPI(
         }
         return { ...response.data, returnCode: true };
       } else {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: mMessages_obj.SUGGESTUS_ERR,
-        });
+        if (showToastFlag) {
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: mMessages_obj.SUGGESTUS_ERR,
+          });
+        }
         return { msg: mMessages_obj.SUGGESTUS_ERR, returnCode: false };
       }
     } else {

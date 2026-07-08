@@ -24,77 +24,18 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
-// Static Doctor Mock Data
-const PROVIDERS = [
-  {
-    id: "1",
-    name: "Dr. Harry Dewson",
-    specialty: "Dermatologist",
-    qualification: "MBBS, M.Sc (Psych), MRC Psych...",
-    hospital: "Emirates Specialty Hospital",
-    distance: "1.2 km away",
-    rating: "4.9",
-    reviews: "142",
-    avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-    nextAvailable: "Next today at 9:30 pm",
-  },
-  {
-    id: "2",
-    name: "Dr. Chiara Papile",
-    specialty: "Family Medicine",
-    qualification: "BA, MA, Ph.D",
-    hospital: "Kings College Hospital",
-    distance: "2.5 km away",
-    rating: "4.8",
-    reviews: "98",
-    avatar: "https://randomuser.me/api/portraits/women/32.jpg",
-    nextAvailable: "Next today at 9:30 pm",
-  },
-  {
-    id: "3",
-    name: "Dr. Brigita Wilkinson",
-    specialty: "Internal Medicine",
-    qualification: "B.Sc (Pharmacy)",
-    hospital: "Mediclinic Welcare Hospital",
-    distance: "3.1 km away",
-    rating: "4.7",
-    reviews: "210",
-    avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-    nextAvailable: "Next today at 9:30 pm",
-  },
-  {
-    id: "4",
-    name: "Dr. Yanal Salam",
-    specialty: "Internal Medicine",
-    qualification: "MD, PhD",
-    hospital: "Aster Cedar Hospital",
-    distance: "4.0 km away",
-    rating: "4.6",
-    reviews: "85",
-    avatar: "https://randomuser.me/api/portraits/men/46.jpg",
-    nextAvailable: "Next tomorrow at 10:00 am",
-  },
-  {
-    id: "5",
-    name: "Dr. Sarah Jenkins",
-    specialty: "Pediatrician",
-    qualification: "MD, FAAP",
-    hospital: "City Hospital Dubai",
-    distance: "5.3 km away",
-    rating: "4.9",
-    reviews: "167",
-    avatar: "https://randomuser.me/api/portraits/women/43.jpg",
-    nextAvailable: "Next today at 4:30 pm",
-  },
-];
-
-const CATEGORIES = [
-  "All",
-  "Dermatologist",
-  "Family Medicine",
-  "Internal Medicine",
-  "Pediatrician",
-];
+interface Provider {
+  id: string;
+  name: string;
+  specialty: string;
+  qualification: string;
+  hospital: string;
+  distance: string;
+  rating: string;
+  reviews: string;
+  avatar: string;
+  nextAvailable: string;
+}
 
 function DoctorAvatar({ uri, name }: { uri: string; name: string }) {
   const [hasError, setHasError] = useState(false);
@@ -131,9 +72,9 @@ export default function NearbyProvidersScreen() {
   const categoriesScrollOffsetRef = useRef(0);
   const categoriesScrollMaxRef = useRef(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [providers, setProviders] = useState(PROVIDERS);
-  const [categories, setCategories] = useState(CATEGORIES);
-  const [isLoading, setIsLoading] = useState(false);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [categories, setCategories] = useState<string[]>(["All"]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProviders = async () => {
@@ -198,7 +139,7 @@ export default function NearbyProvidersScreen() {
   return (
     <View style={styles.container}>
       {/* Title Header */}
-      <CustomHeader title="Nearby providers" />
+      <CustomHeader title="Providers" />
 
       {/* Categories Horizontal Scroll */}
       <View style={styles.categoriesContainer}>

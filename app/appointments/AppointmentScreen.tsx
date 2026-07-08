@@ -96,10 +96,12 @@ export default function AppointmentScreen() {
           {
             p_patient_id: patientId ?? "",
             p_visit_id: null,
+            
             menu_name: "Wellness",
             menu_tab_type: "always_patient_specific",
             maximization_redirection_label: "Make appointment",
             p_max_offset: 100,
+            p_process_type: "fetch_all_appointments",
             p_offset: 0,
           },
         );
@@ -124,7 +126,7 @@ export default function AppointmentScreen() {
           const history: Appointment[] = [];
           response.returnData.forEach((a: any) => {
             const histType = (a.appointment_history_type ?? "").toLowerCase();
-            if (histType === "history") {
+            if (histType.includes("hist")) {
               history.push(mapItem(a));
             } else {
               upcoming.push(mapItem(a));
@@ -279,13 +281,13 @@ export default function AppointmentScreen() {
                   </Pressable>
 
                   {/* Options Ellipsis */}
-                  <TouchableOpacity
+                  {/* <TouchableOpacity
                     style={styles.menuButton}
                     onPress={() => handleCancelAppointment(item.id, item.doctorName)}
                     activeOpacity={0.6}
                   >
                     <Ionicons name="ellipsis-vertical" size={18} color="#757575" />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
               );
             })

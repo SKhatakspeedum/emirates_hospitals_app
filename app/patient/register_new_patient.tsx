@@ -69,6 +69,9 @@ export default function RegisterNewPatient() {
   const isSelf =
     (route.params as any)?.isSelf === true ||
     (route.params as any)?.isSelf === "true";
+  const isFromDrawer =
+    (route.params as any)?.fromDrawer === true ||
+    (route.params as any)?.fromDrawer === "true";
 
   const [emiratesId, setEmiratesId] = useState("");
   const [passportNo, setPassportNo] = useState("");
@@ -348,7 +351,10 @@ export default function RegisterNewPatient() {
         text2: "Welcome to Emirates Hospitals Group",
       });
 
-      router.replace("/patient/registered_patients");
+      router.replace({
+        pathname: "/patient/registered_patients",
+        params: isFromDrawer ? { fromDrawer: "true" } : {},
+      });
     } catch (error) {
       console.error("Error saving patient details:", error);
       Toast.show({

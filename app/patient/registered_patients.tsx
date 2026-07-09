@@ -370,7 +370,10 @@ export default function RegisteredPatientsScreen() {
       console.error("Error registering as patient:", e);
     }
     setRegisteringAsSelf(false);
-    router.replace("/patient/registered_patients");
+    router.replace({
+      pathname: "/patient/registered_patients",
+      params: isFromDrawer ? { fromDrawer: "true" } : {},
+    });
   };
 
   const handleSelectPatient = async (patient: Patient) => {
@@ -391,7 +394,10 @@ export default function RegisteredPatientsScreen() {
   };
 
   const handleAddNewPatient = () => {
-    router.push("/patient/register_new_patient");
+    router.push({
+      pathname: "/patient/register_new_patient",
+      params: isFromDrawer ? { fromDrawer: "true" } : {},
+    });
   };
 
   const handleSkip = async () => {

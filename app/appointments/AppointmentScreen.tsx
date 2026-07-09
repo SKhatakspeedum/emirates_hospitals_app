@@ -13,7 +13,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -79,6 +79,9 @@ const parseDateBadge = (dateStr: string) => {
 
 export default function AppointmentScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const fromBooking = route.params?.fromBooking === true;
+
   const [activeTab, setActiveTab] = useState<"upcoming" | "history">("upcoming");
   const [upcomingList, setUpcomingList] = useState<Appointment[]>([]);
   const [historyList, setHistoryList] = useState<Appointment[]>([]);
@@ -144,6 +147,16 @@ export default function AppointmentScreen() {
     };
     fetchAppointments();
   }, []);
+
+  useEffect(() => {
+    if (fromBooking) {
+      const unsubscribe = navigation.addListener("beforeRemove", (e: any) => {
+        e.preventDefault();
+        navigation.navigate("NearbyProviders");
+      });
+      return unsubscribe;
+    }
+  }, [fromBooking, navigation]);
 
   const handleCancelAppointment = (id: string, name: string) => {
     Alert.alert(

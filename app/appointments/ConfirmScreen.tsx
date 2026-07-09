@@ -109,13 +109,18 @@ export default function ConfirmScreen() {
           [
             {
               text: "OK",
-              onPress: () => navigation.navigate("Appointment"),
+              onPress: () =>
+                navigation.navigate("Appointment", {
+                  fromBooking: true,
+                }),
             },
           ],
         );
 
         setTimeout(() => {
-          navigation.navigate("Appointment");
+          navigation.navigate("Appointment", {
+            fromBooking: true,
+          });
         }, 1000);
       } else {
         Alert.alert(
@@ -360,7 +365,7 @@ export default function ConfirmScreen() {
             disabled={isSaving}
           >
             <Text style={styles.confirmButtonText}>
-              {isSaving ? "Saving..." : "Continue"}
+              {isSaving ? "Booking..." : "Book Appointment"}
             </Text>
             <Ionicons
               name="arrow-forward"

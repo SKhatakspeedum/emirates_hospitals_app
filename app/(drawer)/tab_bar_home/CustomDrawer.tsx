@@ -251,7 +251,10 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 
     if (screen === "RegisteredPatients") {
       props.navigation.closeDrawer();
-      router.push("/patient/registered_patients");
+      router.push({
+        pathname: "/patient/registered_patients",
+        params: { fromDrawer: "true" },
+      });
       return;
     }
 

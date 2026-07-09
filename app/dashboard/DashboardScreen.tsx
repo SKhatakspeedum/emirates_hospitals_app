@@ -185,9 +185,13 @@ export default function DashboardScreen() {
               response?.returnCode === true &&
               response.returnData?.length > 0
             ) {
+              // router.push({
+              //   pathname: "/patient/registered_patients",
+              //   params: { hideSkip: "true" },
+              // });
               router.push({
                 pathname: "/patient/registered_patients",
-                params: { hideSkip: "true" },
+                params: { fromDrawer: "true" },
               });
               return;
             }
@@ -204,14 +208,18 @@ export default function DashboardScreen() {
             }
           } catch (e) {}
 
-          router.push({
-            pathname: "/patient/registered_patients",
-            params: { hideSkip: "true" },
-          });
+          // router.push({
+          //   pathname: "/patient/registered_patients",
+          //   params: { hideSkip: "true" },
+          // });
           // router.push({
           //   pathname: "/patient/register_new_patient",
           //   params: { phone_number: phone },
           // });
+          router.push({
+            pathname: "/patient/registered_patients",
+            params: { fromDrawer: "true" },
+          });
         }
       },
     },

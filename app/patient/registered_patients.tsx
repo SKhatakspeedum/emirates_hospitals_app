@@ -53,7 +53,10 @@ const parseAdditionalAttributes = (raw: any): Record<string, string> => {
 
 export default function RegisteredPatientsScreen() {
   const router = useRouter();
-  const { hideSkip } = useLocalSearchParams<{ hideSkip?: string }>();
+  const { hideSkip, fromDrawer } = useLocalSearchParams<{
+    hideSkip?: string;
+    fromDrawer?: string;
+  }>();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<{
@@ -411,6 +414,12 @@ export default function RegisteredPatientsScreen() {
     router.replace("/(drawer)/tab_bar_home/HomeScreen");
   };
 
+  const handleGoHome = () => {
+    router.replace("/(drawer)/tab_bar_home/HomeScreen");
+  };
+
+  const isFromDrawer = fromDrawer === "true";
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -547,10 +556,12 @@ export default function RegisteredPatientsScreen() {
         {hideSkip !== "true" && (
           <TouchableOpacity
             style={styles.skipBtn}
-            onPress={handleSkip}
+            onPress={isFromDrawer ? handleGoHome : handleSkip}
             activeOpacity={0.7}
           >
-            <Text style={styles.skipBtnText}>Skip &gt;</Text>
+            <Text style={styles.skipBtnText}>
+              {isFromDrawer ? "Home" : "Skip >"}
+            </Text>
           </TouchableOpacity>
         )}
       </View>

@@ -11,13 +11,14 @@ import {
   Platform,
   ActivityIndicator,
   Dimensions,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { Calendar } from "react-native-calendars";
 import {
   IS_LOGGED_IN,
   USER_FULL_DATA,
@@ -100,6 +101,10 @@ export default function PersonalDetailsScreen() {
   const [lastName, setLastName] = useState("");
   const [dob, setDob] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(
+    dayjs(dob).format("YYYY-MM-DD"),
+  );
+  const [showYearGrid, setShowYearGrid] = useState(false);
   const [gender, setGender] = useState<"Male" | "Female" | "">("Male");
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
@@ -728,9 +733,12 @@ export default function PersonalDetailsScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
+          style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          overScrollMode="never"
           bounces={false}
         >
           <View
@@ -960,101 +968,23 @@ export default function PersonalDetailsScreen() {
               {/* Date of Birth */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Date of birth</Text>
-                {Platform.OS === "web" ? (
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      focusedField === "dob" && styles.inputWrapperFocused,
-                    ]}
-                  >
-                    <style type="text/css">{`
-                      .hide-calendar-icon::-webkit-calendar-picker-indicator {
-                        display: none;
-                        -webkit-appearance: none;
-                      }
-                    `}</style>
-                    <input
-                      id="web-dob-picker"
-                      className="hide-calendar-icon"
-                      type="date"
-                      value={dayjs(dob).format("YYYY-MM-DD")}
-                      min="1900-01-01"
-                      max={dayjs().format("YYYY-MM-DD")}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          const selectedDate = new Date(e.target.value);
-                          const year = selectedDate.getFullYear();
-                          const today = new Date();
-                          const minDate = new Date(1900, 0, 1);
-                          if (year >= 1000) {
-                            setDob(
-                              selectedDate < minDate
-                                ? minDate
-                                : year > today.getFullYear()
-                                  ? today
-                                  : selectedDate,
-                            );
-                          } else {
-                            setDob(selectedDate);
-                          }
-                        }
-                      }}
-                      onFocus={() => setFocusedField("dob")}
-                      onBlur={() => {
-                        setFocusedField("");
-                        const today = new Date();
-                        const minDate = new Date(1900, 0, 1);
-                        if (dob > today) setDob(today);
-                        else if (dob < minDate) setDob(minDate);
-                      }}
-                      style={{
-                        flex: 1,
-                        border: "none",
-                        outline: "none",
-                        fontSize: "16px",
-                        fontFamily: FontFamilies.medium,
-                        color: Colors.text,
-                        backgroundColor: "transparent",
-                        height: "100%",
-                      }}
-                    />
-                    <TouchableOpacity
-                      onPress={() => {
-                        const inputEl = document.getElementById(
-                          "web-dob-picker",
-                        ) as any;
-                        if (
-                          inputEl &&
-                          typeof inputEl.showPicker === "function"
-                        ) {
-                          inputEl.showPicker();
-                        }
-                      }}
-                    >
-                      <Text style={styles.changeLinkText}>Change</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={[
-                      styles.inputWrapper,
-                      showDatePicker && styles.inputWrapperFocused,
-                    ]}
-                    onPress={() => setShowDatePicker(true)}
-                    activeOpacity={0.8}
-                  >
-                    {/* <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color={showDatePicker ? Colors.secondary : Colors.label}
-                      style={styles.inputIcon}
-                    /> */}
-                    <Text style={styles.input}>
-                      {dayjs(dob).format("MMM DD, YYYY")}
-                    </Text>
-                    <Text style={styles.changeLinkText}>Change</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={[
+                    styles.inputWrapper,
+                    showDatePicker && styles.inputWrapperFocused,
+                  ]}
+                  onPress={() => {
+                    setCalendarMonth(dayjs(dob).format("YYYY-MM-DD"));
+                    setShowYearGrid(false);
+                    setShowDatePicker(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.input}>
+                    {dayjs(dob).format("MMM DD, YYYY")}
+                  </Text>
+                  <Text style={styles.changeLinkText}>Change</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Gender */}
@@ -1143,29 +1073,187 @@ export default function PersonalDetailsScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {showDatePicker && (
-        <DateTimePicker
-          value={dob}
-          mode="date"
-          display="default"
-          minimumDate={new Date(1900, 0, 1)}
-          maximumDate={new Date()}
-          onChange={(event: any, date?: Date) => {
-            if (Platform.OS === "android") {
-              setShowDatePicker(false);
-            }
-            if (event.type === "dismissed") {
-              setShowDatePicker(false);
-              return;
-            }
-            if (date) {
-              const today = new Date();
-              const minDate = new Date(1900, 0, 1);
-              setDob(date > today ? today : date < minDate ? minDate : date);
-            }
-          }}
-        />
-      )}
+      <Modal
+        visible={showDatePicker}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.dobModalOverlay}>
+          <View style={styles.dobModalCard}>
+            {showYearGrid ? (
+              <View style={styles.yearGridContainer}>
+                <Text style={styles.yearGridTitle}>Select year</Text>
+                <ScrollView
+                  style={styles.yearGridScroll}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View style={styles.yearGrid}>
+                    {Array.from(
+                      { length: dayjs().year() - 1900 + 1 },
+                      (_, i) => dayjs().year() - i,
+                    ).map((year) => {
+                      const isSelected = dayjs(calendarMonth).year() === year;
+                      return (
+                        <TouchableOpacity
+                          key={year}
+                          style={[
+                            styles.yearCell,
+                            isSelected && styles.yearCellSelected,
+                          ]}
+                          onPress={() => {
+                            const next = dayjs(calendarMonth).year(year);
+                            const today = dayjs();
+                            setCalendarMonth(
+                              (next.isAfter(today) ? today : next).format(
+                                "YYYY-MM-DD",
+                              ),
+                            );
+                            setShowYearGrid(false);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.yearCellText,
+                              isSelected && styles.yearCellTextSelected,
+                            ]}
+                          >
+                            {year}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              </View>
+            ) : (
+              <Calendar
+              key={calendarMonth}
+              current={calendarMonth}
+              hideArrows
+              renderHeader={() => {
+                const jumpTo = (unit: "year" | "month", amount: number) => {
+                  const next = dayjs(calendarMonth).add(amount, unit);
+                  const today = dayjs();
+                  const minMonth = dayjs("1900-01-01");
+                  const clamped = next.isAfter(today)
+                    ? today
+                    : next.isBefore(minMonth)
+                      ? minMonth
+                      : next;
+                  setCalendarMonth(clamped.format("YYYY-MM-DD"));
+                };
+                return (
+                  <View style={styles.calendarHeaderRow}>
+                    <TouchableOpacity
+                      onPress={() => jumpTo("year", -1)}
+                      style={styles.calendarNavBtn}
+                    >
+                      <Ionicons
+                        name="play-back"
+                        size={16}
+                        color={Colors.primary}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => jumpTo("month", -1)}
+                      style={styles.calendarNavBtn}
+                    >
+                      <Ionicons
+                        name="chevron-back"
+                        size={20}
+                        color={Colors.primary}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setShowYearGrid(true)}
+                      style={styles.calendarHeaderLabelBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.calendarHeaderText}>
+                        {dayjs(calendarMonth).format("MMMM YYYY")}
+                      </Text>
+                      <Ionicons
+                        name="caret-down"
+                        size={12}
+                        color={Colors.primary}
+                        style={{ marginLeft: 4 }}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => jumpTo("month", 1)}
+                      style={styles.calendarNavBtn}
+                    >
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color={Colors.primary}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => jumpTo("year", 1)}
+                      style={styles.calendarNavBtn}
+                    >
+                      <Ionicons
+                        name="play-forward"
+                        size={16}
+                        color={Colors.primary}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                );
+              }}
+              onMonthChange={(m: { dateString: string }) =>
+                setCalendarMonth(m.dateString)
+              }
+              onDayPress={(day: { dateString: string }) => {
+                const selectedDate = new Date(`${day.dateString}T00:00:00`);
+                const today = new Date();
+                const minDate = new Date(1900, 0, 1);
+                setDob(
+                  selectedDate > today
+                    ? today
+                    : selectedDate < minDate
+                      ? minDate
+                      : selectedDate,
+                );
+                setShowDatePicker(false);
+              }}
+              minDate="1900-01-01"
+              maxDate={dayjs().format("YYYY-MM-DD")}
+              markedDates={{
+                [dayjs(dob).format("YYYY-MM-DD")]: {
+                  selected: true,
+                  selectedColor: Colors.primary,
+                },
+              }}
+              theme={{
+                backgroundColor: Colors.background,
+                calendarBackground: Colors.background,
+                todayTextColor: Colors.primary,
+                selectedDayBackgroundColor: Colors.primary,
+                selectedDayTextColor: Colors.background,
+                dayTextColor: Colors.text,
+                textDisabledColor: Colors.inactive,
+                arrowColor: Colors.primary,
+                monthTextColor: Colors.text,
+                textMonthFontWeight: "700",
+                textDayFontFamily: FontFamilies.regular,
+                textMonthFontFamily: FontFamilies.semiBold,
+                textDayHeaderFontFamily: FontFamilies.medium,
+              }}
+              />
+            )}
+            <TouchableOpacity
+              onPress={() => setShowDatePicker(false)}
+              style={styles.dobModalCancelButton}
+            >
+              <Text style={styles.dobModalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <Toast />
     </View>
   );
@@ -1175,6 +1263,86 @@ const styles: any = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  dobModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dobModalCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 16,
+    minWidth: 320,
+    elevation: 4,
+  },
+  dobModalCancelButton: {
+    marginTop: 10,
+    alignSelf: "flex-end",
+  },
+  dobModalCancelText: {
+    color: Colors.primary,
+    fontFamily: FontFamilies.semiBold,
+    fontSize: 15,
+  },
+  calendarHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 8,
+  },
+  calendarNavBtn: {
+    padding: 6,
+  },
+  calendarHeaderLabelBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  calendarHeaderText: {
+    fontSize: 16,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
+  },
+  yearGridContainer: {
+    minHeight: 300,
+  },
+  yearGridTitle: {
+    fontSize: 16,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  yearGridScroll: {
+    maxHeight: 300,
+  },
+  yearGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  yearCell: {
+    width: "31%",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 8,
+    backgroundColor: Colors.lightgray,
+  },
+  yearCellSelected: {
+    backgroundColor: Colors.primary,
+  },
+  yearCellText: {
+    fontSize: 15,
+    fontFamily: FontFamilies.medium,
+    color: Colors.text,
+  },
+  yearCellTextSelected: {
+    color: Colors.background,
+    fontFamily: FontFamilies.semiBold,
   },
   content: {
     flex: 1,

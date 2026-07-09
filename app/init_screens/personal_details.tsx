@@ -128,7 +128,12 @@ export default function PersonalDetailsScreen() {
     lastName.trim().length > 0 &&
     gender !== "";
 
-  const buttonLabel = "Register";
+  const buttonLabel =
+    (emiratesIdCheck.status === "available" ||
+      passportCheck.status === "available") &&
+    linkedPatientId
+      ? "Continue"
+      : "Register";
 
   // Inline existence check — fires on blur of the ID field
   const checkExistence = useCallback(
@@ -811,7 +816,7 @@ export default function PersonalDetailsScreen() {
                 )}
                 {emiratesIdCheck.status === "available" && linkedPatientId ? (
                   <Text style={styles.fieldInfo}>
-                    {`Patient with the same "${emiratesId}" already exists. Click Register to continue with the existing patient.`}
+                    {`Patient with the same Emirates ID "${emiratesId}" already exists. Click Below to continue with the existing patient.`}
                   </Text>
                 ) : null}
               </View>
@@ -880,7 +885,7 @@ export default function PersonalDetailsScreen() {
                 )}
                 {passportCheck.status === "available" && linkedPatientId ? (
                   <Text style={styles.fieldInfo}>
-                    {`Patient with the same "${passportNo}" already exists. Click Register to continue with the existing patient.`}
+                    {`Patient with the same Passport No. "${passportNo}" already exists. Click Below to continue with the existing patient.`}
                   </Text>
                 ) : null}
               </View>

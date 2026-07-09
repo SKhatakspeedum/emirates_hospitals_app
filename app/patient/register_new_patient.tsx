@@ -564,7 +564,7 @@ export default function RegisterNewPatient() {
                   />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="John"
+                    placeholder=""
                     placeholderTextColor={Colors.inactive}
                     value={firstName}
                     onChangeText={setFirstName}
@@ -591,7 +591,7 @@ export default function RegisterNewPatient() {
                   />
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="Doe"
+                    placeholder=""
                     placeholderTextColor={Colors.inactive}
                     value={lastName}
                     onChangeText={setLastName}
@@ -773,7 +773,7 @@ export default function RegisterNewPatient() {
               {loading ? (
                 <ActivityIndicator color={Colors.background} />
               ) : (
-                <Text style={styles.continueBtnText}>Continue</Text>
+                <Text style={styles.continueBtnText}>Submit</Text>
               )}
             </TouchableOpacity>
           </ScrollView>

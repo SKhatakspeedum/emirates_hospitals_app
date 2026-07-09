@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
   specialty: {
     fontSize: 13,
     color: Colors.primary,
-    fontWeight: "600",
+    fontFamily: FontFamilies.semiBold,
     marginBottom: 2,
   },
   name: {

@@ -300,8 +300,8 @@ export default function AppointmentScreen() {
           )}
         </ScrollView>
 
-        {/* Floating Action Button (Only visible when list is not empty) */}
-        {appointments.length > 0 && (
+        {/* Floating Action Button (Only visible on Upcoming tab when list is not empty) */}
+        {appointments.length > 0 && activeTab === "upcoming" && (
           <Pressable
             style={({ pressed }) => [
               styles.fab,
@@ -311,6 +311,7 @@ export default function AppointmentScreen() {
               }
             ]}
             onPress={() => navigation.navigate("NearbyProviders")}
+            disabled={false}
           >
             <Ionicons name="add" size={28} color={Colors.background} />
           </Pressable>
@@ -498,7 +499,6 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+    fontFamily: FontFamilies.semiBold,
   },
 });

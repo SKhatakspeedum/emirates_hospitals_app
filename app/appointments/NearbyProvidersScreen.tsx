@@ -24,6 +24,13 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
+// Responsive sizing for the category scroll-hint arrows
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const HINT_BADGE_SIZE = Math.round(
+  Math.min(34, Math.max(28, SCREEN_WIDTH * 0.085)),
+);
+const HINT_ICON_SIZE = Math.round(HINT_BADGE_SIZE * 0.62);
+
 interface Provider {
   id: string;
   name: string;
@@ -150,15 +157,19 @@ export default function NearbyProvidersScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesScroll}
-          scrollEventThrottle={32}
+          scrollEventThrottle={16}
           onContentSizeChange={(contentWidth, _h) => {
             const containerWidth = Dimensions.get("window").width;
             categoriesScrollMaxRef.current = Math.max(
               0,
               contentWidth - containerWidth,
             );
-            setShowCategoriesScrollHint((prev) =>
-              contentWidth > containerWidth ? true : prev && false,
+            const distanceFromEnd =
+              contentWidth -
+              (categoriesScrollOffsetRef.current + containerWidth);
+            setShowCategoriesScrollHint(distanceFromEnd > 16);
+            setShowCategoriesScrollHintLeft(
+              categoriesScrollOffsetRef.current > 16,
             );
           }}
           onScroll={({ nativeEvent }) => {
@@ -219,8 +230,8 @@ export default function NearbyProvidersScreen() {
               <View style={styles.scrollHintBadge}>
                 <Ionicons
                   name="chevron-back"
-                  size={18}
-                  color={Colors.background}
+                  size={HINT_ICON_SIZE}
+                  color={Colors.primary}
                 />
               </View>
             </LinearGradient>
@@ -253,8 +264,8 @@ export default function NearbyProvidersScreen() {
               <View style={styles.scrollHintBadge}>
                 <Ionicons
                   name="chevron-forward"
-                  size={18}
-                  color={Colors.background}
+                  size={HINT_ICON_SIZE}
+                  color={Colors.primary}
                 />
               </View>
             </LinearGradient>
@@ -435,41 +446,34 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
-    width: 48,
+    width: 64,
   },
   categoriesScrollHintGradient: {
     flex: 1,
     justifyContent: "center",
     alignItems: "flex-end",
-    paddingRight: 8,
+    paddingRight: 10,
   },
   categoriesScrollHintLeft: {
     position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
-    width: 48,
+    width: 64,
     zIndex: 2,
   },
   categoriesScrollHintGradientLeft: {
     flex: 1,
     justifyContent: "center",
     alignItems: "flex-start",
-    paddingLeft: 8,
+    paddingLeft: 10,
   },
   scrollHintBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.secondary,
-    opacity: 0.85,
+    width: HINT_BADGE_SIZE,
+    height: HINT_BADGE_SIZE,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
+    opacity: 0.7,
   },
   categoriesScroll: {
     paddingHorizontal: 16,
@@ -514,8 +518,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.background,
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: Colors.border,
     shadowColor: Colors.text,
@@ -527,21 +531,20 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
   },
   avatarContainer: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: "#E8F0FE",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
+    marginRight: 14,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   avatarFallback: {
     backgroundColor: Colors.primary,

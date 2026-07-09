@@ -227,7 +227,13 @@ export default function AppointmentScreen() {
               const statusStyle = getStatusStyle(item.statusHtml ?? "");
 
               return (
-                <View key={item.id} style={styles.appointmentRow}>
+                <View
+                  key={item.id}
+                  style={[
+                    styles.appointmentRow,
+                    activeTab === "history" && styles.appointmentRowCompact,
+                  ]}
+                >
                   <Pressable
                     style={({ pressed }) => [
                       styles.rowClickArea,
@@ -269,8 +275,8 @@ export default function AppointmentScreen() {
                         <Text style={styles.metaText}>{startTime}</Text>
                       </View>
 
-                      {/* appstat_html_name → status badge */}
-                      {!!statusLabel && (
+                      {/* appstat_html_name → status badge (Upcoming only) */}
+                      {activeTab === "upcoming" && !!statusLabel && (
                         <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
                           <Text style={[styles.statusBadgeText, { color: statusStyle.color }]}>
                             {statusLabel}
@@ -392,6 +398,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
     alignItems: "center",
+  },
+  appointmentRowCompact: {
+    paddingVertical: 12,
   },
   dateBadge: {
     width: 46,

@@ -18,6 +18,7 @@ import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functio
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -36,7 +37,6 @@ export default function ConfirmScreen() {
     patientName,
     patientAge,
     patientGender,
-    relationship,
     appSubtypeId,
     type,
     date,
@@ -52,7 +52,6 @@ export default function ConfirmScreen() {
     patientName: "John Doe",
     patientAge: "",
     patientGender: "",
-    relationship: "Self",
     appSubtypeId: "",
     type: "Video Consult",
     date: "02 Mar 2026",
@@ -236,7 +235,7 @@ export default function ConfirmScreen() {
             <View style={styles.divider} />
 
             {/* Patient Info */}
-            <View style={styles.listItem}>
+            {/* <View style={styles.listItem}>
               <Ionicons
                 name="person-outline"
                 size={22}
@@ -247,11 +246,7 @@ export default function ConfirmScreen() {
                 <Text style={styles.itemValue}>{patientName}</Text>
                 {(patientAge || patientGender) && (
                   <Text style={styles.itemSubValue}>
-                    {[
-                      patientAge && `${patientAge} yrs`,
-                      patientGender,
-                      relationship,
-                    ]
+                    {[patientAge && `${patientAge} yrs`, patientGender]
                       .filter(Boolean)
                       .join(" · ")}
                   </Text>
@@ -259,7 +254,7 @@ export default function ConfirmScreen() {
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={styles.divider} /> */}
 
             {/* Date and Time Slot with Change Button */}
             <View style={[styles.listItem, styles.listItemSpaceBetween]}>
@@ -342,6 +337,13 @@ export default function ConfirmScreen() {
             </View> */}
           </View>
         </ScrollView>
+
+        {/* Fade effect above footer */}
+        <LinearGradient
+          colors={["rgba(255,255,255,0)", Colors.background]}
+          style={styles.footerFade}
+          pointerEvents="none"
+        />
 
         {/* Footer with Continue Button */}
         <View style={styles.footerContainer}>
@@ -479,6 +481,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.label,
     fontFamily: FontFamilies.semiBold,
+  },
+  footerFade: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 120,
   },
   footerContainer: {
     position: "absolute",

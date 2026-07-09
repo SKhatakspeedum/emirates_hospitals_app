@@ -17,7 +17,7 @@ import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { Calendar } from "react-native-calendars";
 import { IS_LOGGED_IN, USER_FULL_DATA } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -603,104 +603,25 @@ export default function RegisterNewPatient() {
             {/* Date of Birth */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Date of birth</Text>
-              {Platform.OS === "web" ? (
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === "dob" && styles.inputWrapperFocused,
-                  ]}
-                >
-                  <style type="text/css">{`
-                    .hide-calendar-icon::-webkit-calendar-picker-indicator {
-                      display: none;
-                      -webkit-appearance: none;
-                    }
-                  `}</style>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color={Colors.secondary}
-                    style={styles.inputIcon}
-                  />
-                  <input
-                    id="web-dob-picker"
-                    className="hide-calendar-icon"
-                    type="date"
-                    value={dayjs(dob).format("YYYY-MM-DD")}
-                    min="1900-01-01"
-                    max={dayjs().format("YYYY-MM-DD")}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const selectedDate = new Date(e.target.value);
-                        const year = selectedDate.getFullYear();
-                        const today = new Date();
-                        const minDate = new Date(1900, 0, 1);
-                        if (year >= 1000) {
-                          setDob(
-                            selectedDate < minDate
-                              ? minDate
-                              : year > today.getFullYear()
-                                ? today
-                                : selectedDate,
-                          );
-                        } else {
-                          setDob(selectedDate);
-                        }
-                      }
-                    }}
-                    onFocus={() => setFocusedField("dob")}
-                    onBlur={() => {
-                      setFocusedField("");
-                      const today = new Date();
-                      const minDate = new Date(1900, 0, 1);
-                      if (dob > today) setDob(today);
-                      else if (dob < minDate) setDob(minDate);
-                    }}
-                    style={{
-                      flex: 1,
-                      border: "none",
-                      outline: "none",
-                      fontSize: "16px",
-                      fontFamily: FontFamilies.medium,
-                      color: Colors.text,
-                      backgroundColor: "transparent",
-                      height: "100%",
-                    }}
-                  />
-                  <TouchableOpacity
-                    onPress={() => {
-                      const inputEl = document.getElementById(
-                        "web-dob-picker",
-                      ) as any;
-                      if (inputEl && typeof inputEl.showPicker === "function") {
-                        inputEl.showPicker();
-                      }
-                    }}
-                  >
-                    <Text style={styles.changeLinkText}>Change</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.inputWrapper,
-                    showDatePicker && styles.inputWrapperFocused,
-                  ]}
-                  onPress={() => setShowDatePicker(true)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color={showDatePicker ? Colors.secondary : Colors.label}
-                    style={styles.inputIcon}
-                  />
-                  <Text style={styles.input}>
-                    {dayjs(dob).format("MMM DD, YYYY")}
-                  </Text>
-                  <Text style={styles.changeLinkText}>Change</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={[
+                  styles.inputWrapper,
+                  showDatePicker && styles.inputWrapperFocused,
+                ]}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={showDatePicker ? Colors.secondary : Colors.label}
+                  style={styles.inputIcon}
+                />
+                <Text style={styles.input}>
+                  {dayjs(dob).format("MMM DD, YYYY")}
+                </Text>
+                <Text style={styles.changeLinkText}>Change</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Date of Birth */}
@@ -851,29 +772,62 @@ export default function RegisterNewPatient() {
         </KeyboardAvoidingView>
       </View>
 
-      {showDatePicker && (
-        <DateTimePicker
-          value={dob}
-          mode="date"
-          display="default"
-          minimumDate={new Date(1900, 0, 1)}
-          maximumDate={new Date()}
-          onChange={(event: any, date?: Date) => {
-            if (Platform.OS === "android") {
-              setShowDatePicker(false);
-            }
-            if (event.type === "dismissed") {
-              setShowDatePicker(false);
-              return;
-            }
-            if (date) {
-              const today = new Date();
-              const minDate = new Date(1900, 0, 1);
-              setDob(date > today ? today : date < minDate ? minDate : date);
-            }
-          }}
-        />
-      )}
+      <Modal
+        visible={showDatePicker}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.dobModalOverlay}>
+          <View style={styles.dobModalCard}>
+            <Calendar
+              current={dayjs(dob).format("YYYY-MM-DD")}
+              onDayPress={(day: { dateString: string }) => {
+                const selectedDate = new Date(`${day.dateString}T00:00:00`);
+                const today = new Date();
+                const minDate = new Date(1900, 0, 1);
+                setDob(
+                  selectedDate > today
+                    ? today
+                    : selectedDate < minDate
+                      ? minDate
+                      : selectedDate,
+                );
+                setShowDatePicker(false);
+              }}
+              minDate="1900-01-01"
+              maxDate={dayjs().format("YYYY-MM-DD")}
+              markedDates={{
+                [dayjs(dob).format("YYYY-MM-DD")]: {
+                  selected: true,
+                  selectedColor: Colors.primary,
+                },
+              }}
+              theme={{
+                backgroundColor: Colors.background,
+                calendarBackground: Colors.background,
+                todayTextColor: Colors.primary,
+                selectedDayBackgroundColor: Colors.primary,
+                selectedDayTextColor: Colors.background,
+                dayTextColor: Colors.text,
+                textDisabledColor: Colors.inactive,
+                arrowColor: Colors.primary,
+                monthTextColor: Colors.text,
+                textMonthFontWeight: "700",
+                textDayFontFamily: FontFamilies.regular,
+                textMonthFontFamily: FontFamilies.semiBold,
+                textDayHeaderFontFamily: FontFamilies.medium,
+              }}
+            />
+            <TouchableOpacity
+              onPress={() => setShowDatePicker(false)}
+              style={styles.dobModalCancelButton}
+            >
+              <Text style={styles.dobModalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <Toast />
     </Modal>
   );
@@ -884,6 +838,28 @@ const styles: any = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
+  },
+  dobModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dobModalCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 16,
+    minWidth: 320,
+    elevation: 4,
+  },
+  dobModalCancelButton: {
+    marginTop: 10,
+    alignSelf: "flex-end",
+  },
+  dobModalCancelText: {
+    color: Colors.primary,
+    fontFamily: FontFamilies.semiBold,
+    fontSize: 15,
   },
   sheet: {
     backgroundColor: Colors.background,

@@ -443,7 +443,10 @@ export default function RegisteredPatientsScreen() {
         </View>
 
         {/* Self-registration card — only if not already a patient */}
-        {!loading && !isAlreadyPatient && userData && (
+        {!loading &&
+          !isAlreadyPatient &&
+          userData &&
+          !(isFromDrawer && alreadyAssigned) && (
           <View style={styles.userCard}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.avatarContainer}>

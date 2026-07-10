@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -33,6 +33,7 @@ import { FontFamilies } from "../config/fonts";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+import { useDashboardSections } from "../hooks/useDashboardSections";
 
 const { width, height } = Dimensions.get("window");
 
@@ -55,6 +56,8 @@ export default function DashboardScreen() {
     age: number;
     gender: string;
   } | null>(null);
+  const [hasUpcomingAppointments, setHasUpcomingAppointments] =
+    useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -73,6 +76,42 @@ export default function DashboardScreen() {
         }
         const pid = await AsyncStorage.getItem("sg_patientId");
         setPatientId(pid);
+
+        if (pid && pid !== "null") {
+          try {
+            const response = await callSuggestusAPI(
+              spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
+              {
+                p_patient_id: pid,
+                p_visit_id: null,
+                menu_name: "Wellness",
+                menu_tab_type: "always_patient_specific",
+                maximization_redirection_label: "Make appointment",
+                p_max_offset: 100,
+                p_process_type: "fetch_all_appointments",
+                p_offset: 0,
+              },
+            );
+            if (
+              response?.returnCode === true &&
+              response.returnData?.length > 0
+            ) {
+              const hasUpcoming = response.returnData.some((a: any) => {
+                const histType = (
+                  a.appointment_history_type ?? ""
+                ).toLowerCase();
+                return !histType.includes("hist");
+              });
+              setHasUpcomingAppointments(hasUpcoming);
+            } else {
+              setHasUpcomingAppointments(false);
+            }
+          } catch (_) {
+            setHasUpcomingAppointments(false);
+          }
+        } else {
+          setHasUpcomingAppointments(false);
+        }
       };
       load();
     }, []),
@@ -251,115 +290,59 @@ export default function DashboardScreen() {
 
   const noPatient = !patientId || patientId === "null";
 
-  return (
-    <View style={styles.container}>
-      {/* Fixed Sticky Header Top Bar */}
-      <View style={styles.stickyHeader}>
-        <SafeAreaView style={styles.headerSafeArea}>
-          <View style={styles.headerTopRow}>
-            <Pressable
-              style={({ pressed }) => ({
-                opacity: pressed ? 0.7 : 1,
-                padding: 4,
-              })}
-              onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-            >
-              <Ionicons
-                name="menu-outline"
-                size={32}
-                color={Colors.background}
-              />
-            </Pressable>
-            <View style={styles.headerIconsRight}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.iconButton,
-                  { opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <Ionicons
-                  name="search-outline"
-                  size={24}
-                  color={Colors.background}
-                />
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.iconButton,
-                  { opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <View>
-                  <Ionicons
-                    name="notifications-outline"
-                    size={24}
-                    color={Colors.background}
-                  />
-                  <View style={styles.badgeDot} />
+  // Fetch dynamic sections from backend (with automatic fallback to defaults)
+  const { visibleSections, sections } = useDashboardSections(noPatient);
+
+  // Debug log to verify sections are being loaded
+  useEffect(() => {
+    console.log(
+      "[DashboardScreen] visibleSections:",
+      visibleSections,
+      "sections:",
+      sections
+    );
+  }, [visibleSections, sections]);
+
+  // Renders each "body" section (everything below the greeting hero) by key.
+  // Called in the order of `visibleSections`, so the backend's
+  // menu_display_order drives the actual render order on screen.
+  const renderBodySection = (key: string) => {
+    switch (key) {
+      case "promoBanner":
+        return (
+          <React.Fragment key={key}>
+            <View style={styles.promoBanner}>
+              <View style={styles.promoContent}>
+                <View style={styles.promoBadge}>
+                  <Text style={styles.promoBadgeText}>SAVE 20%</Text>
                 </View>
-              </Pressable>
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.stickyHeaderSpacer} />
-
-        {/* Greeting Section */}
-        <View style={styles.headerGreetingSection}>
-          <View style={styles.bgCircleLarge} />
-          <View style={styles.bgPlusHorizontal} />
-          <View style={styles.bgPlusVertical} />
-
-          <View style={styles.greetingContainer}>
-            <Text style={styles.greetingText}>
-              {noPatient
-                ? `Welcome, ${userProfileName}!`
-                : `${getGreetingTime()}, ${userProfileName}!`}
-            </Text>
-
-            <Text style={styles.subGreetingText}>
-              {noPatient
-                ? "Start exploring healthcare services\n& specialist - all in one place."
-                : "Welcome back. How can we support\nyour health today?"}
-            </Text>
-          </View>
-        </View>
-
-        {/* White Content Area */}
-        <View style={styles.bodyContent}>
-          {/* Promo Banner */}
-          <View style={styles.promoBanner}>
-            <View style={styles.promoContent}>
-              <View style={styles.promoBadge}>
-                <Text style={styles.promoBadgeText}>SAVE 20%</Text>
+                <Text style={styles.promoTitle}>
+                  20% off on Health Checkups
+                </Text>
+                <Text style={styles.promoSub}>
+                  Book before July 20th • All branches
+                </Text>
               </View>
-              <Text style={styles.promoTitle}>20% off on Health Checkups</Text>
-              <Text style={styles.promoSub}>
-                Book before July 20th • All branches
-              </Text>
+              <FontAwesome5
+                name="hospital"
+                size={80}
+                color="rgba(255,255,255,0.15)"
+                style={styles.promoIcon}
+              />
             </View>
-            <FontAwesome5
-              name="hospital"
-              size={80}
-              color="rgba(255,255,255,0.15)"
-              style={styles.promoIcon}
-            />
-          </View>
 
-          {/* Pagination dots */}
-          <View style={styles.paginationDots}>
-            <View style={[styles.dot, styles.dotActive]} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-          </View>
+            {/* Pagination dots */}
+            <View style={styles.paginationDots}>
+              <View style={[styles.dot, styles.dotActive]} />
+              <View style={styles.dot} />
+              <View style={styles.dot} />
+            </View>
+          </React.Fragment>
+        );
 
-          {/* Quick Actions */}
-          <View style={styles.quickActionsContainer}>
+      case "quickActions":
+        return (
+          <View key={key} style={styles.quickActionsContainer}>
             {quickActions.map((action, index) => {
               const Icon = action.IconFamily;
               return (
@@ -391,50 +374,49 @@ export default function DashboardScreen() {
               );
             })}
           </View>
+        );
 
-          {/* Upcoming Appointments — only when patient selected */}
-          {!noPatient && (
-            <View style={styles.sectionContainer}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>Upcoming appointments</Text>
-                <Pressable
-                  style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-                >
-                  <Text style={styles.seeAllText}>
-                    See all{" "}
-                    <Ionicons
-                      name="chevron-forward"
-                      size={12}
-                      color={Colors.secondary}
-                    />
-                  </Text>
-                </Pressable>
-              </View>
-
-              <View style={styles.noAppointmentsCard}>
-                <View style={styles.noAppointmentsIconContainer}>
+      case "upcomingAppointments":
+        if (noPatient || !hasUpcomingAppointments) return null;
+        return (
+          <View key={key} style={styles.sectionContainer}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Upcoming appointments</Text>
+              <Pressable
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
+                <Text style={styles.seeAllText}>
+                  See all{" "}
                   <Ionicons
-                    name="calendar"
-                    size={24}
+                    name="chevron-forward"
+                    size={12}
                     color={Colors.secondary}
                   />
-                  <View style={styles.noApptBadgeDot} />
-                </View>
-                <View style={styles.noAppointmentsTextContainer}>
-                  <Text style={styles.noAppointmentsTitle}>
-                    No Appointments Yet
-                  </Text>
-                  <Text style={styles.noAppointmentsDesc}>
-                    Book an appointment to get started. Your upcoming visits
-                    will appear here.
-                  </Text>
-                </View>
+                </Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.noAppointmentsCard}>
+              <View style={styles.noAppointmentsIconContainer}>
+                <Ionicons name="calendar" size={24} color={Colors.secondary} />
+                <View style={styles.noApptBadgeDot} />
+              </View>
+              <View style={styles.noAppointmentsTextContainer}>
+                <Text style={styles.noAppointmentsTitle}>
+                  No Appointments Yet
+                </Text>
+                <Text style={styles.noAppointmentsDesc}>
+                  Book an appointment to get started. Your upcoming visits
+                  will appear here.
+                </Text>
               </View>
             </View>
-          )}
+          </View>
+        );
 
-          {/* Health Awareness */}
-          <View style={styles.sectionContainer}>
+      case "healthAwareness":
+        return (
+          <View key={key} style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
                 <Ionicons
@@ -481,42 +463,45 @@ export default function DashboardScreen() {
               </View>
             </Pressable>
           </View>
+        );
 
-          {/* My Health Summary — only when patient selected */}
-          {!noPatient && (
-            <View style={styles.sectionContainer}>
-              <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons
-                  name="heart"
-                  size={13}
-                  color={Colors.secondary}
-                  style={styles.sectionHeaderIcon}
-                />
-                <Text style={styles.sectionTitle}>My health summary</Text>
-              </View>
-              <View style={styles.healthSummaryGrid}>
-                {healthSummary.map((item, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.healthSummaryItem,
-                      { backgroundColor: item.bgColor },
-                    ]}
-                  >
-                    <Text
-                      style={[styles.healthSummaryTitle, { color: item.color }]}
-                    >
-                      {item.title}
-                    </Text>
-                    <Text style={styles.healthSummaryValue}>{item.value}</Text>
-                  </View>
-                ))}
-              </View>
+      case "healthSummary":
+        if (noPatient) return null;
+        return (
+          <View key={key} style={styles.sectionContainer}>
+            <View style={styles.sectionHeaderTitleRow}>
+              <Ionicons
+                name="heart"
+                size={13}
+                color={Colors.secondary}
+                style={styles.sectionHeaderIcon}
+              />
+              <Text style={styles.sectionTitle}>My health summary</Text>
             </View>
-          )}
+            <View style={styles.healthSummaryGrid}>
+              {healthSummary.map((item, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.healthSummaryItem,
+                    { backgroundColor: item.bgColor },
+                  ]}
+                >
+                  <Text
+                    style={[styles.healthSummaryTitle, { color: item.color }]}
+                  >
+                    {item.title}
+                  </Text>
+                  <Text style={styles.healthSummaryValue}>{item.value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        );
 
-          {/* Providers */}
-          <View style={styles.sectionContainer}>
+      case "providers":
+        return (
+          <View key={key} style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
                 <Ionicons
@@ -582,9 +567,11 @@ export default function DashboardScreen() {
               ))}
             </ScrollView>
           </View>
+        );
 
-          {/* Specialties */}
-          <View style={styles.sectionContainer}>
+      case "specialties":
+        return (
+          <View key={key} style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
                 <Ionicons
@@ -648,6 +635,99 @@ export default function DashboardScreen() {
               })}
             </ScrollView>
           </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Fixed Sticky Header Top Bar */}
+      <View style={styles.stickyHeader}>
+        <SafeAreaView style={styles.headerSafeArea}>
+          <View style={styles.headerTopRow}>
+            <Pressable
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.7 : 1,
+                padding: 4,
+              })}
+              onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+            >
+              <Ionicons
+                name="menu-outline"
+                size={32}
+                color={Colors.background}
+              />
+            </Pressable>
+            <View style={styles.headerIconsRight}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              >
+                <Ionicons
+                  name="search-outline"
+                  size={24}
+                  color={Colors.background}
+                />
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              >
+                <View>
+                  <Ionicons
+                    name="notifications-outline"
+                    size={24}
+                    color={Colors.background}
+                  />
+                  <View style={styles.badgeDot} />
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.stickyHeaderSpacer} />
+
+        {/* Greeting Section */}
+        {visibleSections.includes("greeting") && (
+        <View style={styles.headerGreetingSection}>
+          <View style={styles.bgCircleLarge} />
+          <View style={styles.bgPlusHorizontal} />
+          <View style={styles.bgPlusVertical} />
+
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greetingText}>
+              {noPatient
+                ? `Welcome, ${userProfileName}!`
+                : `${getGreetingTime()}, ${userProfileName}!`}
+            </Text>
+
+            <Text style={styles.subGreetingText}>
+              {noPatient
+                ? "Start exploring healthcare services\n& specialist - all in one place."
+                : "Welcome back. How can we support\nyour health today?"}
+            </Text>
+          </View>
+        </View>
+        )}
+
+        {/* White Content Area — body sections render in backend sequence order */}
+        <View style={styles.bodyContent}>
+          {visibleSections
+            .filter((key) => key !== "greeting")
+            .map((key) => renderBodySection(key))}
 
           <View style={styles.bottomSpacer} />
         </View>

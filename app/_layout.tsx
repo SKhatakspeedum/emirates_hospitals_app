@@ -112,6 +112,17 @@ export default function RootLayout() {
       if (wasRefreshed === "true") {
         sessionStorage.removeItem("refreshDetected");
         setTimeout(async () => {
+          // Get current route from sessionStorage to preserve navigation
+          const currentRoute = sessionStorage.getItem("currentRoute") as any;
+
+          // If there's a saved route, use it (preserves registration flow)
+          if (currentRoute) {
+            sessionStorage.removeItem("currentRoute");
+            router.replace(currentRoute);
+            return;
+          }
+
+          // Otherwise, check auth state
           const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
           if (isLoggedIn === "true") {
             router.replace("/tab_bar_home/HomeScreen");

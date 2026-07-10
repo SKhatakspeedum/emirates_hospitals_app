@@ -150,8 +150,7 @@ export default function DashboardScreen() {
                     avatar: a.p_doc_image_url ?? "",
                     date: a.appt_date_dashboard ?? "",
                     time: formatAmPm(a.appt_start_time ?? ""),
-                    statusLabel:
-                      stripHtml(statusHtml) || a.appstat_name || "",
+                    statusLabel: stripHtml(statusHtml) || a.appstat_name || "",
                     statusColor: statusStyle.color,
                     statusBg: statusStyle.bg,
                   };
@@ -353,7 +352,7 @@ export default function DashboardScreen() {
       "[DashboardScreen] visibleSections:",
       visibleSections,
       "sections:",
-      sections
+      sections,
     );
   }, [visibleSections, sections]);
 
@@ -482,7 +481,7 @@ export default function DashboardScreen() {
                     </Text>
                   </View>
                 </View>
-                {!!appt.statusLabel && (
+                {/* {!!appt.statusLabel && (
                   <View
                     style={[
                       styles.appointmentStatusBadge,
@@ -498,7 +497,7 @@ export default function DashboardScreen() {
                       {appt.statusLabel}
                     </Text>
                   </View>
-                )}
+                )} */}
               </Pressable>
             ))}
           </View>
@@ -792,25 +791,25 @@ export default function DashboardScreen() {
 
         {/* Greeting Section */}
         {visibleSections.includes("greeting") && (
-        <View style={styles.headerGreetingSection}>
-          <View style={styles.bgCircleLarge} />
-          <View style={styles.bgPlusHorizontal} />
-          <View style={styles.bgPlusVertical} />
+          <View style={styles.headerGreetingSection}>
+            <View style={styles.bgCircleLarge} />
+            <View style={styles.bgPlusHorizontal} />
+            <View style={styles.bgPlusVertical} />
 
-          <View style={styles.greetingContainer}>
-            <Text style={styles.greetingText}>
-              {noPatient
-                ? `Welcome, ${userProfileName}!`
-                : `${getGreetingTime()}, ${userProfileName}!`}
-            </Text>
+            <View style={styles.greetingContainer}>
+              <Text style={styles.greetingText}>
+                {noPatient
+                  ? `Welcome, ${userProfileName}!`
+                  : `${getGreetingTime()}, ${userProfileName}!`}
+              </Text>
 
-            <Text style={styles.subGreetingText}>
-              {noPatient
-                ? "Start exploring healthcare services\n& specialist - all in one place."
-                : "Welcome back. How can we support\nyour health today?"}
-            </Text>
+              <Text style={styles.subGreetingText}>
+                {noPatient
+                  ? "Start exploring healthcare services\n& specialist - all in one place."
+                  : "Welcome back. How can we support\nyour health today?"}
+              </Text>
+            </View>
           </View>
-        </View>
         )}
 
         {/* White Content Area — body sections render in backend sequence order */}

@@ -48,6 +48,42 @@ const getGreetingTime = () => {
   }
 };
 
+// Strips HTML tags: "<div class="badge-success">BOOKED</div>" → "BOOKED"
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
+
+// Converts "09:15:00" or "09:15 AM" → "09:15 AM"
+const formatAmPm = (timeStr: string): string => {
+  if (!timeStr) return "";
+  if (/am|pm/i.test(timeStr)) return timeStr.trim();
+  const [hStr, mStr] = timeStr.split(":");
+  const h = parseInt(hStr, 10);
+  const m = mStr ?? "00";
+  if (isNaN(h)) return timeStr;
+  const suffix = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${String(h12).padStart(2, "0")}:${m} ${suffix}`;
+};
+
+// Returns color/bg from badge class: badge-outline-success, badge-outline-danger, etc.
+const getStatusStyle = (htmlStr: string) => {
+  if (htmlStr.includes("success")) return { color: "#16a34a", bg: "#dcfce7" };
+  if (htmlStr.includes("danger")) return { color: "#dc2626", bg: "#fee2e2" };
+  if (htmlStr.includes("warning")) return { color: "#d97706", bg: "#fef3c7" };
+  return { color: Colors.primary, bg: "#e0f2fe" };
+};
+
+type UpcomingAppointment = {
+  id: string;
+  doctorName: string;
+  specialty: string;
+  avatar: string;
+  date: string;
+  time: string;
+  statusLabel: string;
+  statusColor: string;
+  statusBg: string;
+};
+
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const [userProfileName, setUserProfileName] = useState<string>("John");
@@ -56,8 +92,9 @@ export default function DashboardScreen() {
     age: number;
     gender: string;
   } | null>(null);
-  const [hasUpcomingAppointments, setHasUpcomingAppointments] =
-    useState(false);
+  const [upcomingAppointments, setUpcomingAppointments] = useState<
+    UpcomingAppointment[]
+  >([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -96,21 +133,38 @@ export default function DashboardScreen() {
               response?.returnCode === true &&
               response.returnData?.length > 0
             ) {
-              const hasUpcoming = response.returnData.some((a: any) => {
-                const histType = (
-                  a.appointment_history_type ?? ""
-                ).toLowerCase();
-                return !histType.includes("hist");
-              });
-              setHasUpcomingAppointments(hasUpcoming);
+              const upcoming: UpcomingAppointment[] = response.returnData
+                .filter((a: any) => {
+                  const histType = (
+                    a.appointment_history_type ?? ""
+                  ).toLowerCase();
+                  return !histType.includes("hist");
+                })
+                .map((a: any) => {
+                  const statusHtml = a.appstat_html_name ?? "";
+                  const statusStyle = getStatusStyle(statusHtml);
+                  return {
+                    id: String(a.p_appt_id ?? a.appt_id ?? ""),
+                    doctorName: a.resource_name ?? "",
+                    specialty: a.dpt_description ?? "",
+                    avatar: a.p_doc_image_url ?? "",
+                    date: a.appt_date_dashboard ?? "",
+                    time: formatAmPm(a.appt_start_time ?? ""),
+                    statusLabel:
+                      stripHtml(statusHtml) || a.appstat_name || "",
+                    statusColor: statusStyle.color,
+                    statusBg: statusStyle.bg,
+                  };
+                });
+              setUpcomingAppointments(upcoming);
             } else {
-              setHasUpcomingAppointments(false);
+              setUpcomingAppointments([]);
             }
           } catch (_) {
-            setHasUpcomingAppointments(false);
+            setUpcomingAppointments([]);
           }
         } else {
-          setHasUpcomingAppointments(false);
+          setUpcomingAppointments([]);
         }
       };
       load();
@@ -377,12 +431,13 @@ export default function DashboardScreen() {
         );
 
       case "upcomingAppointments":
-        if (noPatient || !hasUpcomingAppointments) return null;
+        if (noPatient || upcomingAppointments.length === 0) return null;
         return (
           <View key={key} style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Upcoming appointments</Text>
               <Pressable
+                onPress={() => navigation.navigate("Appointment")}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
@@ -396,21 +451,56 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
 
-            <View style={styles.noAppointmentsCard}>
-              <View style={styles.noAppointmentsIconContainer}>
-                <Ionicons name="calendar" size={24} color={Colors.secondary} />
-                <View style={styles.noApptBadgeDot} />
-              </View>
-              <View style={styles.noAppointmentsTextContainer}>
-                <Text style={styles.noAppointmentsTitle}>
-                  No Appointments Yet
-                </Text>
-                <Text style={styles.noAppointmentsDesc}>
-                  Book an appointment to get started. Your upcoming visits
-                  will appear here.
-                </Text>
-              </View>
-            </View>
+            {upcomingAppointments.map((appt) => (
+              <Pressable
+                key={appt.id}
+                style={({ pressed }) => [
+                  styles.appointmentCard,
+                  { opacity: pressed ? 0.9 : 1 },
+                ]}
+                onPress={() => navigation.navigate("Appointment")}
+              >
+                <Image
+                  source={{ uri: appt.avatar }}
+                  style={styles.appointmentAvatar}
+                />
+                <View style={styles.appointmentInfo}>
+                  <Text style={styles.appointmentDoctorName} numberOfLines={1}>
+                    {appt.doctorName}
+                  </Text>
+                  <Text style={styles.appointmentSpecialty} numberOfLines={1}>
+                    {appt.specialty}
+                  </Text>
+                  <View style={styles.appointmentMetaRow}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={12}
+                      color={Colors.label}
+                    />
+                    <Text style={styles.appointmentMetaText}>
+                      {appt.date} • {appt.time}
+                    </Text>
+                  </View>
+                </View>
+                {!!appt.statusLabel && (
+                  <View
+                    style={[
+                      styles.appointmentStatusBadge,
+                      { backgroundColor: appt.statusBg },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.appointmentStatusText,
+                        { color: appt.statusColor },
+                      ]}
+                    >
+                      {appt.statusLabel}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            ))}
           </View>
         );
 
@@ -1006,6 +1096,56 @@ const styles = StyleSheet.create({
     fontFamily: FontFamilies.medium,
     color: Colors.label,
     lineHeight: 18,
+  },
+  appointmentCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F8FE",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 10,
+  },
+  appointmentAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.border,
+    marginRight: 12,
+  },
+  appointmentInfo: {
+    flex: 1,
+  },
+  appointmentDoctorName: {
+    fontSize: 14,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
+  },
+  appointmentSpecialty: {
+    fontSize: 12,
+    fontFamily: FontFamilies.medium,
+    color: Colors.secondary,
+    marginTop: 2,
+  },
+  appointmentMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    gap: 4,
+  },
+  appointmentMetaText: {
+    fontSize: 11,
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
+  },
+  appointmentStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  appointmentStatusText: {
+    fontSize: 11,
+    fontFamily: FontFamilies.semiBold,
   },
   sectionHeaderTitleRow: {
     flexDirection: "row",

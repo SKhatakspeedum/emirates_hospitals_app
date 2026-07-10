@@ -18,8 +18,11 @@ import {
   SPD_ORG_WEBSITE_URL,
   SPD_INITPAGE_STEPS,
   SPD_ORG_LANGUAGE_CODE,
+  SPD_THEME_SETTING_CONFIG,
+  SPD_COUNTRY_CODES_FOR_PHONE,
 } from "./config/config";
 import { setEncryptedID } from "./suggestus_plugin/util/util_functions";
+import { applyThemeColors, THEME_CACHE_KEY } from "./config/colors";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -238,6 +241,56 @@ export default function RootLayout() {
           } else {
             await setEncryptedID("dark_color_palette", colorPalette);
           }
+
+          // ── Apply backend-driven theme colors (safe no-op if missing) ──
+          applyThemeColors(responseData?.spd_theme_setting_config);
+          await setEncryptedID(
+            SPD_THEME_SETTING_CONFIG,
+            responseData?.spd_theme_setting_config || null,
+          );
+
+          // ── Web only: cache theme + reload once so already-imported ───
+          // screens' StyleSheet.create() calls (baked with the OLD colors
+          // before this fetch resolved) get rebuilt with the correct
+          // backend theme from the very first paint. Guarded by a
+          // sessionStorage flag so this can only reload once per tab
+          // session, and only when the fetched theme actually changed.
+          if (
+            Platform.OS === "web" &&
+            typeof window !== "undefined" &&
+            window.localStorage &&
+            responseData?.spd_theme_setting_config
+          ) {
+            try {
+              const newThemeStr = JSON.stringify(
+                responseData.spd_theme_setting_config,
+              );
+              const prevThemeStr = window.localStorage.getItem(
+                THEME_CACHE_KEY,
+              );
+              window.localStorage.setItem(THEME_CACHE_KEY, newThemeStr);
+
+              if (
+                newThemeStr !== prevThemeStr &&
+                !window.sessionStorage.getItem("sg_theme_reload_done")
+              ) {
+                window.sessionStorage.setItem("sg_theme_reload_done", "true");
+                window.location.reload();
+                return; // stop init here — the reload will re-run this effect
+              }
+            } catch (themeCacheError) {
+              console.error(
+                "[RootLayout] Error caching theme:",
+                themeCacheError,
+              );
+            }
+          }
+
+          // ── Allowed country codes for phone number inputs ──────────────
+          await setEncryptedID(
+            SPD_COUNTRY_CODES_FOR_PHONE,
+            responseData?.spd_country_codes_for_phone || null,
+          );
 
           // ── Terms & Conditions ────────────────────────────────────────
           await setEncryptedID(

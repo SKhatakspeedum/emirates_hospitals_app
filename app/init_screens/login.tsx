@@ -23,8 +23,10 @@ import CountryFlag from "react-native-country-flag";
 
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
-import countries from "../json_dummy_datas/country";
+import countries, { countryCodeAliasMap } from "../json_dummy_datas/country";
 import { FontFamilies } from "../config/fonts";
+import { SPD_COUNTRY_CODES_FOR_PHONE } from "../config/config";
+import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -32,6 +34,7 @@ export default function LoginScreen() {
   const isSmallScreen = screenHeight < 680;
 
   // Dynamic country picker states
+  const [availableCountries, setAvailableCountries] = useState(countries);
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [phoneDigits, setPhoneDigits] = useState("");
@@ -50,6 +53,43 @@ export default function LoginScreen() {
       setSearchQuery("");
     }
   }, [showCountryModal]);
+
+  // Restrict the country list to spd_country_codes_for_phone (from the org
+  // config fetched in _layout.tsx), falling back to the full list when that
+  // config is missing, empty, or doesn't match any known country.
+  useEffect(() => {
+    const loadAllowedCountries = async () => {
+      try {
+        const raw = await getDecryptedID(SPD_COUNTRY_CODES_FOR_PHONE);
+        if (!raw) return;
+
+        const codes = JSON.parse(raw);
+        if (!Array.isArray(codes) || codes.length === 0) return;
+
+        const allowedFlags = codes
+          .map((c: string) =>
+            (countryCodeAliasMap as Record<string, string>)[
+              String(c).toUpperCase()
+            ] ?? String(c).toLowerCase(),
+          )
+          .filter(Boolean);
+
+        const filtered = countries.filter((c) =>
+          allowedFlags.includes(c.flag),
+        );
+
+        if (filtered.length > 0) {
+          setAvailableCountries(filtered);
+          setSelectedCountry((prev) =>
+            filtered.some((c) => c.code === prev.code) ? prev : filtered[0],
+          );
+        }
+      } catch (_) {
+        // Keep the default full country list on any error
+      }
+    };
+    loadAllowedCountries();
+  }, []);
 
   // Truncate phone digits if they exceed the selected country's maximum length
   useEffect(() => {
@@ -114,7 +154,7 @@ export default function LoginScreen() {
     }
   };
 
-  const filteredCountries = countries.filter(
+  const filteredCountries = availableCountries.filter(
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.code.includes(searchQuery)

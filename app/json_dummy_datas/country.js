@@ -10,4 +10,22 @@ const countries = [
   { code: "+44", flag: "gb", name: "United Kingdom", placeholder: "7700 900077" },
 ];
 
+// Maps backend country identifiers (e.g. spd_country_codes_for_phone: ["UAE", "IN"])
+// to this list's `flag` (ISO-2) values, since the backend doesn't always send
+// standard ISO-2 codes (e.g. "UAE" instead of "AE").
+export const countryCodeAliasMap = {
+  UAE: "ae",
+  AE: "ae",
+  IN: "in",
+  SA: "sa",
+  OM: "om",
+  QA: "qa",
+  KW: "kw",
+  BH: "bh",
+  US: "us",
+  USA: "us",
+  GB: "gb",
+  UK: "gb",
+};
+
 export default countries;

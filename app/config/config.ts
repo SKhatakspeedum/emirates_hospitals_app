@@ -38,3 +38,5 @@ export const SPD_ORG_WEBSITE_URL = "sg_org_website_url";
 export const SPD_INITPAGE_STEPS = "Initpage_Steps";
 export const SPD_ORG_LANGUAGE_CODE = "orglanguage";
 export const SPD_SELECTED_PATIENT = "sg_selected_patient";
+export const SPD_THEME_SETTING_CONFIG = "sg_theme_setting_config";
+export const SPD_COUNTRY_CODES_FOR_PHONE = "sg_country_codes_for_phone";

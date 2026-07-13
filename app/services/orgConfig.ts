@@ -49,15 +49,21 @@ export const ORG_CONFIG_STORAGE_KEYS = [
  * logo/theme/country codes are refreshed before the login screen shows,
  * instead of the login screen briefly showing stale/cleared values.
  *
+ * @param orgAiCode - Optional override for p_org_ai_code (e.g. a specific
+ * location's org_ai_code selected during registration). Defaults to
+ * SiteConfig.AI_CODE, preserving existing behavior for all current callers.
+ *
  * @returns true if org config was fetched and applied, false otherwise
  * (including when a one-time web reload was triggered — see below).
  */
-export async function fetchAndApplyOrgConfig(): Promise<boolean> {
+export async function fetchAndApplyOrgConfig(
+  orgAiCode?: string,
+): Promise<boolean> {
   try {
     const res = await callSuggestusAPI(
       spd_processId_config.sgconf_get_mst_organization_by_org_patient_portal_url,
       {
-        p_org_ai_code: SiteConfig.AI_CODE,
+        p_org_ai_code: orgAiCode || SiteConfig.AI_CODE,
         p_org_patient_portal_url: SiteConfig.ACTION_URL,
       },
     );

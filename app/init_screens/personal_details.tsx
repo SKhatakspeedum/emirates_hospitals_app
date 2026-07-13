@@ -44,6 +44,7 @@ import {
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 import CustomTabs from "../components/CustomTabs";
+import { fetchAndApplyOrgConfig } from "../services/orgConfig";
 
 type CheckStatus =
   | "idle"
@@ -111,12 +112,13 @@ export default function PersonalDetailsScreen() {
   const [focusedField, setFocusedField] = useState("");
 
   const [locations, setLocations] = useState<
-    { id: string; name: string }[]
+    { id: string; name: string; orgAiCode: string }[]
   >([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{
     id: string;
     name: string;
+    orgAiCode: string;
   } | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
@@ -124,15 +126,30 @@ export default function PersonalDetailsScreen() {
     const loadLocations = async () => {
       setLoadingLocations(true);
       try {
-        const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "3";
+        // spd_app_location_list ("INPATIENT,ORG0001") is a field inside the
+        // cached org config (DEFAULT_JSON_DATA), written by
+        // fetchAndApplyOrgConfig() in app/services/orgConfig.ts.
+        const defaultJsonStr = await getDecryptedID("DEFAULT_JSON_DATA");
+        let orgCodes = SiteConfig.AI_CODE;
+        try {
+          const defaultJson = defaultJsonStr ? JSON.parse(defaultJsonStr) : {};
+          orgCodes = defaultJson?.spd_app_location_list ?? SiteConfig.AI_CODE;
+        } catch (parseError) {
+          console.error("Error parsing DEFAULT_JSON_DATA:", parseError);
+        }
+
         const response = await callSuggestusAPI(
-          spd_processId_config.hospapp_get_mst_locations,
-          { p_org_id: orgId },
+          spd_processId_config.sgconf_get_mst_organization_location_patient_portal_list,
+          {
+            p_org_ai_code: SiteConfig.AI_CODE,
+            p_org_codes: orgCodes,
+          },
         );
         if (response?.returnCode === true && response.returnData?.length > 0) {
           const fetched = response.returnData.map((r: any) => ({
-            id: String(r.location_id ?? r.id ?? ""),
-            name: r.location_name ?? r.name ?? "",
+            id: String(r.id ?? ""),
+            name: r.description ?? r.name ?? "",
+            orgAiCode: r.org_ai_code ?? "",
           }));
           setLocations(fetched);
         }
@@ -307,6 +324,18 @@ export default function PersonalDetailsScreen() {
   };
 
   const handleContinue = async () => {
+    // Re-fetch org config scoped to the selected location's org_ai_code
+    // (reuses the existing fetchAndApplyOrgConfig — just a dynamic
+    // p_org_ai_code — so branding/theme reflect the chosen location).
+    // Best-effort: failures here must never block registration.
+    if (selectedLocation?.orgAiCode) {
+      try {
+        await fetchAndApplyOrgConfig(selectedLocation.orgAiCode);
+      } catch (e) {
+        console.error("Error refreshing org config for location:", e);
+      }
+    }
+
     // --- Path A: ID already exists → restore session + self-register as patient ---
     if (activeCheck.status === "exists") {
       setLoading(true);
@@ -1113,7 +1142,9 @@ export default function PersonalDetailsScreen() {
                       !selectedLocation && styles.inputPlaceholderText,
                     ]}
                   >
-                    {selectedLocation ? selectedLocation.name : "Select location"}
+                    {selectedLocation
+                      ? selectedLocation.name
+                      : "Select location"}
                   </Text>
                   {loadingLocations ? (
                     <ActivityIndicator size="small" color={Colors.secondary} />
@@ -1216,120 +1247,120 @@ export default function PersonalDetailsScreen() {
               </View>
             ) : (
               <Calendar
-              key={calendarMonth}
-              current={calendarMonth}
-              hideArrows
-              renderHeader={() => {
-                const jumpTo = (unit: "year" | "month", amount: number) => {
-                  const next = dayjs(calendarMonth).add(amount, unit);
-                  const today = dayjs();
-                  const minMonth = dayjs("1900-01-01");
-                  const clamped = next.isAfter(today)
-                    ? today
-                    : next.isBefore(minMonth)
-                      ? minMonth
-                      : next;
-                  setCalendarMonth(clamped.format("YYYY-MM-DD"));
-                };
-                return (
-                  <View style={styles.calendarHeaderRow}>
-                    <TouchableOpacity
-                      onPress={() => jumpTo("year", -1)}
-                      style={styles.calendarNavBtn}
-                    >
-                      <Ionicons
-                        name="play-back"
-                        size={16}
-                        color={Colors.primary}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => jumpTo("month", -1)}
-                      style={styles.calendarNavBtn}
-                    >
-                      <Ionicons
-                        name="chevron-back"
-                        size={20}
-                        color={Colors.primary}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setShowYearGrid(true)}
-                      style={styles.calendarHeaderLabelBtn}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.calendarHeaderText}>
-                        {dayjs(calendarMonth).format("MMMM YYYY")}
-                      </Text>
-                      <Ionicons
-                        name="caret-down"
-                        size={12}
-                        color={Colors.primary}
-                        style={{ marginLeft: 4 }}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => jumpTo("month", 1)}
-                      style={styles.calendarNavBtn}
-                    >
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={Colors.primary}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => jumpTo("year", 1)}
-                      style={styles.calendarNavBtn}
-                    >
-                      <Ionicons
-                        name="play-forward"
-                        size={16}
-                        color={Colors.primary}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                );
-              }}
-              onMonthChange={(m: { dateString: string }) =>
-                setCalendarMonth(m.dateString)
-              }
-              onDayPress={(day: { dateString: string }) => {
-                const selectedDate = new Date(`${day.dateString}T00:00:00`);
-                const today = new Date();
-                const minDate = new Date(1900, 0, 1);
-                setDob(
-                  selectedDate > today
-                    ? today
-                    : selectedDate < minDate
-                      ? minDate
-                      : selectedDate,
-                );
-                setShowDatePicker(false);
-              }}
-              minDate="1900-01-01"
-              maxDate={dayjs().format("YYYY-MM-DD")}
-              markedDates={{
-                [dayjs(dob).format("YYYY-MM-DD")]: {
-                  selected: true,
-                  selectedColor: Colors.primary,
-                },
-              }}
-              theme={{
-                backgroundColor: Colors.background,
-                calendarBackground: Colors.background,
-                todayTextColor: Colors.primary,
-                selectedDayBackgroundColor: Colors.primary,
-                selectedDayTextColor: Colors.background,
-                dayTextColor: Colors.text,
-                textDisabledColor: Colors.inactive,
-                arrowColor: Colors.primary,
-                monthTextColor: Colors.text,
-                textMonthFontWeight: "700",
-                textDayFontFamily: FontFamilies.regular,
-                textMonthFontFamily: FontFamilies.semiBold,
-                textDayHeaderFontFamily: FontFamilies.medium,
-              }}
+                key={calendarMonth}
+                current={calendarMonth}
+                hideArrows
+                renderHeader={() => {
+                  const jumpTo = (unit: "year" | "month", amount: number) => {
+                    const next = dayjs(calendarMonth).add(amount, unit);
+                    const today = dayjs();
+                    const minMonth = dayjs("1900-01-01");
+                    const clamped = next.isAfter(today)
+                      ? today
+                      : next.isBefore(minMonth)
+                        ? minMonth
+                        : next;
+                    setCalendarMonth(clamped.format("YYYY-MM-DD"));
+                  };
+                  return (
+                    <View style={styles.calendarHeaderRow}>
+                      <TouchableOpacity
+                        onPress={() => jumpTo("year", -1)}
+                        style={styles.calendarNavBtn}
+                      >
+                        <Ionicons
+                          name="play-back"
+                          size={16}
+                          color={Colors.primary}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => jumpTo("month", -1)}
+                        style={styles.calendarNavBtn}
+                      >
+                        <Ionicons
+                          name="chevron-back"
+                          size={20}
+                          color={Colors.primary}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setShowYearGrid(true)}
+                        style={styles.calendarHeaderLabelBtn}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.calendarHeaderText}>
+                          {dayjs(calendarMonth).format("MMMM YYYY")}
+                        </Text>
+                        <Ionicons
+                          name="caret-down"
+                          size={12}
+                          color={Colors.primary}
+                          style={{ marginLeft: 4 }}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => jumpTo("month", 1)}
+                        style={styles.calendarNavBtn}
+                      >
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color={Colors.primary}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => jumpTo("year", 1)}
+                        style={styles.calendarNavBtn}
+                      >
+                        <Ionicons
+                          name="play-forward"
+                          size={16}
+                          color={Colors.primary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                }}
+                onMonthChange={(m: { dateString: string }) =>
+                  setCalendarMonth(m.dateString)
+                }
+                onDayPress={(day: { dateString: string }) => {
+                  const selectedDate = new Date(`${day.dateString}T00:00:00`);
+                  const today = new Date();
+                  const minDate = new Date(1900, 0, 1);
+                  setDob(
+                    selectedDate > today
+                      ? today
+                      : selectedDate < minDate
+                        ? minDate
+                        : selectedDate,
+                  );
+                  setShowDatePicker(false);
+                }}
+                minDate="1900-01-01"
+                maxDate={dayjs().format("YYYY-MM-DD")}
+                markedDates={{
+                  [dayjs(dob).format("YYYY-MM-DD")]: {
+                    selected: true,
+                    selectedColor: Colors.primary,
+                  },
+                }}
+                theme={{
+                  backgroundColor: Colors.background,
+                  calendarBackground: Colors.background,
+                  todayTextColor: Colors.primary,
+                  selectedDayBackgroundColor: Colors.primary,
+                  selectedDayTextColor: Colors.background,
+                  dayTextColor: Colors.text,
+                  textDisabledColor: Colors.inactive,
+                  arrowColor: Colors.primary,
+                  monthTextColor: Colors.text,
+                  textMonthFontWeight: "700",
+                  textDayFontFamily: FontFamilies.regular,
+                  textMonthFontFamily: FontFamilies.semiBold,
+                  textDayHeaderFontFamily: FontFamilies.medium,
+                }}
               />
             )}
             <TouchableOpacity

@@ -123,5 +123,6 @@ export const spd_processId_config = {
     "spdonmood9_get_md_user_sleep_hygiene_check_out_sleep_hygeine_12months_chart",
   hospapp_get_mst_menu_app_widgets_json_data_common:
     "hospapp_get_mst_menu_app_widgets_json_data_common",
-  hospapp_get_mst_locations: "hospapp_get_mst_locations",
+  sgconf_get_mst_organization_location_patient_portal_list:
+    "sgconf_get_mst_organization_location_patient_portal_list",
 };

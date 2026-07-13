@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
@@ -108,6 +109,41 @@ export default function PersonalDetailsScreen() {
   const [gender, setGender] = useState<"Male" | "Female" | "">("Male");
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
+
+  const [locations, setLocations] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+
+  useEffect(() => {
+    const loadLocations = async () => {
+      setLoadingLocations(true);
+      try {
+        const orgId = (await fetchDataFromLocalStorage("sg_org_id")) ?? "3";
+        const response = await callSuggestusAPI(
+          spd_processId_config.hospapp_get_mst_locations,
+          { p_org_id: orgId },
+        );
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const fetched = response.returnData.map((r: any) => ({
+            id: String(r.location_id ?? r.id ?? ""),
+            name: r.location_name ?? r.name ?? "",
+          }));
+          setLocations(fetched);
+        }
+      } catch (e) {
+        console.error("Error fetching locations:", e);
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+    loadLocations();
+  }, []);
 
   const [emiratesIdCheck, setEmiratesIdCheck] =
     useState<FieldCheck>(IDLE_CHECK);
@@ -606,6 +642,8 @@ export default function PersonalDetailsScreen() {
             user_passport_no: !isResident ? passportNo.trim() : "",
             user_dob: dayjs(dob).format("YYYY-MM-DD"),
             user_gender: gender,
+            user_location_id: selectedLocation?.id ?? "",
+            user_location_name: selectedLocation?.name ?? "",
           }),
         },
       );
@@ -758,7 +796,27 @@ export default function PersonalDetailsScreen() {
             {/* ID field — Emirates ID or Passport based on active tab */}
             {isResident ? (
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Emirates ID</Text>
+                <View style={styles.labelRow}>
+                  <Text style={styles.inputLabel}>Emirates ID</Text>
+                  <TouchableOpacity
+                    style={styles.scanButton}
+                    onPress={() =>
+                      Toast.show({
+                        type: "info",
+                        text1: "Coming Soon",
+                        text2: "Emirates ID scanning will be available soon.",
+                      })
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name="scan-outline"
+                      size={16}
+                      color={Colors.secondary}
+                    />
+                    <Text style={styles.scanButtonText}>Scan</Text>
+                  </TouchableOpacity>
+                </View>
                 <View
                   style={[
                     styles.inputWrapper,
@@ -1039,6 +1097,35 @@ export default function PersonalDetailsScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+
+              {/* Location */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Location</Text>
+                <TouchableOpacity
+                  style={styles.inputWrapper}
+                  onPress={() => setShowLocationPicker(true)}
+                  activeOpacity={0.8}
+                  disabled={loadingLocations}
+                >
+                  <Text
+                    style={[
+                      styles.input,
+                      !selectedLocation && styles.inputPlaceholderText,
+                    ]}
+                  >
+                    {selectedLocation ? selectedLocation.name : "Select location"}
+                  </Text>
+                  {loadingLocations ? (
+                    <ActivityIndicator size="small" color={Colors.secondary} />
+                  ) : (
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color={Colors.textLabel}
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
             {/* end fieldsDisabled wrapper */}
           </View>
@@ -1254,6 +1341,46 @@ export default function PersonalDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={showLocationPicker}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowLocationPicker(false)}
+      >
+        <View style={styles.dobModalOverlay}>
+          <View style={styles.dobModalCard}>
+            {locations.length === 0 ? (
+              <Text style={styles.locationEmptyText}>
+                No locations available.
+              </Text>
+            ) : (
+              <FlatList
+                data={locations}
+                keyExtractor={(item) => item.id}
+                style={styles.locationList}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.locationRow}
+                    onPress={() => {
+                      setSelectedLocation(item);
+                      setShowLocationPicker(false);
+                    }}
+                  >
+                    <Text style={styles.locationRowText}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+            <TouchableOpacity
+              onPress={() => setShowLocationPicker(false)}
+              style={styles.dobModalCancelButton}
+            >
+              <Text style={styles.dobModalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <Toast />
     </View>
   );
@@ -1285,6 +1412,26 @@ const styles: any = StyleSheet.create({
     color: Colors.primary,
     fontFamily: FontFamilies.semiBold,
     fontSize: 15,
+  },
+  locationList: {
+    maxHeight: 320,
+  },
+  locationRow: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  locationRowText: {
+    fontSize: 15,
+    fontFamily: FontFamilies.medium,
+    color: Colors.text,
+  },
+  locationEmptyText: {
+    fontSize: 14,
+    fontFamily: FontFamilies.medium,
+    color: Colors.textLabel,
+    paddingVertical: 20,
+    textAlign: "center",
   },
   calendarHeaderRow: {
     flexDirection: "row",
@@ -1368,6 +1515,22 @@ const styles: any = StyleSheet.create({
     marginBottom: 8,
     textAlign: "left",
   },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  scanButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 8,
+  },
+  scanButtonText: {
+    fontSize: 14,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.secondary,
+  },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -1411,6 +1574,10 @@ const styles: any = StyleSheet.create({
     fontFamily: FontFamilies.semiBold,
     paddingVertical: 0,
     minWidth: 0,
+  },
+  inputPlaceholderText: {
+    color: Colors.inactive,
+    fontFamily: FontFamilies.medium,
   },
   inputNoOutline: {
     outlineStyle: "none",

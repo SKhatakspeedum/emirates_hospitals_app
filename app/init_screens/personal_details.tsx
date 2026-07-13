@@ -45,6 +45,9 @@ import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 import CustomTabs from "../components/CustomTabs";
 import { fetchAndApplyOrgConfig } from "../services/orgConfig";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import TextRecognition from "@react-native-ml-kit/text-recognition";
+import * as ImagePicker from "expo-image-picker";
 
 type CheckStatus =
   | "idle"
@@ -92,6 +95,75 @@ const formatEmiratesId = (text: string) => {
 const formatPassport = (text: string) =>
   text.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
+type ParsedEmiratesId = {
+  emiratesId: string;
+  firstName: string;
+  lastName: string;
+  dob: Date | null;
+};
+
+// Best-effort parser for Emirates ID card OCR text (ML Kit's recognized
+// text doesn't preserve visual layout perfectly, so this uses label-based
+// heuristics rather than fixed positions). Returns null if no valid
+// Emirates ID number was found — that's the one field we can't proceed
+// without; name/DOB are filled in on a best-effort basis.
+const parseEmiratesIdText = (rawText: string): ParsedEmiratesId | null => {
+  const lines = rawText
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  // ID Number — 784-XXXX-XXXXXXX-X (15 digits total, starts with 784)
+  const idMatch = rawText.match(/784[\s-]?\d{4}[\s-]?\d{7}[\s-]?\d/);
+  if (!idMatch) return null;
+  const idDigits = idMatch[0].replace(/\D/g, "");
+  if (idDigits.length !== 15) return null;
+  const emiratesId = formatEmiratesId(idDigits);
+
+  // Name — look for a line containing "Name" (but not "Nationality"),
+  // take whatever follows a colon on that line, else the next line.
+  let firstName = "";
+  let lastName = "";
+  const nameLineIdx = lines.findIndex(
+    (l) => /\bname\b/i.test(l) && !/nationality/i.test(l),
+  );
+  if (nameLineIdx !== -1) {
+    const sameLine = lines[nameLineIdx].split(/name\s*[:\-]?/i)[1]?.trim();
+    const candidate =
+      sameLine && sameLine.length > 1 ? sameLine : lines[nameLineIdx + 1];
+    if (candidate) {
+      const parts = candidate
+        .replace(/[^a-zA-Z\s]/g, "")
+        .trim()
+        .split(/\s+/);
+      firstName = parts[0] ?? "";
+      lastName = parts.slice(1).join(" ");
+    }
+  }
+
+  // Date of Birth — a date near a line mentioning "Birth"
+  let dob: Date | null = null;
+  const dobLineIdx = lines.findIndex((l) => /birth/i.test(l));
+  const searchLines =
+    dobLineIdx !== -1
+      ? [lines[dobLineIdx], lines[dobLineIdx + 1] ?? ""]
+      : lines;
+  for (const line of searchLines) {
+    const dateMatch = line.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+    if (dateMatch) {
+      const [, d, m, y] = dateMatch;
+      const year = y.length === 2 ? Number(`19${y}`) : Number(y);
+      const parsed = new Date(year, Number(m) - 1, Number(d));
+      if (!isNaN(parsed.getTime())) {
+        dob = parsed;
+        break;
+      }
+    }
+  }
+
+  return { emiratesId, firstName, lastName, dob };
+};
+
 export default function PersonalDetailsScreen() {
   const router = useRouter();
   const route = useRoute();
@@ -121,6 +193,143 @@ export default function PersonalDetailsScreen() {
     orgAiCode: string;
   } | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+
+  // Real camera capture + on-device ML Kit OCR. "searching" waits on the
+  // user to tap; "processing" captures a photo and runs text recognition;
+  // "success"/"error" reflect whether a valid Emirates ID number was found.
+  type ScanPhase = "searching" | "processing" | "success" | "error";
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [scanPhase, setScanPhase] = useState<ScanPhase>("searching");
+  const [scanErrorMessage, setScanErrorMessage] = useState("");
+  const [scannedData, setScannedData] = useState<ParsedEmiratesId | null>(null);
+  const cameraRef = React.useRef<CameraView>(null);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+
+  useEffect(() => {
+    if (!showScanModal) return;
+    setScanPhase("searching");
+    setScannedData(null);
+    setScanErrorMessage("");
+    if (!cameraPermission?.granted) {
+      requestCameraPermission();
+    }
+  }, [showScanModal]);
+
+  // Shared by both the camera capture and the "Upload Document" fallback —
+  // runs OCR on whatever image URI it's given and updates scan state.
+  const processScannedImage = async (uri: string) => {
+    setScanPhase("processing");
+    // @react-native-ml-kit/text-recognition is a native module with no web
+    // implementation — it can only run on a real device/simulator via a
+    // native build (npx expo run:android / run:ios or an EAS dev build),
+    // never in a browser preview. Fail clearly here instead of surfacing
+    // the raw "package doesn't seem to be linked" native error.
+    if (Platform.OS === "web") {
+      setScanErrorMessage(
+        "Emirates ID scanning isn't supported in the web preview. Please use the mobile app (Android/iOS build) to scan or upload your ID.",
+      );
+      setScanPhase("error");
+      return;
+    }
+    try {
+      const result = await TextRecognition.recognize(uri);
+      const parsed = parseEmiratesIdText(result.text);
+
+      if (!parsed) {
+        setScanErrorMessage(
+          "Couldn't read the Emirates ID clearly. Please try again with better lighting or a clearer photo.",
+        );
+        setScanPhase("error");
+        return;
+      }
+
+      setScannedData(parsed);
+      setScanPhase("success");
+    } catch (e) {
+      console.error("Emirates ID scan error:", e);
+      setScanErrorMessage(
+        "Something went wrong while scanning. Please try again.",
+      );
+      setScanPhase("error");
+    }
+  };
+
+  const handleCaptureTap = async () => {
+    if (scanPhase !== "searching" || !cameraRef.current) return;
+    setScanPhase("processing");
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+      if (!photo?.uri) throw new Error("No image captured");
+      await processScannedImage(photo.uri);
+    } catch (e) {
+      console.error("Emirates ID capture error:", e);
+      setScanErrorMessage(
+        "Something went wrong while scanning. Please try again.",
+      );
+      setScanPhase("error");
+    }
+  };
+
+  const handleUploadDocument = async () => {
+    if (scanPhase !== "searching") return;
+    try {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setScanErrorMessage(
+          "Please allow photo library access to upload your Emirates ID.",
+        );
+        setScanPhase("error");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+
+      await processScannedImage(result.assets[0].uri);
+    } catch (e) {
+      console.error("Emirates ID upload error:", e);
+      setScanErrorMessage(
+        "Something went wrong while reading the document. Please try again.",
+      );
+      setScanPhase("error");
+    }
+  };
+
+  const handleScanRetry = () => {
+    setScannedData(null);
+    setScanErrorMessage("");
+    setScanPhase("searching");
+  };
+
+  const handleScanDone = () => {
+    if (!scannedData) return;
+    setShowScanModal(false);
+    setEmiratesId(scannedData.emiratesId);
+    if (scannedData.firstName) setFirstName(scannedData.firstName);
+    if (scannedData.lastName) setLastName(scannedData.lastName);
+    if (scannedData.dob) setDob(scannedData.dob);
+    checkExistence("emirates", scannedData.emiratesId);
+  };
+
+  const scanFrameColor =
+    scanPhase === "searching"
+      ? "#EF4444"
+      : scanPhase === "processing"
+        ? Colors.secondary
+        : scanPhase === "error"
+          ? "#EF4444"
+          : "#22C55E";
+
+  const scanStatusText =
+    scanPhase === "searching"
+      ? "Position your Emirates ID within the frame and tap to scan"
+      : scanPhase === "processing"
+        ? "Reading document..."
+        : "";
 
   useEffect(() => {
     const loadLocations = async () => {
@@ -829,13 +1038,7 @@ export default function PersonalDetailsScreen() {
                   <Text style={styles.inputLabel}>Emirates ID</Text>
                   <TouchableOpacity
                     style={styles.scanButton}
-                    onPress={() =>
-                      Toast.show({
-                        type: "info",
-                        text1: "Coming Soon",
-                        text2: "Emirates ID scanning will be available soon.",
-                      })
-                    }
+                    onPress={() => setShowScanModal(true)}
                     activeOpacity={0.7}
                   >
                     <Ionicons
@@ -1412,6 +1615,174 @@ export default function PersonalDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Emirates ID scan — real camera + on-device ML Kit OCR */}
+      <Modal
+        visible={showScanModal}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowScanModal(false)}
+      >
+        <View style={styles.scanOverlay}>
+          {scanPhase === "success" && scannedData ? (
+            <View style={styles.scanSuccessCard}>
+              <View style={styles.scanSuccessIconWrap}>
+                <Ionicons name="checkmark-circle" size={40} color="#22C55E" />
+              </View>
+              <Text style={styles.scanSuccessTitle}>Scan Successful!</Text>
+              <Text style={styles.scanSuccessSubtitle}>
+                Emirates ID : {scannedData.emiratesId}
+              </Text>
+              <View style={styles.scanSuccessDivider} />
+              <View style={styles.scanSuccessRow}>
+                <Text style={styles.scanSuccessLabel}>Name</Text>
+                <Text style={styles.scanSuccessValue}>
+                  {scannedData.firstName || scannedData.lastName
+                    ? `${scannedData.firstName} ${scannedData.lastName}`.trim()
+                    : "Not detected — please enter manually"}
+                </Text>
+              </View>
+              <View style={styles.scanSuccessRow}>
+                <Text style={styles.scanSuccessLabel}>Date of Birth</Text>
+                <Text style={styles.scanSuccessValue}>
+                  {scannedData.dob
+                    ? dayjs(scannedData.dob).format("MMM DD, YYYY")
+                    : "Not detected — please enter manually"}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.scanDoneButton}
+                onPress={handleScanDone}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.scanDoneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          ) : scanPhase === "error" ? (
+            <View style={styles.scanSuccessCard}>
+              <View style={styles.scanSuccessIconWrap}>
+                <Ionicons name="alert-circle" size={40} color="#EF4444" />
+              </View>
+              <Text style={styles.scanSuccessTitle}>Scan Failed</Text>
+              <Text style={styles.scanSuccessSubtitle}>{scanErrorMessage}</Text>
+              <TouchableOpacity
+                style={styles.scanDoneButton}
+                onPress={handleScanRetry}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.scanDoneButtonText}>Try Again</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowScanModal(false)}
+                style={styles.scanCancelButton}
+              >
+                <Text
+                  style={[styles.scanCancelText, { color: Colors.textLabel }]}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : !cameraPermission?.granted ? (
+            <View style={styles.scanSuccessCard}>
+              <Ionicons
+                name="camera-outline"
+                size={40}
+                color={Colors.textLabel}
+                style={{ marginBottom: 12 }}
+              />
+              <Text style={styles.scanSuccessTitle}>Camera Access Needed</Text>
+              <Text style={styles.scanSuccessSubtitle}>
+                Please allow camera access to scan your Emirates ID.
+              </Text>
+              <TouchableOpacity
+                style={styles.scanDoneButton}
+                onPress={requestCameraPermission}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.scanDoneButtonText}>Grant Access</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowScanModal(false)}
+                style={styles.scanCancelButton}
+              >
+                <Text
+                  style={[styles.scanCancelText, { color: Colors.textLabel }]}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.scanCameraArea}>
+              <View style={styles.scanFrameBox}>
+                <CameraView
+                  ref={cameraRef}
+                  style={StyleSheet.absoluteFill}
+                  facing="back"
+                />
+                <View
+                  style={[
+                    styles.scanCorner,
+                    styles.scanCornerTL,
+                    { borderColor: scanFrameColor },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.scanCorner,
+                    styles.scanCornerTR,
+                    { borderColor: scanFrameColor },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.scanCorner,
+                    styles.scanCornerBL,
+                    { borderColor: scanFrameColor },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.scanCorner,
+                    styles.scanCornerBR,
+                    { borderColor: scanFrameColor },
+                  ]}
+                />
+              </View>
+              {scanPhase === "processing" && (
+                <ActivityIndicator
+                  color={scanFrameColor}
+                  style={{ marginTop: 28 }}
+                />
+              )}
+              <Text style={[styles.scanStatusText, { color: scanFrameColor }]}>
+                {scanStatusText}
+              </Text>
+              {scanPhase === "searching" && (
+                <TouchableOpacity
+                  style={styles.scanCaptureButton}
+                  onPress={handleCaptureTap}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons
+                    name="scan-outline"
+                    size={18}
+                    color={Colors.lightgray}
+                  />
+                  <Text style={styles.scanCaptureButtonText}>Tap to Scan</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={() => setShowScanModal(false)}
+                style={styles.scanCancelButton}
+              >
+                <Text style={styles.scanCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </Modal>
       <Toast />
     </View>
   );
@@ -1463,6 +1834,146 @@ const styles: any = StyleSheet.create({
     color: Colors.textLabel,
     paddingVertical: 20,
     textAlign: "center",
+  },
+  scanOverlay: {
+    flex: 1,
+    backgroundColor: "#141414",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scanCameraArea: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scanFrameBox: {
+    width: 260,
+    height: 170,
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: 8,
+  },
+  scanCorner: {
+    position: "absolute",
+    width: 32,
+    height: 32,
+  },
+  scanCornerTL: {
+    top: 0,
+    left: 0,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderTopLeftRadius: 8,
+  },
+  scanCornerTR: {
+    top: 0,
+    right: 0,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderTopRightRadius: 8,
+  },
+  scanCornerBL: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderBottomLeftRadius: 8,
+  },
+  scanCornerBR: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderBottomRightRadius: 8,
+  },
+  scanStatusText: {
+    marginTop: 28,
+    fontSize: 15,
+    fontFamily: FontFamilies.semiBold,
+    textAlign: "center",
+    paddingHorizontal: 32,
+  },
+  scanCaptureButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 20,
+    backgroundColor: Colors.primary,
+    borderRadius: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+  },
+  scanCaptureButtonText: {
+    color: Colors.lightgray,
+    fontSize: 15,
+    fontFamily: FontFamilies.bold,
+  },
+  scanCancelButton: {
+    marginTop: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+  },
+  scanCancelText: {
+    color: Colors.lightgray,
+    fontSize: 15,
+    fontFamily: FontFamilies.semiBold,
+  },
+  scanSuccessCard: {
+    width: 300,
+    backgroundColor: Colors.background,
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  scanSuccessIconWrap: {
+    marginBottom: 8,
+  },
+  scanSuccessTitle: {
+    fontSize: 17,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  scanSuccessSubtitle: {
+    fontSize: 13,
+    fontFamily: FontFamilies.medium,
+    color: Colors.textLabel,
+    marginBottom: 16,
+  },
+  scanSuccessDivider: {
+    width: "100%",
+    height: 1,
+    backgroundColor: Colors.border,
+    marginBottom: 12,
+  },
+  scanSuccessRow: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  scanSuccessLabel: {
+    fontSize: 14,
+    fontFamily: FontFamilies.medium,
+    color: Colors.textLabel,
+  },
+  scanSuccessValue: {
+    fontSize: 14,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
+  },
+  scanDoneButton: {
+    width: "100%",
+    marginTop: 12,
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  scanDoneButtonText: {
+    color: Colors.lightgray,
+    fontSize: 16,
+    fontFamily: FontFamilies.bold,
   },
   calendarHeaderRow: {
     flexDirection: "row",

@@ -10,19 +10,9 @@ import Toast from "react-native-toast-message";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { AuthProvider } from "./auth-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  IS_LOGGED_IN,
-  SPD_ORG_ID,
-  SPD_AI_CODE,
-  SPD_ORG_LOGO,
-  SPD_ORG_WEBSITE_URL,
-  SPD_INITPAGE_STEPS,
-  SPD_ORG_LANGUAGE_CODE,
-  SPD_THEME_SETTING_CONFIG,
-  SPD_COUNTRY_CODES_FOR_PHONE,
-} from "./config/config";
-import { setEncryptedID } from "./suggestus_plugin/util/util_functions";
-import { applyThemeColors, THEME_CACHE_KEY } from "./config/colors";
+import { IS_LOGGED_IN } from "./config/config";
+import { useOrgLogo } from "./hooks/useOrgLogo";
+import { fetchAndApplyOrgConfig } from "./services/orgConfig";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -33,18 +23,16 @@ import {
   Dimensions,
 } from "react-native";
 import {
-  callSuggestusAPI,
   createSuggestusSession,
   initializeSuggestus,
 } from "./suggestus_plugin/suggestusClient";
-import { spd_processId_config } from "./config/process_id";
-import { SiteConfig } from "./config/site_config";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const router = useRouter();
   const colorScheme = useColorScheme();
+  const logoSource = useOrgLogo();
   const [loaded, error] = useFonts(Fonts);
   const [isReady, setIsReady] = useState(false);
 
@@ -166,150 +154,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     const handleInitialRedirect = async () => {
-      try {
-        await init();
-
-        const res = await callSuggestusAPI(
-          spd_processId_config.sgconf_get_mst_organization_by_org_patient_portal_url,
-          {
-            p_org_ai_code: SiteConfig.AI_CODE,
-            p_org_patient_portal_url: SiteConfig.ACTION_URL,
-          },
-        );
-
-        if (res?.returnCode === true && res?.returnData?.length > 0) {
-          const final_org_data = res.returnData[0];
-
-          // ── Basic org fields ──────────────────────────────────────────
-          const org_ai_code = final_org_data?.org_ai_code;
-          const org_profile_image = final_org_data?.org_profile_image;
-          const org_name = final_org_data?.org_name;
-          const org_website_url = final_org_data?.org_website;
-          const org_id = final_org_data?.org_id;
-
-          await setEncryptedID(SPD_ORG_LOGO, org_profile_image || null);
-          await setEncryptedID(SPD_ORG_WEBSITE_URL, org_website_url || null);
-          await setEncryptedID(SPD_AI_CODE, org_ai_code || null);
-          await setEncryptedID("sg_org_name", org_name || null);
-
-          // sg_org_id is the key read by createUserdata() in util_functions.js
-          if (org_id) {
-            await setEncryptedID(SPD_ORG_ID, org_id);
-          }
-
-          // ── Parse nested org detail JSON ──────────────────────────────
-          let responseData: Record<string, any> = {};
-          try {
-            responseData =
-              typeof final_org_data?.p_org_detail_json === "string"
-                ? JSON.parse(final_org_data.p_org_detail_json)
-                : final_org_data?.p_org_detail_json || {};
-          } catch (parseError) {
-            console.error(
-              "[RootLayout] Error parsing p_org_detail_json:",
-              parseError,
-            );
-            responseData = {};
-          }
-
-          // ── Signup / EULA config ──────────────────────────────────────
-          const eulaConfig = responseData?.spd_signup_eula_config;
-          await setEncryptedID(
-            SPD_INITPAGE_STEPS,
-            eulaConfig && eulaConfig.length !== 0
-              ? JSON.stringify(eulaConfig)
-              : null,
-          );
-
-          // ── Language code ─────────────────────────────────────────────
-          await setEncryptedID(
-            SPD_ORG_LANGUAGE_CODE,
-            responseData?.spd_theme_setting_config?.language || null,
-          );
-
-          // ── Color palette (theme-aware) ───────────────────────────────
-          const colorPalette = {
-            primary: responseData?.spd_theme_setting_config?.primary_color,
-            secondary: responseData?.spd_theme_setting_config?.secondary_color,
-            ui_border: responseData?.spd_theme_setting_config?.ui_border,
-            ui_theme_base:
-              responseData?.spd_theme_setting_config?.ui_theme_base,
-          };
-
-          if (responseData?.spd_theme_setting_config?.theme !== "DARK") {
-            await setEncryptedID("color_palette", colorPalette);
-          } else {
-            await setEncryptedID("dark_color_palette", colorPalette);
-          }
-
-          // ── Apply backend-driven theme colors (safe no-op if missing) ──
-          applyThemeColors(responseData?.spd_theme_setting_config);
-          await setEncryptedID(
-            SPD_THEME_SETTING_CONFIG,
-            responseData?.spd_theme_setting_config || null,
-          );
-
-          // ── Web only: cache theme + reload once so already-imported ───
-          // screens' StyleSheet.create() calls (baked with the OLD colors
-          // before this fetch resolved) get rebuilt with the correct
-          // backend theme from the very first paint. Guarded by a
-          // sessionStorage flag so this can only reload once per tab
-          // session, and only when the fetched theme actually changed.
-          if (
-            Platform.OS === "web" &&
-            typeof window !== "undefined" &&
-            window.localStorage &&
-            responseData?.spd_theme_setting_config
-          ) {
-            try {
-              const newThemeStr = JSON.stringify(
-                responseData.spd_theme_setting_config,
-              );
-              const prevThemeStr = window.localStorage.getItem(
-                THEME_CACHE_KEY,
-              );
-              window.localStorage.setItem(THEME_CACHE_KEY, newThemeStr);
-
-              if (
-                newThemeStr !== prevThemeStr &&
-                !window.sessionStorage.getItem("sg_theme_reload_done")
-              ) {
-                window.sessionStorage.setItem("sg_theme_reload_done", "true");
-                window.location.reload();
-                return; // stop init here — the reload will re-run this effect
-              }
-            } catch (themeCacheError) {
-              console.error(
-                "[RootLayout] Error caching theme:",
-                themeCacheError,
-              );
-            }
-          }
-
-          // ── Allowed country codes for phone number inputs ──────────────
-          await setEncryptedID(
-            SPD_COUNTRY_CODES_FOR_PHONE,
-            responseData?.spd_country_codes_for_phone || null,
-          );
-
-          // ── Terms & Conditions ────────────────────────────────────────
-          await setEncryptedID(
-            "TERM_CONDITION",
-            final_org_data?.terms_conditions || null,
-          );
-
-          // ── Full org config JSON (used by login page config etc.) ─────
-          await setEncryptedID("DEFAULT_JSON_DATA", responseData);
-        } else {
-          console.warn(
-            "[RootLayout] org config fetch failed or empty:",
-            res?.message || res?.msg,
-          );
-        }
-      } catch (error) {
-        console.error("[RootLayout] Error fetching org config:", error);
-      }
-
+      await init();
+      // Fetches + applies org logo, theme colors, country codes, EULA
+      // config, etc. — shared with the post-logout flow in
+      // init_screens/splash.tsx (see app/services/orgConfig.ts).
+      await fetchAndApplyOrgConfig();
       setIsReady(true); // Show the app now
     };
 
@@ -349,7 +198,7 @@ export default function RootLayout() {
         />
         <View style={styles.centerContent}>
           <Image
-            source={require("@/assets/images/logo.png")}
+            source={logoSource}
             style={styles.logo}
             resizeMode="contain"
           />

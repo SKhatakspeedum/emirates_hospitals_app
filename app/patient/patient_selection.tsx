@@ -29,6 +29,7 @@ import {
 } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import dayjs from "dayjs";
+import { useOrgLogo } from "../hooks/useOrgLogo";
 
 interface Patient {
   id: string;
@@ -52,6 +53,7 @@ const parseAdditionalAttributes = (raw: any): Record<string, string> => {
 
 export default function PatientSelectionScreen() {
   const router = useRouter();
+  const logoSource = useOrgLogo();
   const { height: screenHeight } = Dimensions.get("window");
   const isSmallScreen = screenHeight < 680;
 
@@ -475,7 +477,7 @@ export default function PatientSelectionScreen() {
         ]}
       >
         <Image
-          source={require("@/assets/images/logo.png")}
+          source={logoSource}
           style={[styles.logoImg, { height: isSmallScreen ? 40 : 60 }]}
           resizeMode="contain"
         />

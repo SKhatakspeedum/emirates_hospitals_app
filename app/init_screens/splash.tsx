@@ -19,9 +19,12 @@ import "react-native-get-random-values";
 import Toast from "react-native-toast-message";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
+import { useOrgLogo } from "../hooks/useOrgLogo";
+import { fetchAndApplyOrgConfig } from "../services/orgConfig";
 
 export default function SplashScreen() {
   const router = useRouter();
+  const logoSource = useOrgLogo();
   const [loading, setLoading] = useState(true);
   const [loadingText, setLoadingText] = useState("Initializing...");
   const [sessionError, setSessionError] = useState(false);
@@ -46,7 +49,13 @@ export default function SplashScreen() {
         }
       }
 
-      // Step 2: Check persistent login
+      // Step 2: Refresh org config (logo, theme, country codes, etc.) —
+      // important after logout, since AsyncStorage.clear() wipes it and the
+      // login screen would otherwise show stale/default branding.
+      setLoadingText("Loading organization details...");
+      await fetchAndApplyOrgConfig();
+
+      // Step 3: Check persistent login
       setLoadingText("Loading...");
       const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
       setLoading(false);
@@ -81,7 +90,7 @@ export default function SplashScreen() {
       />
       <View style={styles.centerContent}>
         <Image
-          source={require("@/assets/images/logo.png")}
+          source={logoSource}
           style={styles.logo}
           resizeMode="contain"
         />

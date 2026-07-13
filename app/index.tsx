@@ -16,9 +16,11 @@ import { IS_LOGGED_IN } from "./config/config";
 import "react-native-get-random-values";
 import Toast from "react-native-toast-message";
 import useResponsiveHorizontalMargin from "./hooks/useResponsiveHorizontalMargin";
+import { useOrgLogo } from "./hooks/useOrgLogo";
 
 export default function IndexRedirect() {
   const router = useRouter();
+  const logoSource = useOrgLogo();
   const [loading, setLoading] = useState(true);
   const horizontalMargin = useResponsiveHorizontalMargin();
 
@@ -82,7 +84,7 @@ export default function IndexRedirect() {
       />
       <View style={styles.centerContent}>
         <Image
-          source={require("@/assets/images/logo.png")}
+          source={logoSource}
           style={styles.logo}
           resizeMode="contain"
         />

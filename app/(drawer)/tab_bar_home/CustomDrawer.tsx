@@ -24,16 +24,8 @@ import {
 import Toast from "react-native-toast-message";
 import { Colors } from "@/app/config/colors";
 import { FontFamilies } from "@/app/config/fonts";
-import {
-  initializeSuggestus,
-  callSuggestusAPI,
-} from "@/app/suggestus_plugin/suggestusClient";
-import {
-  getDecryptedID,
-  saveDataFromLocalStorage,
-} from "@/app/suggestus_plugin/util/util_functions";
-import { spd_processId_config } from "@/app/config/process_id";
-import { SiteConfig } from "@/app/config/site_config";
+import { getDecryptedID } from "@/app/suggestus_plugin/util/util_functions";
+import { ORG_CONFIG_STORAGE_KEYS } from "@/app/services/orgConfig";
 
 interface UserProfile {
   name: string;
@@ -197,39 +189,26 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     if (screen === "SignOut") {
       setIsSigningOut(true);
       try {
+        // Org/hospital branding (logo, theme, country codes, etc.) isn't
+        // user session data — preserve it across AsyncStorage.clear() so
+        // the splash/login screens keep showing the correct org logo
+        // immediately, instead of flashing to the generic default asset
+        // while fetchAndApplyOrgConfig() re-fetches it in the background.
+        const preserved = await AsyncStorage.multiGet(ORG_CONFIG_STORAGE_KEYS);
         await AsyncStorage.clear();
-        try {
-          await initializeSuggestus();
-        } catch (err) {
-          console.warn(
-            "[CustomDrawer] initializeSuggestus after logout failed:",
-            err,
-          );
+        const toRestore = preserved.filter(
+          (pair): pair is [string, string] => pair[1] !== null,
+        );
+        if (toRestore.length > 0) {
+          await AsyncStorage.multiSet(toRestore);
         }
-        try {
-          const orgRes = await callSuggestusAPI(
-            spd_processId_config.sgconf_get_mst_organization_by_org_patient_portal_url,
-            {
-              p_org_ai_code: SiteConfig.AI_CODE,
-              p_org_patient_portal_url: SiteConfig.ACTION_URL,
-            },
-          );
-          if (orgRes?.returnCode === true && orgRes.returnData?.length > 0) {
-            const org = orgRes.returnData[0];
-            const orgId = String(org.org_id ?? "");
-            const orgName = String(org.org_name ?? "");
-            if (orgId) {
-              await saveDataFromLocalStorage("sg_org_id", orgId);
-              await saveDataFromLocalStorage("sg_org_name", orgName);
-            }
-          }
-        } catch (err) {
-          console.warn("[CustomDrawer] org lookup after logout failed:", err);
-        }
+
         Toast.show({ type: "success", text1: "You have been signed out." });
+        // Route through the splash screen so it re-runs device/session init
+        // and refreshes org config in the background.
         props.navigation.reset({
           index: 0,
-          routes: [{ name: "init_screens/login" }],
+          routes: [{ name: "init_screens/splash" }],
         });
       } catch (err) {
         console.error("[CustomDrawer] Sign-out error:", err);

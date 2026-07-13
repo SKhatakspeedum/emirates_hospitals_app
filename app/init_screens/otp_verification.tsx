@@ -31,8 +31,10 @@ import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import Toast from "react-native-toast-message";
+import { useOrgLogo } from "../hooks/useOrgLogo";
 
 export default function OTPVerificationScreen() {
+  const logoSource = useOrgLogo();
   const route = useRoute();
   const router = useRouter();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -253,7 +255,7 @@ export default function OTPVerificationScreen() {
           <View style={styles.content}>
             <View style={styles.logoContainer}>
               <Image
-                source={require("@/assets/images/logo.png")}
+                source={logoSource}
                 style={styles.logoImg}
                 resizeMode="contain"
               />

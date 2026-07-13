@@ -27,9 +27,11 @@ import countries, { countryCodeAliasMap } from "../json_dummy_datas/country";
 import { FontFamilies } from "../config/fonts";
 import { SPD_COUNTRY_CODES_FOR_PHONE } from "../config/config";
 import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
+import { useOrgLogo } from "../hooks/useOrgLogo";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const logoSource = useOrgLogo();
   const { height: screenHeight } = Dimensions.get("window");
   const isSmallScreen = screenHeight < 680;
 
@@ -188,7 +190,7 @@ export default function LoginScreen() {
           <View style={styles.content}>
             <View style={styles.logoContainer}>
               <Image
-                source={require("@/assets/images/logo.png")}
+                source={logoSource}
                 style={styles.logoImg}
                 resizeMode="contain"
               />

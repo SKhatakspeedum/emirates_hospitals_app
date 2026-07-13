@@ -30,6 +30,7 @@ import {
   saveDataFromLocalStorage,
 } from "../suggestus_plugin/util/util_functions";
 import { spd_processId_config } from "../config/process_id";
+import { useOrgLogo } from "../hooks/useOrgLogo";
 
 interface Patient {
   id: string;
@@ -53,6 +54,7 @@ const parseAdditionalAttributes = (raw: any): Record<string, string> => {
 
 export default function RegisteredPatientsScreen() {
   const router = useRouter();
+  const logoSource = useOrgLogo();
   const { hideSkip, fromDrawer } = useLocalSearchParams<{
     hideSkip?: string;
     fromDrawer?: string;
@@ -442,7 +444,7 @@ export default function RegisteredPatientsScreen() {
           ]}
         >
           <Image
-            source={require("@/assets/images/logo.png")}
+            source={logoSource}
             style={[styles.logoImg, { height: isSmallScreen ? 50 : 70 }]}
             resizeMode="contain"
           />

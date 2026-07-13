@@ -189,7 +189,7 @@ export default function OTPVerificationScreen() {
             visibilityTime: 3000,
           });
           router.replace({
-            pathname: "/init_screens/personal_details",
+            pathname: "/init_screens/terms_and_privacy",
             params: { phone_number: rawPhone },
           });
         }

@@ -18,6 +18,7 @@ export interface SectionConfig {
   order: number;
   description: string;
   requiresPatient?: boolean;
+  bannerUrls?: string[]; // promoBanner only — backend-driven carousel images
 }
 
 // Mapping of backend widget codes to frontend SectionKeys
@@ -103,7 +104,7 @@ export const parseSectionsFromBackend = (
   backendSections: BackendMenuWidget[],
 ): SectionConfig[] => {
   return backendSections
-    .map((item) => {
+    .map((item): SectionConfig | null => {
       const sectionKey = WIDGET_CODE_MAP[item.widget_code];
       if (!sectionKey) return null;
 
@@ -114,6 +115,10 @@ export const parseSectionsFromBackend = (
         ...defaultSection,
         visible: item.is_active === "Y",
         order: item.sequence || defaultSection.order,
+        bannerUrls:
+          sectionKey === "promoBanner" && item.bannerUrls?.length
+            ? item.bannerUrls
+            : undefined,
       };
     })
     .filter((s): s is SectionConfig => s !== null)

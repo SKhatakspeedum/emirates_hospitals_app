@@ -346,6 +346,10 @@ export default function DashboardScreen() {
   // Fetch dynamic sections from backend (with automatic fallback to defaults)
   const { visibleSections, sections } = useDashboardSections(noPatient);
 
+  // Tracks which slide of the promo banner carousel is currently showing,
+  // driving the pagination dots as the user swipes.
+  const [promoBannerIndex, setPromoBannerIndex] = useState(0);
+
   // Debug log to verify sections are being loaded
   useEffect(() => {
     console.log(
@@ -361,7 +365,53 @@ export default function DashboardScreen() {
   // menu_display_order drives the actual render order on screen.
   const renderBodySection = (key: string) => {
     switch (key) {
-      case "promoBanner":
+      case "promoBanner": {
+        const promoBannerUrls =
+          sections.find((s) => s.key === "promoBanner")?.bannerUrls ?? [];
+        const bannerWidth = width - 40; // matches bodyContent's paddingHorizontal: 20
+
+        if (promoBannerUrls.length > 0) {
+          return (
+            <React.Fragment key={key}>
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={(e) => {
+                  const idx = Math.round(
+                    e.nativeEvent.contentOffset.x / bannerWidth,
+                  );
+                  setPromoBannerIndex(idx);
+                }}
+              >
+                {promoBannerUrls.map((url, index) => (
+                  <Image
+                    key={`${url}-${index}`}
+                    source={{ uri: url }}
+                    style={[styles.promoBannerImage, { width: bannerWidth }]}
+                    resizeMode="cover"
+                  />
+                ))}
+              </ScrollView>
+
+              {promoBannerUrls.length > 1 && (
+                <View style={styles.paginationDots}>
+                  {promoBannerUrls.map((_, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.dot,
+                        index === promoBannerIndex && styles.dotActive,
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </React.Fragment>
+          );
+        }
+
+        // Fallback — static promo card when no backend banners are configured
         return (
           <React.Fragment key={key}>
             <View style={styles.promoBanner}>
@@ -392,6 +442,7 @@ export default function DashboardScreen() {
             </View>
           </React.Fragment>
         );
+      }
 
       case "quickActions":
         return (
@@ -990,6 +1041,11 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.8)",
     fontSize: 14,
     fontFamily: FontFamilies.medium,
+  },
+  promoBannerImage: {
+    height: 140,
+    borderRadius: 16,
+    backgroundColor: Colors.border,
   },
   promoIcon: {
     position: "absolute",

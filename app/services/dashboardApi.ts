@@ -12,8 +12,58 @@ export interface BackendMenuItem {
   menu_action_screen_identifier: string; // Maps to widget_code
   menu_display_order: number; // Maps to sequence
   menu_action_screen_identifier_detail?: string;
+  // JSON string (or object) of extra per-widget config, e.g.
+  // { "banner_urls": "url1~url2~url3" } for the promo banner carousel.
+  menu_additional_attributes?: string | Record<string, any>;
   [key: string]: any;
 }
+
+/**
+ * Parses menu_additional_attributes (a JSON string or already-parsed
+ * object) into a plain object. Returns {} on any malformed/missing input.
+ */
+const parseAdditionalAttributes = (
+  raw: string | Record<string, any> | undefined,
+): Record<string, any> => {
+  if (!raw) return {};
+  if (typeof raw === "object") return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+};
+
+/**
+ * Splits a "~"-delimited banner_urls value into a clean array of URLs.
+ * Defensive against common backend quirks: already-an-array values,
+ * stray/encoded quote characters (e.g. a trailing "%22" or '"'), and
+ * URI-encoded separators.
+ */
+export const parseBannerUrls = (bannerUrls: unknown): string[] => {
+  if (Array.isArray(bannerUrls)) {
+    return bannerUrls.map((url) => String(url).trim()).filter(Boolean);
+  }
+  if (typeof bannerUrls !== "string" || !bannerUrls.trim()) return [];
+
+  let cleaned = bannerUrls.trim();
+  // Strip a literal or URL-encoded trailing/leading double-quote artifact.
+  cleaned = cleaned.replace(/^%22|%22$/g, "").replace(/^"|"$/g, "");
+  try {
+    // Only decode if it actually looks URI-encoded, to avoid corrupting
+    // plain URLs that legitimately contain "%" (rare, but be safe).
+    if (/%[0-9A-Fa-f]{2}/.test(cleaned)) {
+      cleaned = decodeURIComponent(cleaned);
+    }
+  } catch {
+    // Malformed encoding — fall back to the un-decoded string
+  }
+
+  return cleaned
+    .split("~")
+    .map((url) => url.trim().replace(/^"|"$/g, ""))
+    .filter(Boolean);
+};
 
 /**
  * Backend response wrapper for menu app widgets
@@ -33,6 +83,8 @@ export interface BackendMenuWidget {
   widget_name: string;
   is_active: string; // "Y" or "N" (defaults to "Y")
   sequence: number;
+  additionalAttributes?: Record<string, any>;
+  bannerUrls?: string[]; // Parsed from additionalAttributes.banner_urls
   [key: string]: any;
 }
 
@@ -87,7 +139,7 @@ export const getMenuAppWidgets = async (
       spd_processId_config.hospapp_get_mst_menu_app_widgets_json_data_common,
       {
         p_ai_code: params.p_ai_code,
-        sgOrgId: orgId,
+        // sgOrgId: orgId,
         p_menu_type: params.p_menu_type,
         p_process_flag: params.p_process_flag || "Y",
       },
@@ -122,12 +174,35 @@ export const getMenuAppWidgets = async (
         // Sorting happens downstream (parseSectionsFromBackend / getVisibleSections)
         // using this value, so changing menu_display_order in the backend
         // directly reorders the Home Screen sections.
-        const normalized: BackendMenuWidget[] = detailsArray.map((item) => ({
-          widget_code: item.menu_action_screen_identifier,
-          widget_name: item.menu_name,
-          is_active: "Y", // Default to active since backend doesn't provide this
-          sequence: item.menu_display_order,
-        }));
+        const normalized: BackendMenuWidget[] = detailsArray.map((item) => {
+          // Tolerate a couple of likely field-name variants from the backend.
+          const rawAttributes =
+            item.menu_additional_attributes ??
+            item.menu_additional_attribute ??
+            item.additional_attributes;
+          const additionalAttributes = parseAdditionalAttributes(rawAttributes);
+          const bannerUrls = parseBannerUrls(
+            additionalAttributes?.banner_urls ??
+              additionalAttributes?.bannerUrls,
+          );
+
+          if (item.menu_action_screen_identifier === "promoBanner") {
+            console.log("[getMenuAppWidgets] promoBanner raw attributes:", {
+              rawAttributes,
+              additionalAttributes,
+              bannerUrls,
+            });
+          }
+
+          return {
+            widget_code: item.menu_action_screen_identifier,
+            widget_name: item.menu_name,
+            is_active: "Y", // Default to active since backend doesn't provide this
+            sequence: item.menu_display_order,
+            additionalAttributes,
+            bannerUrls,
+          };
+        });
 
         console.log("[getMenuAppWidgets] Normalized widgets:", normalized);
         return normalized;

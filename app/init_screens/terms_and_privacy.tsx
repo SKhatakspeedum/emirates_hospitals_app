@@ -31,10 +31,13 @@ const TERM_CONDITION_KEY = "TERM_CONDITION";
 const stripLeadingStyleBlock = (html: string): string =>
   html.replace(/<style[\s\S]*?<\/style>/i, "").trim();
 
+const DEFAULT_NEXT_ROUTE = "/(drawer)/tab_bar_home/HomeScreen";
+
 export default function TermsAndPrivacyScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ phone_number?: string }>();
-  const phone_number = params?.phone_number;
+  const params = useLocalSearchParams<{ user_id?: string; next?: string }>();
+  const user_id = params?.user_id;
+  const next = params?.next || DEFAULT_NEXT_ROUTE;
 
   const [loadingHtml, setLoadingHtml] = useState(true);
   const [termsHtml, setTermsHtml] = useState("");
@@ -62,10 +65,10 @@ export default function TermsAndPrivacyScreen() {
           p_id: "",
           p_attribute_code: "USER_ATTRIBUTES",
           p_attribute_value: JSON.stringify({ user_eula_agreement: "Y" }),
-          p_attribute_reference_id: "",
-          p_attribute_reference_code: "",
+          p_attribute_reference_id: user_id ?? "",
+          p_attribute_reference_code: "USER_ID",
           p_active_status: "Y",
-          p_internal_flag: "",
+          p_internal_flag: "N",
         },
       );
     } catch (e) {
@@ -75,10 +78,7 @@ export default function TermsAndPrivacyScreen() {
       setSaving(false);
     }
 
-    router.replace({
-      pathname: "/init_screens/personal_details",
-      params: { phone_number },
-    });
+    router.replace(next as any);
   };
 
   const hasContent = termsHtml.trim().length > 0;

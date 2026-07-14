@@ -13,6 +13,7 @@ import {
   Dimensions,
   Modal,
   FlatList,
+  Pressable,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
@@ -350,7 +351,7 @@ export default function PersonalDetailsScreen() {
         const response = await callSuggestusAPI(
           spd_processId_config.sgconf_get_mst_organization_location_patient_portal_list,
           {
-            p_org_ai_code: SiteConfig.AI_CODE,
+            p_org_ai_code: "",
             p_org_codes: orgCodes,
           },
         );
@@ -977,14 +978,23 @@ export default function PersonalDetailsScreen() {
           text1: "Registration Complete",
           text2: "Welcome to Emirates Hospitals Group",
         });
-        router.replace("/(drawer)/tab_bar_home/HomeScreen");
+        router.replace({
+          pathname: "/init_screens/terms_and_privacy",
+          params: {
+            user_id: newUserId,
+            next: "/(drawer)/tab_bar_home/HomeScreen",
+          },
+        });
       } else {
         Toast.show({
           type: "success",
           text1: "Profile Updated Successfully",
           text2: "Welcome to Emirates Hospitals Group",
         });
-        router.replace("/patient/patient_selection");
+        router.replace({
+          pathname: "/init_screens/terms_and_privacy",
+          params: { user_id: newUserId, next: "/patient/patient_selection" },
+        });
       }
     } catch (error) {
       console.error("[PersonalDetails] registration error:", error);
@@ -1578,12 +1588,17 @@ export default function PersonalDetailsScreen() {
 
       <Modal
         visible={showLocationPicker}
-        animationType="fade"
+        animationType="slide"
         transparent
         onRequestClose={() => setShowLocationPicker(false)}
       >
-        <View style={styles.dobModalOverlay}>
-          <View style={styles.dobModalCard}>
+        <Pressable
+          style={styles.locationSheetOverlay}
+          onPress={() => setShowLocationPicker(false)}
+        >
+          <Pressable style={styles.locationSheetCard} onPress={() => {}}>
+            <View style={styles.locationSheetHandle} />
+            <Text style={styles.locationSheetTitle}>Switch location</Text>
             {locations.length === 0 ? (
               <Text style={styles.locationEmptyText}>
                 No locations available.
@@ -1592,28 +1607,50 @@ export default function PersonalDetailsScreen() {
               <FlatList
                 data={locations}
                 keyExtractor={(item) => item.id}
-                style={styles.locationList}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.locationRow}
-                    onPress={() => {
-                      setSelectedLocation(item);
-                      setShowLocationPicker(false);
-                    }}
-                  >
-                    <Text style={styles.locationRowText}>{item.name}</Text>
-                  </TouchableOpacity>
-                )}
+                renderItem={({ item, index }) => {
+                  const isSelected = selectedLocation?.id === item.id;
+                  return (
+                    <TouchableOpacity
+                      style={styles.locationSheetRow}
+                      onPress={() => {
+                        setSelectedLocation(item);
+                        setShowLocationPicker(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.locationSheetIconWrap}>
+                        <Ionicons
+                          name="location"
+                          size={18}
+                          color={Colors.secondary}
+                        />
+                      </View>
+                      <View style={styles.locationSheetTextCol}>
+                        <View style={styles.locationSheetNameRow}>
+                          <Text style={styles.locationSheetName}>
+                            {item.name}
+                          </Text>
+                          {index === 0 && (
+                            <View style={styles.locationSheetDefaultBadge}>
+                              <Text style={styles.locationSheetDefaultText}>
+                                DEFAULT
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <Ionicons
+                        name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                        size={22}
+                        color={isSelected ? Colors.secondary : Colors.border}
+                      />
+                    </TouchableOpacity>
+                  );
+                }}
               />
             )}
-            <TouchableOpacity
-              onPress={() => setShowLocationPicker(false)}
-              style={styles.dobModalCancelButton}
-            >
-              <Text style={styles.dobModalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Emirates ID scan — real camera + on-device ML Kit OCR */}
@@ -1834,6 +1871,75 @@ const styles: any = StyleSheet.create({
     color: Colors.textLabel,
     paddingVertical: 20,
     textAlign: "center",
+  },
+  locationSheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  locationSheetCard: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === "ios" ? 32 : 20,
+    maxHeight: "70%",
+  },
+  locationSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  locationSheetTitle: {
+    fontSize: 16,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+    marginBottom: 12,
+  },
+  locationSheetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  locationSheetIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.pressed,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  locationSheetTextCol: {
+    flex: 1,
+  },
+  locationSheetNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  locationSheetName: {
+    fontSize: 15,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
+  },
+  locationSheetDefaultBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: Colors.pressed,
+  },
+  locationSheetDefaultText: {
+    fontSize: 10,
+    fontFamily: FontFamilies.bold,
+    color: Colors.secondary,
+    letterSpacing: 0.5,
   },
   scanOverlay: {
     flex: 1,

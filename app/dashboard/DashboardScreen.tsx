@@ -10,6 +10,7 @@ import {
   StatusBar,
   SafeAreaView,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import {
   useNavigation,
@@ -84,6 +85,25 @@ type UpcomingAppointment = {
   statusBg: string;
 };
 
+// Matches AppointmentScreen's Appointment shape exactly, so the lists
+// fetched here can be passed straight through via navigation params
+// without AppointmentScreen needing to re-fetch xcelsch_get_patient_...
+type FullAppointment = {
+  id: string;
+  doctorName: string;
+  specialty: string;
+  avatar: string;
+  date: string;
+  time: string;
+  status: string;
+  statusHtml: string;
+  type: string;
+  apptypName: string;
+  patientDet: string;
+  resourceId: string;
+  appSubtypeId: string;
+};
+
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const [userProfileName, setUserProfileName] = useState<string>("John");
@@ -94,6 +114,15 @@ export default function DashboardScreen() {
   } | null>(null);
   const [upcomingAppointments, setUpcomingAppointments] = useState<
     UpcomingAppointment[]
+  >([]);
+  // Full-shape upcoming/history lists — kept so "See all" can pass them
+  // straight to AppointmentScreen via navigation params, avoiding a
+  // duplicate xcelsch_get_patient_future_appointments... fetch there.
+  const [upcomingAppointmentsFull, setUpcomingAppointmentsFull] = useState<
+    FullAppointment[]
+  >([]);
+  const [historyAppointmentsFull, setHistoryAppointmentsFull] = useState<
+    FullAppointment[]
   >([]);
 
   useFocusEffect(
@@ -133,63 +162,176 @@ export default function DashboardScreen() {
               response?.returnCode === true &&
               response.returnData?.length > 0
             ) {
-              const upcoming: UpcomingAppointment[] = response.returnData
-                .filter((a: any) => {
-                  const histType = (
-                    a.appointment_history_type ?? ""
-                  ).toLowerCase();
-                  return !histType.includes("hist");
-                })
-                .map((a: any) => {
-                  const statusHtml = a.appstat_html_name ?? "";
-                  const statusStyle = getStatusStyle(statusHtml);
+              // Same mapping AppointmentScreen uses, so the full lists are
+              // directly usable there without remapping.
+              const mapFull = (a: any): FullAppointment => ({
+                id: String(a.p_appt_id ?? a.appt_id ?? ""),
+                doctorName: a.resource_name ?? "",
+                specialty: a.dpt_description ?? "",
+                avatar: a.p_doc_image_url ?? "",
+                date: a.appt_date_dashboard ?? "",
+                time: a.appt_start_time ?? "",
+                status: a.appstat_name ?? "Confirmed",
+                statusHtml: a.appstat_html_name ?? "",
+                type: a.appsubtyp_name ?? "In-Clinic",
+                apptypName: stripHtml(a.apptyp_name ?? ""),
+                patientDet: a.patient_det ?? "",
+                resourceId: String(a.appt_resource_id ?? a.resource_id ?? ""),
+                appSubtypeId: String(a.appsubtyp_id ?? ""),
+              });
+
+              const upcomingFull: FullAppointment[] = [];
+              const historyFull: FullAppointment[] = [];
+              response.returnData.forEach((a: any) => {
+                const histType = (
+                  a.appointment_history_type ?? ""
+                ).toLowerCase();
+                if (histType.includes("hist")) {
+                  historyFull.push(mapFull(a));
+                } else {
+                  upcomingFull.push(mapFull(a));
+                }
+              });
+              setUpcomingAppointmentsFull(upcomingFull);
+              setHistoryAppointmentsFull(historyFull);
+
+              // Simplified subset used by this screen's own dashboard card.
+              const upcoming: UpcomingAppointment[] = upcomingFull.map(
+                (a) => {
+                  const statusStyle = getStatusStyle(a.statusHtml);
                   return {
-                    id: String(a.p_appt_id ?? a.appt_id ?? ""),
-                    doctorName: a.resource_name ?? "",
-                    specialty: a.dpt_description ?? "",
-                    avatar: a.p_doc_image_url ?? "",
-                    date: a.appt_date_dashboard ?? "",
-                    time: formatAmPm(a.appt_start_time ?? ""),
-                    statusLabel: stripHtml(statusHtml) || a.appstat_name || "",
+                    id: a.id,
+                    doctorName: a.doctorName,
+                    specialty: a.specialty,
+                    avatar: a.avatar,
+                    date: a.date,
+                    time: formatAmPm(a.time),
+                    statusLabel: stripHtml(a.statusHtml) || a.status,
                     statusColor: statusStyle.color,
                     statusBg: statusStyle.bg,
                   };
-                });
+                },
+              );
               setUpcomingAppointments(upcoming);
             } else {
               setUpcomingAppointments([]);
+              setUpcomingAppointmentsFull([]);
+              setHistoryAppointmentsFull([]);
             }
           } catch (_) {
             setUpcomingAppointments([]);
+            setUpcomingAppointmentsFull([]);
+            setHistoryAppointmentsFull([]);
           }
         } else {
           setUpcomingAppointments([]);
+          setUpcomingAppointmentsFull([]);
+          setHistoryAppointmentsFull([]);
         }
       };
       load();
     }, []),
   );
 
-  const handleSeeAllProviders = () => {};
+  const handleSeeAllProviders = () => {
+    // Pass the already-fetched list along so NearbyProvidersScreen doesn't
+    // have to re-hit hospapp_get_resources — it reuses this data directly.
+    navigation.navigate("NearbyProviders", { preloadedProviders: Providers });
+  };
   const handleSeeAllSpecialties = () => {};
 
-  const Providers = [
+  // Fallback shown only if the backend fetch below fails or returns nothing.
+  // Matches NearbyProvidersScreen's Provider shape so this same list can be
+  // passed straight through via navigation params without remapping.
+  const FALLBACK_PROVIDERS = [
     {
-      uri: "https://randomuser.me/api/portraits/men/32.jpg",
+      id: "fallback-1",
+      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
       name: "Dr. Wael Berro",
       specialty: "Family Medicine Consul..",
+      qualification: "",
+      hospital: "",
+      distance: "",
+      rating: "",
+      reviews: "",
+      nextAvailable: "",
     },
     {
-      uri: "https://randomuser.me/api/portraits/women/68.jpg",
+      id: "fallback-2",
+      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
       name: "Dr. Sheena Cherry",
       specialty: "Specialist Internal Med..",
+      qualification: "",
+      hospital: "",
+      distance: "",
+      rating: "",
+      reviews: "",
+      nextAvailable: "",
     },
     {
-      uri: "https://randomuser.me/api/portraits/men/46.jpg",
+      id: "fallback-3",
+      avatar: "https://randomuser.me/api/portraits/men/46.jpg",
       name: "Dr. Yanal Salam",
       specialty: "Consultant Internal Med..",
+      qualification: "",
+      hospital: "",
+      distance: "",
+      rating: "",
+      reviews: "",
+      nextAvailable: "",
     },
   ];
+
+  const [Providers, setProviders] = useState(FALLBACK_PROVIDERS);
+  const [loadingProviders, setLoadingProviders] = useState(true);
+
+  // Same hospapp_get_resources call used by NearbyProvidersScreen — fetches
+  // here too so the Home dashboard's "Providers" carousel shows real data,
+  // and the full result is passed to NearbyProvidersScreen on "See all" so
+  // it doesn't need to re-fetch (see handleSeeAllProviders above).
+  useEffect(() => {
+    const fetchProviders = async () => {
+      setLoadingProviders(true);
+      try {
+        const patientId = await fetchDataFromLocalStorage("sg_patientId");
+        const now = new Date();
+        const response = await callSuggestusAPI(
+          spd_processId_config.hospapp_get_resources,
+          {
+            p_patient_id: patientId ?? "",
+            p_resource_code: "",
+            p_month: now.getMonth() + 1,
+            p_year: now.getFullYear(),
+            p_process_type: "",
+            p_visit_id: null,
+            p_category_code: "CAT005",
+          },
+        );
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const fetched = response.returnData.map((r: any) => ({
+            id: String(r.resource_id ?? r.id ?? Math.random()),
+            name: r.resource_name ?? r.name ?? "",
+            specialty: r.dpt_description ?? r.dept_name ?? "",
+            qualification:
+              r.doctor_education ?? r.doctor_short_description ?? "",
+            hospital: r.org_name ?? "",
+            distance: r.distance ?? "",
+            rating: String(r.rating ?? ""),
+            reviews: String(r.reviews ?? ""),
+            avatar: r.resource_image_url ?? "",
+            nextAvailable: r.next_available ?? r.next_slot ?? "",
+          }));
+          setProviders(fetched);
+        }
+      } catch (e) {
+        console.error("Error fetching providers:", e);
+        // Keep the fallback list on error
+      } finally {
+        setLoadingProviders(false);
+      }
+    };
+    fetchProviders();
+  }, []);
 
   const specialties = [
     {
@@ -250,7 +392,11 @@ export default function DashboardScreen() {
       onPress: async () => {
         const pid = await AsyncStorage.getItem("sg_patientId");
         if (pid && pid !== "null") {
-          navigation.navigate("Appointment");
+          navigation.navigate("Appointment", {
+            preloadedUpcoming: upcomingAppointmentsFull,
+            preloadedHistory: historyAppointmentsFull,
+            preloadedProviders: Providers,
+          });
         } else {
           try {
             const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
@@ -480,14 +626,22 @@ export default function DashboardScreen() {
           </View>
         );
 
-      case "upcomingAppointments":
+      case "upcomingAppointments": {
         if (noPatient || upcomingAppointments.length === 0) return null;
+        // Pass the already-fetched lists so AppointmentScreen doesn't
+        // re-hit xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard.
+        const goToAppointments = () =>
+          navigation.navigate("Appointment", {
+            preloadedUpcoming: upcomingAppointmentsFull,
+            preloadedHistory: historyAppointmentsFull,
+            preloadedProviders: Providers,
+          });
         return (
           <View key={key} style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Upcoming appointments</Text>
               <Pressable
-                onPress={() => navigation.navigate("Appointment")}
+                onPress={goToAppointments}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
@@ -508,7 +662,7 @@ export default function DashboardScreen() {
                   styles.appointmentCard,
                   { opacity: pressed ? 0.9 : 1 },
                 ]}
-                onPress={() => navigation.navigate("Appointment")}
+                onPress={goToAppointments}
               >
                 <Image
                   source={{ uri: appt.avatar }}
@@ -553,6 +707,7 @@ export default function DashboardScreen() {
             ))}
           </View>
         );
+      }
 
       case "healthAwareness":
         return (
@@ -669,43 +824,51 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.providersScrollList}
-            >
-              {Providers.map((provider, index) => (
-                <Pressable
-                  key={index}
-                  style={({ pressed }) => [
-                    styles.providerCard,
-                    {
-                      backgroundColor: pressed
-                        ? Colors.pressed
-                        : Colors.background,
-                      borderColor: pressed
-                        ? Colors.activeBorder
-                        : Colors.border,
-                      opacity: pressed ? 0.9 : 1,
-                      transform: [{ scale: pressed ? 0.97 : 1 }],
-                    },
-                  ]}
-                >
-                  <View style={styles.providerAvatarBg}>
-                    <Image
-                      source={{ uri: provider.uri }}
-                      style={styles.providerAvatar}
-                    />
-                  </View>
-                  <Text style={styles.providerName} numberOfLines={1}>
-                    {provider.name}
-                  </Text>
-                  <Text style={styles.providerSpecialty} numberOfLines={2}>
-                    {provider.specialty}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            {loadingProviders ? (
+              <ActivityIndicator
+                size="small"
+                color={Colors.secondary}
+                style={{ marginVertical: 16 }}
+              />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.providersScrollList}
+              >
+                {Providers.map((provider) => (
+                  <Pressable
+                    key={provider.id}
+                    style={({ pressed }) => [
+                      styles.providerCard,
+                      {
+                        backgroundColor: pressed
+                          ? Colors.pressed
+                          : Colors.background,
+                        borderColor: pressed
+                          ? Colors.activeBorder
+                          : Colors.border,
+                        opacity: pressed ? 0.9 : 1,
+                        transform: [{ scale: pressed ? 0.97 : 1 }],
+                      },
+                    ]}
+                  >
+                    <View style={styles.providerAvatarBg}>
+                      <Image
+                        source={{ uri: provider.avatar }}
+                        style={styles.providerAvatar}
+                      />
+                    </View>
+                    <Text style={styles.providerName} numberOfLines={1}>
+                      {provider.name}
+                    </Text>
+                    <Text style={styles.providerSpecialty} numberOfLines={2}>
+                      {provider.specialty}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
           </View>
         );
 

@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../config/colors";
@@ -72,6 +72,9 @@ function DoctorAvatar({ uri, name }: { uri: string; name: string }) {
 
 export default function NearbyProvidersScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const preloadedProviders: Provider[] | undefined =
+    route.params?.preloadedProviders;
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [showCategoriesScrollHint, setShowCategoriesScrollHint] =
     useState(false);
@@ -81,11 +84,26 @@ export default function NearbyProvidersScreen() {
   const categoriesScrollOffsetRef = useRef(0);
   const categoriesScrollMaxRef = useRef(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [categories, setCategories] = useState<string[]>(["All"]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [providers, setProviders] = useState<Provider[]>(
+    preloadedProviders ?? [],
+  );
+  const [categories, setCategories] = useState<string[]>(() => {
+    if (!preloadedProviders?.length) return ["All"];
+    return [
+      "All",
+      ...Array.from(
+        new Set(preloadedProviders.map((p) => p.specialty).filter(Boolean)),
+      ),
+    ];
+  });
+  const [isLoading, setIsLoading] = useState(!preloadedProviders?.length);
 
   useEffect(() => {
+    // Dashboard already fetched this via the same hospapp_get_resources
+    // call and passed it along — skip the redundant re-fetch.
+    console.log("preloadedProviders?.length :>>", preloadedProviders?.length);
+    if (preloadedProviders?.length) return;
+
     const fetchProviders = async () => {
       setIsLoading(true);
       try {
@@ -108,7 +126,8 @@ export default function NearbyProvidersScreen() {
             id: String(r.resource_id ?? r.id ?? Math.random()),
             name: r.resource_name ?? r.name ?? "",
             specialty: r.dpt_description ?? r.dept_name ?? "",
-            qualification: r.doctor_education ?? r.doctor_short_description ?? "",
+            qualification:
+              r.doctor_education ?? r.doctor_short_description ?? "",
             hospital: r.org_name ?? "",
             distance: r.distance ?? "",
             rating: String(r.rating ?? ""),
@@ -121,7 +140,9 @@ export default function NearbyProvidersScreen() {
           const uniqueSpecialties: string[] = [
             "All",
             ...Array.from(
-              new Set<string>(fetched.map((p: any) => p.specialty).filter(Boolean)),
+              new Set<string>(
+                fetched.map((p: any) => p.specialty).filter(Boolean),
+              ),
             ),
           ];
           setCategories(uniqueSpecialties);
@@ -177,8 +198,7 @@ export default function NearbyProvidersScreen() {
               nativeEvent;
             categoriesScrollOffsetRef.current = contentOffset.x;
             const distanceFromEnd =
-              contentSize.width -
-              (contentOffset.x + layoutMeasurement.width);
+              contentSize.width - (contentOffset.x + layoutMeasurement.width);
             setShowCategoriesScrollHint(distanceFromEnd > 16);
             setShowCategoriesScrollHintLeft(contentOffset.x > 16);
           }}
@@ -322,7 +342,9 @@ export default function NearbyProvidersScreen() {
                     <Text style={styles.specialty}>{provider.specialty}</Text>
                   )}
                   {!!provider.qualification && (
-                    <Text style={styles.qualification}>{provider.qualification}</Text>
+                    <Text style={styles.qualification}>
+                      {provider.qualification}
+                    </Text>
                   )}
 
                   {/* Actions Row */}

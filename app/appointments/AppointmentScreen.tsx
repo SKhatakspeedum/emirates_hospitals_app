@@ -81,15 +81,35 @@ export default function AppointmentScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const fromBooking = route.params?.fromBooking === true;
+  const preloadedUpcoming: Appointment[] | undefined =
+    route.params?.preloadedUpcoming;
+  const preloadedHistory: Appointment[] | undefined =
+    route.params?.preloadedHistory;
+  const hasPreloaded =
+    Array.isArray(preloadedUpcoming) || Array.isArray(preloadedHistory);
+  // Forwarded from Dashboard so "Book an appointment" → NearbyProviders
+  // doesn't have to re-hit hospapp_get_resources either.
+  const preloadedProviders = route.params?.preloadedProviders;
+  const goToNearbyProviders = () =>
+    navigation.navigate("NearbyProviders", { preloadedProviders });
 
   const [activeTab, setActiveTab] = useState<"upcoming" | "history">("upcoming");
-  const [upcomingList, setUpcomingList] = useState<Appointment[]>([]);
-  const [historyList, setHistoryList] = useState<Appointment[]>([]);
+  const [upcomingList, setUpcomingList] = useState<Appointment[]>(
+    preloadedUpcoming ?? [],
+  );
+  const [historyList, setHistoryList] = useState<Appointment[]>(
+    preloadedHistory ?? [],
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const appointments = activeTab === "upcoming" ? upcomingList : historyList;
 
   useEffect(() => {
+    // Dashboard already fetched this via the same
+    // xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard
+    // call and passed both lists along — skip the redundant re-fetch.
+    if (hasPreloaded) return;
+
     const fetchAppointments = async () => {
       setIsLoading(true);
       try {
@@ -152,7 +172,7 @@ export default function AppointmentScreen() {
     if (fromBooking) {
       const unsubscribe = navigation.addListener("beforeRemove", (e: any) => {
         e.preventDefault();
-        navigation.navigate("NearbyProviders");
+        goToNearbyProviders();
       });
       return unsubscribe;
     }
@@ -225,7 +245,7 @@ export default function AppointmentScreen() {
                 <TouchableOpacity
                   style={styles.outlineBookButton}
                   activeOpacity={0.8}
-                  onPress={() => navigation.navigate("NearbyProviders")}
+                  onPress={goToNearbyProviders}
                 >
                   <Text style={styles.outlineBookButtonText}>Book an appointment</Text>
                 </TouchableOpacity>
@@ -323,7 +343,7 @@ export default function AppointmentScreen() {
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               }
             ]}
-            onPress={() => navigation.navigate("NearbyProviders")}
+            onPress={goToNearbyProviders}
             disabled={false}
           >
             <Ionicons name="add" size={28} color={Colors.background} />

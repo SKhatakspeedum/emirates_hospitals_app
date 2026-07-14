@@ -362,6 +362,17 @@ export default function PersonalDetailsScreen() {
             orgAiCode: r.org_ai_code ?? "",
           }));
           setLocations(fetched);
+
+          // Default location = the one whose org_ai_code matches this
+          // site's configured AI code, so it's pre-selected and used for
+          // any location-scoped API calls until the user explicitly picks
+          // a different one.
+          const defaultLocation =
+            fetched.find(
+              (loc: { orgAiCode: string }) =>
+                loc.orgAiCode === SiteConfig.AI_CODE,
+            ) ?? fetched[0];
+          if (defaultLocation) setSelectedLocation(defaultLocation);
         }
       } catch (e) {
         console.error("Error fetching locations:", e);
@@ -371,6 +382,41 @@ export default function PersonalDetailsScreen() {
     };
     loadLocations();
   }, []);
+
+  // Refresh org config (sgOrgId + branding/theme) scoped to whichever
+  // location is currently selected — runs as soon as a location is picked
+  // (including the initial default selection above), so every subsequent
+  // API call on this screen (ID verification, registration, etc.) uses the
+  // right sgOrgId, not just the one fired at final submission.
+  //
+  // If an Emirates ID / Passport was already typed and verified under the
+  // PREVIOUS location's org, that result is now stale — re-run the
+  // existence check under the newly selected location's org once the
+  // refresh completes.
+  useEffect(() => {
+    if (!selectedLocation?.orgAiCode) return;
+    let cancelled = false;
+
+    const refreshOrgAndRevalidate = async () => {
+      try {
+        await fetchAndApplyOrgConfig(selectedLocation.orgAiCode);
+      } catch (e) {
+        console.error("Error refreshing org config for location:", e);
+      }
+      if (cancelled) return;
+
+      if (isResident && emiratesId.trim()) {
+        checkExistence("emirates", emiratesId);
+      } else if (!isResident && passportNo.trim()) {
+        checkExistence("passport", passportNo);
+      }
+    };
+
+    refreshOrgAndRevalidate();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLocation?.orgAiCode]);
 
   const [emiratesIdCheck, setEmiratesIdCheck] =
     useState<FieldCheck>(IDLE_CHECK);
@@ -534,17 +580,13 @@ export default function PersonalDetailsScreen() {
   };
 
   const handleContinue = async () => {
-    // Re-fetch org config scoped to the selected location's org_ai_code
-    // (reuses the existing fetchAndApplyOrgConfig — just a dynamic
-    // p_org_ai_code — so branding/theme reflect the chosen location).
-    // Best-effort: failures here must never block registration.
-    if (selectedLocation?.orgAiCode) {
-      try {
-        await fetchAndApplyOrgConfig(selectedLocation.orgAiCode);
-      } catch (e) {
-        console.error("Error refreshing org config for location:", e);
-      }
-    }
+    // Org config (sgOrgId/theme) for the selected location is already kept
+    // in sync by the useEffect above as soon as a location is picked — no
+    // need to re-fetch it here at submit time.
+
+    // Every ai_code field sent from this screen must reflect the currently
+    // selected location, not the app's static default.
+    const currentOrgAiCode = selectedLocation?.orgAiCode || SiteConfig.AI_CODE;
 
     // --- Path A: ID already exists → restore session + self-register as patient ---
     if (activeCheck.status === "exists") {
@@ -559,7 +601,7 @@ export default function PersonalDetailsScreen() {
           {
             p_username: phoneE164.replace(/^\+/, ""),
             p_password: "",
-            p_ai_code: SiteConfig.AI_CODE,
+            p_ai_code: currentOrgAiCode,
             p_login_type: "external",
           },
         );
@@ -866,7 +908,7 @@ export default function PersonalDetailsScreen() {
       const signupRes = await callSuggestusAPI(
         spd_processId_config.sgconf_save_mst_user_from_signup_wrapper,
         {
-          p_create_ai_code: SiteConfig.AI_CODE,
+          p_create_ai_code: currentOrgAiCode,
           p_next_process_id:
             "sgconf_get_mst_user_profile_for_authentic_token_v2",
           p_register_new_patient_flag: "N",
@@ -905,7 +947,7 @@ export default function PersonalDetailsScreen() {
           {
             p_username: phoneE164.replace(/^\+/, ""),
             p_password: "",
-            p_ai_code: SiteConfig.AI_CODE,
+            p_ai_code: currentOrgAiCode,
             p_login_type: "external",
           },
         );
@@ -1339,39 +1381,37 @@ export default function PersonalDetailsScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-
-              {/* Location */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Location</Text>
-                <TouchableOpacity
-                  style={styles.inputWrapper}
-                  onPress={() => setShowLocationPicker(true)}
-                  activeOpacity={0.8}
-                  disabled={loadingLocations}
-                >
-                  <Text
-                    style={[
-                      styles.input,
-                      !selectedLocation && styles.inputPlaceholderText,
-                    ]}
-                  >
-                    {selectedLocation
-                      ? selectedLocation.name
-                      : "Select location"}
-                  </Text>
-                  {loadingLocations ? (
-                    <ActivityIndicator size="small" color={Colors.secondary} />
-                  ) : (
-                    <Ionicons
-                      name="chevron-down"
-                      size={20}
-                      color={Colors.textLabel}
-                    />
-                  )}
-                </TouchableOpacity>
-              </View>
             </View>
             {/* end fieldsDisabled wrapper */}
+
+            {/* Location — always enabled, not gated by ID verification */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Location</Text>
+              <TouchableOpacity
+                style={styles.inputWrapper}
+                onPress={() => setShowLocationPicker(true)}
+                activeOpacity={0.8}
+                disabled={loadingLocations}
+              >
+                <Text
+                  style={[
+                    styles.input,
+                    !selectedLocation && styles.inputPlaceholderText,
+                  ]}
+                >
+                  {selectedLocation ? selectedLocation.name : "Select location"}
+                </Text>
+                {loadingLocations ? (
+                  <ActivityIndicator size="small" color={Colors.secondary} />
+                ) : (
+                  <Ionicons
+                    name="chevron-down"
+                    size={20}
+                    color={Colors.textLabel}
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
 
@@ -1607,8 +1647,9 @@ export default function PersonalDetailsScreen() {
               <FlatList
                 data={locations}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item, index }) => {
+                renderItem={({ item }) => {
                   const isSelected = selectedLocation?.id === item.id;
+                  const isDefault = item.orgAiCode === SiteConfig.AI_CODE;
                   return (
                     <TouchableOpacity
                       style={styles.locationSheetRow}
@@ -1630,7 +1671,7 @@ export default function PersonalDetailsScreen() {
                           <Text style={styles.locationSheetName}>
                             {item.name}
                           </Text>
-                          {index === 0 && (
+                          {isDefault && (
                             <View style={styles.locationSheetDefaultBadge}>
                               <Text style={styles.locationSheetDefaultText}>
                                 DEFAULT

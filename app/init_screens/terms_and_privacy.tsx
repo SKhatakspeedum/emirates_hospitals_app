@@ -14,6 +14,8 @@ import RenderHtml from "react-native-render-html";
 import { Ionicons } from "@expo/vector-icons";
 import CustomHeader from "../components/CustomHeader";
 import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
+import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import { spd_processId_config } from "../config/process_id";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 
@@ -37,6 +39,7 @@ export default function TermsAndPrivacyScreen() {
   const [loadingHtml, setLoadingHtml] = useState(true);
   const [termsHtml, setTermsHtml] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadTerms = async () => {
@@ -47,7 +50,31 @@ export default function TermsAndPrivacyScreen() {
     loadTerms();
   }, []);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      // sgUserId / sgOrgId / sgRoleId are "userdata" — auto-injected by
+      // callSuggestusAPI from the stored session, not passed here.
+      await callSuggestusAPI(
+        spd_processId_config.sgconf_save_mst_user_attribute_mapping,
+        {
+          p_id: "",
+          p_attribute_code: "USER_ATTRIBUTES",
+          p_attribute_value: JSON.stringify({ user_eula_agreement: "Y" }),
+          p_attribute_reference_id: "",
+          p_attribute_reference_code: "",
+          p_active_status: "Y",
+          p_internal_flag: "",
+        },
+      );
+    } catch (e) {
+      // Best-effort — never block onboarding on a consent-log failure.
+      console.error("Error saving EULA agreement:", e);
+    } finally {
+      setSaving(false);
+    }
+
     router.replace({
       pathname: "/init_screens/personal_details",
       params: { phone_number },
@@ -66,10 +93,7 @@ export default function TermsAndPrivacyScreen() {
         showsVerticalScrollIndicator={false}
       >
         {loadingHtml ? (
-          <ActivityIndicator
-            color={Colors.primary}
-            style={{ marginTop: 40 }}
-          />
+          <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
         ) : hasContent ? (
           <RenderHtml
             contentWidth={width - 48}
@@ -79,8 +103,8 @@ export default function TermsAndPrivacyScreen() {
           />
         ) : (
           <Text style={styles.fallbackText}>
-            Terms & Conditions and Privacy Policy are currently unavailable.
-            By continuing, you agree to our standard terms of service.
+            Terms & Conditions and Privacy Policy are currently unavailable. By
+            continuing, you agree to our standard terms of service.
           </Text>
         )}
 
@@ -99,9 +123,8 @@ export default function TermsAndPrivacyScreen() {
             </View>
             <Text style={styles.consentText}>
               I have read and agree to the Terms & Conditions and Privacy
-              Policy. I consent to the collection, processing, and sharing of
-              my information for the purpose of providing healthcare
-              services.
+              Policy. I consent to the collection, processing, and sharing of my
+              information for the purpose of providing healthcare services.
             </Text>
           </TouchableOpacity>
         </View>
@@ -113,11 +136,15 @@ export default function TermsAndPrivacyScreen() {
             styles.continueBtn,
             agreed ? styles.continueBtnEnabled : styles.continueBtnDisabled,
           ]}
-          disabled={!agreed}
+          disabled={!agreed || saving}
           onPress={handleContinue}
           activeOpacity={0.8}
         >
-          <Text style={styles.continueBtnText}>Continue</Text>
+          {saving ? (
+            <ActivityIndicator color={Colors.lightgray} />
+          ) : (
+            <Text style={styles.continueBtnText}>Continue</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

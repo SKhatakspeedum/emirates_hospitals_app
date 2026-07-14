@@ -125,4 +125,5 @@ export const spd_processId_config = {
     "hospapp_get_mst_menu_app_widgets_json_data_common",
   sgconf_get_mst_organization_location_patient_portal_list:
     "sgconf_get_mst_organization_location_patient_portal_list",
+  sgconf_save_mst_user_attribute_mapping: "sgconf_save_mst_user_attribute_mapping",
 };

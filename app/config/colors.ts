@@ -44,6 +44,7 @@ export const Colors = {
   grayDark: "#5A5A5A80",
   shadow: "rgba(0,0,0,0.6)",
   shadowMedium: "rgba(0,0,0,0.5)",
+  overlayOnDark: "rgba(255,255,255,0.15)",
 };
 
 /**

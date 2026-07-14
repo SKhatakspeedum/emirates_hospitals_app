@@ -13,6 +13,9 @@ import {
   Dimensions,
   Modal,
   FlatList,
+  Image,
+  Animated,
+  Easing,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
@@ -28,6 +31,8 @@ import {
 } from "../config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
+import { FontSizes } from "../config/typography";
+import { Spacing, BorderRadius } from "../config/spacing";
 import {
   setEncryptedID,
   getDecryptedID,
@@ -48,6 +53,7 @@ import { fetchAndApplyOrgConfig } from "../services/orgConfig";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import TextRecognition from "@react-native-ml-kit/text-recognition";
 import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
 
 type CheckStatus =
   | "idle"
@@ -62,6 +68,20 @@ interface FieldCheck {
 }
 
 const IDLE_CHECK: FieldCheck = { status: "idle", checkedValue: "" };
+
+// Scan frame dimensions — shared between the layout styles and the scan-line
+// animation's translation range.
+const SCAN_FRAME_WIDTH = 335;
+const SCAN_FRAME_HEIGHT = 230;
+
+// Low-opacity tints derived from the theme's status colors — avoids
+// hardcoding separate near-duplicate rgba literals for badge/surface
+// backgrounds (hex + alpha suffix, same convention as Colors.label/grayDark).
+const SUCCESS_TINT = `${Colors.success}1F`;
+const ERROR_TINT = `${Colors.error}1F`;
+const NEUTRAL_TINT = `${Colors.textLabel}26`;
+const SUCCESS_SURFACE = `${Colors.success}14`;
+const ERROR_SURFACE = `${Colors.error}14`;
 
 // returnCode arrives as string "true" or boolean true; returnData may be [{}] when empty
 const hasReturnData = (res: any): boolean => {
@@ -95,8 +115,10 @@ const formatEmiratesId = (text: string) => {
 const formatPassport = (text: string) =>
   text.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-type ParsedEmiratesId = {
-  emiratesId: string;
+type ScanTarget = "emirates" | "passport";
+
+type ParsedIdScan = {
+  idNumber: string;
   firstName: string;
   lastName: string;
   dob: Date | null;
@@ -107,7 +129,7 @@ type ParsedEmiratesId = {
 // heuristics rather than fixed positions). Returns null if no valid
 // Emirates ID number was found — that's the one field we can't proceed
 // without; name/DOB are filled in on a best-effort basis.
-const parseEmiratesIdText = (rawText: string): ParsedEmiratesId | null => {
+const parseEmiratesIdText = (rawText: string): ParsedIdScan | null => {
   const lines = rawText
     .split("\n")
     .map((l) => l.trim())
@@ -118,7 +140,7 @@ const parseEmiratesIdText = (rawText: string): ParsedEmiratesId | null => {
   if (!idMatch) return null;
   const idDigits = idMatch[0].replace(/\D/g, "");
   if (idDigits.length !== 15) return null;
-  const emiratesId = formatEmiratesId(idDigits);
+  const idNumber = formatEmiratesId(idDigits);
 
   // Name — look for a line containing "Name" (but not "Nationality"),
   // take whatever follows a colon on that line, else the next line.
@@ -161,7 +183,100 @@ const parseEmiratesIdText = (rawText: string): ParsedEmiratesId | null => {
     }
   }
 
-  return { emiratesId, firstName, lastName, dob };
+  return { idNumber, firstName, lastName, dob };
+};
+
+// Best-effort parser for passport bio-page OCR text. Primary source is the
+// MRZ (the two "P<CCCSURNAME<<GIVEN<<<<" / dense "<"-filled lines at the
+// bottom of the page) since it's a fixed, machine-readable format; falls
+// back to label-based heuristics (mirroring parseEmiratesIdText) when the
+// MRZ wasn't captured cleanly. Returns null if no passport number was found.
+const parsePassportText = (rawText: string): ParsedIdScan | null => {
+  const lines = rawText
+    .split("\n")
+    .map((l) => l.replace(/\s/g, ""))
+    .filter(Boolean);
+
+  const mrzLines = lines.filter(
+    (l) => l.length >= 20 && l.includes("<") && /^[A-Z0-9<]+$/.test(l),
+  );
+  const mrzLine1 = mrzLines.find((l) => /^P[A-Z<]/.test(l));
+  const mrzLine2 = mrzLines.find((l) => l !== mrzLine1);
+
+  let idNumber = "";
+  let firstName = "";
+  let lastName = "";
+  let dob: Date | null = null;
+
+  if (mrzLine1) {
+    const [surname, given] = mrzLine1.slice(5).split("<<");
+    if (surname) lastName = surname.replace(/</g, " ").trim();
+    if (given)
+      firstName = given.replace(/</g, " ").trim().split(/\s+/)[0] ?? "";
+  }
+
+  if (mrzLine2) {
+    const passportNoRaw = mrzLine2.slice(0, 9).replace(/</g, "");
+    if (passportNoRaw) idNumber = passportNoRaw;
+
+    // DOB occupies positions 13-18 (YYMMDD) of the TD3 second MRZ line
+    const dobMatch = mrzLine2.slice(13, 19).match(/^(\d{2})(\d{2})(\d{2})$/);
+    if (dobMatch) {
+      const [, yy, mm, dd] = dobMatch;
+      const currentYY = dayjs().year() % 100;
+      const year = Number(yy) > currentYY ? 1900 + Number(yy) : 2000 + Number(yy);
+      const parsed = new Date(year, Number(mm) - 1, Number(dd));
+      if (!isNaN(parsed.getTime())) dob = parsed;
+    }
+  }
+
+  // Fallback — no clean MRZ, look for a labeled passport number instead
+  if (!idNumber) {
+    const rawLines = rawText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const idLineIdx = rawLines.findIndex((l) => /passport\s*(no\.?|number)?/i.test(l));
+    if (idLineIdx !== -1) {
+      const sameLine = rawLines[idLineIdx]
+        .split(/passport\s*(?:no\.?|number)?[:\-]?/i)[1]
+        ?.trim();
+      const candidate =
+        sameLine && sameLine.length > 1 ? sameLine : rawLines[idLineIdx + 1];
+      const match = candidate?.match(/[A-Z][A-Z0-9]{5,9}/i);
+      if (match) idNumber = match[0].toUpperCase();
+    }
+  }
+
+  if (!idNumber) return null;
+
+  // Fallback name lookup from a "Name" label if the MRZ didn't yield one
+  if (!firstName && !lastName) {
+    const rawLines = rawText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const nameLineIdx = rawLines.findIndex(
+      (l) => /\bname\b/i.test(l) && !/nationality/i.test(l),
+    );
+    if (nameLineIdx !== -1) {
+      const sameLine = rawLines[nameLineIdx]
+        .split(/name\s*[:\-]?/i)[1]
+        ?.trim();
+      const candidate =
+        sameLine && sameLine.length > 1 ? sameLine : rawLines[nameLineIdx + 1];
+      if (candidate) {
+        const parts = candidate
+          .replace(/[^a-zA-Z\s]/g, "")
+          .trim()
+          .split(/\s+/);
+        firstName = parts[0] ?? "";
+        lastName = parts.slice(1).join(" ");
+      }
+    }
+  }
+
+  return { idNumber: formatPassport(idNumber), firstName, lastName, dob };
 };
 
 export default function PersonalDetailsScreen() {
@@ -173,10 +288,10 @@ export default function PersonalDetailsScreen() {
   const [passportNo, setPassportNo] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [dob, setDob] = useState<Date>(new Date());
+  const [dob, setDob] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(
-    dayjs(dob).format("YYYY-MM-DD"),
+    dayjs().format("YYYY-MM-DD"),
   );
   const [showYearGrid, setShowYearGrid] = useState(false);
   const [gender, setGender] = useState<"Male" | "Female" | "">("Male");
@@ -196,20 +311,53 @@ export default function PersonalDetailsScreen() {
 
   // Real camera capture + on-device ML Kit OCR. "searching" waits on the
   // user to tap; "processing" captures a photo and runs text recognition;
-  // "success"/"error" reflect whether a valid Emirates ID number was found.
+  // "success"/"error" reflect whether a valid ID number was found. Shared
+  // between Emirates ID and Passport scanning — scanTarget picks which
+  // parser/labels/fields apply.
   type ScanPhase = "searching" | "processing" | "success" | "error";
   const [showScanModal, setShowScanModal] = useState(false);
+  const [scanTarget, setScanTarget] = useState<ScanTarget>("emirates");
   const [scanPhase, setScanPhase] = useState<ScanPhase>("searching");
   const [scanErrorMessage, setScanErrorMessage] = useState("");
-  const [scannedData, setScannedData] = useState<ParsedEmiratesId | null>(null);
+  const [scannedData, setScannedData] = useState<ParsedIdScan | null>(null);
+  const [capturedImageUri, setCapturedImageUri] = useState<string | null>(
+    null,
+  );
   const cameraRef = React.useRef<CameraView>(null);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const scanDocLabel = scanTarget === "emirates" ? "Emirates ID" : "Passport";
+
+  // Animated scan-line sweeping over the captured image while OCR runs.
+  const scanLineProgress = React.useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (scanPhase !== "processing") return;
+    scanLineProgress.setValue(0);
+    const sweep = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanLineProgress, {
+          toValue: 1,
+          duration: 1100,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanLineProgress, {
+          toValue: 0,
+          duration: 1100,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    sweep.start();
+    return () => sweep.stop();
+  }, [scanPhase]);
 
   useEffect(() => {
     if (!showScanModal) return;
     setScanPhase("searching");
     setScannedData(null);
     setScanErrorMessage("");
+    setCapturedImageUri(null);
     if (!cameraPermission?.granted) {
       requestCameraPermission();
     }
@@ -226,18 +374,21 @@ export default function PersonalDetailsScreen() {
     // the raw "package doesn't seem to be linked" native error.
     if (Platform.OS === "web") {
       setScanErrorMessage(
-        "Emirates ID scanning isn't supported in the web preview. Please use the mobile app (Android/iOS build) to scan or upload your ID.",
+        `${scanDocLabel} scanning isn't supported in the web preview. Please use the mobile app (Android/iOS build) to scan or upload your ID.`,
       );
       setScanPhase("error");
       return;
     }
     try {
       const result = await TextRecognition.recognize(uri);
-      const parsed = parseEmiratesIdText(result.text);
+      const parsed =
+        scanTarget === "emirates"
+          ? parseEmiratesIdText(result.text)
+          : parsePassportText(result.text);
 
       if (!parsed) {
         setScanErrorMessage(
-          "Couldn't read the Emirates ID clearly. Please try again with better lighting or a clearer photo.",
+          `Couldn't read the ${scanDocLabel} clearly. Please try again with better lighting or a clearer photo.`,
         );
         setScanPhase("error");
         return;
@@ -246,7 +397,7 @@ export default function PersonalDetailsScreen() {
       setScannedData(parsed);
       setScanPhase("success");
     } catch (e) {
-      console.error("Emirates ID scan error:", e);
+      console.error(`${scanDocLabel} scan error:`, e);
       setScanErrorMessage(
         "Something went wrong while scanning. Please try again.",
       );
@@ -256,13 +407,18 @@ export default function PersonalDetailsScreen() {
 
   const handleCaptureTap = async () => {
     if (scanPhase !== "searching" || !cameraRef.current) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setScanPhase("processing");
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        shutterSound: false,
+      });
       if (!photo?.uri) throw new Error("No image captured");
+      setCapturedImageUri(photo.uri);
       await processScannedImage(photo.uri);
     } catch (e) {
-      console.error("Emirates ID capture error:", e);
+      console.error(`${scanDocLabel} capture error:`, e);
       setScanErrorMessage(
         "Something went wrong while scanning. Please try again.",
       );
@@ -277,7 +433,7 @@ export default function PersonalDetailsScreen() {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         setScanErrorMessage(
-          "Please allow photo library access to upload your Emirates ID.",
+          `Please allow photo library access to upload your ${scanDocLabel}.`,
         );
         setScanPhase("error");
         return;
@@ -289,9 +445,10 @@ export default function PersonalDetailsScreen() {
       });
       if (result.canceled || !result.assets?.[0]?.uri) return;
 
+      setCapturedImageUri(result.assets[0].uri);
       await processScannedImage(result.assets[0].uri);
     } catch (e) {
-      console.error("Emirates ID upload error:", e);
+      console.error(`${scanDocLabel} upload error:`, e);
       setScanErrorMessage(
         "Something went wrong while reading the document. Please try again.",
       );
@@ -302,31 +459,37 @@ export default function PersonalDetailsScreen() {
   const handleScanRetry = () => {
     setScannedData(null);
     setScanErrorMessage("");
+    setCapturedImageUri(null);
     setScanPhase("searching");
   };
 
   const handleScanDone = () => {
     if (!scannedData) return;
     setShowScanModal(false);
-    setEmiratesId(scannedData.emiratesId);
+    if (scanTarget === "emirates") {
+      setEmiratesId(scannedData.idNumber);
+      checkExistence("emirates", scannedData.idNumber);
+    } else {
+      setPassportNo(scannedData.idNumber);
+      checkExistence("passport", scannedData.idNumber);
+    }
     if (scannedData.firstName) setFirstName(scannedData.firstName);
     if (scannedData.lastName) setLastName(scannedData.lastName);
     if (scannedData.dob) setDob(scannedData.dob);
-    checkExistence("emirates", scannedData.emiratesId);
   };
 
   const scanFrameColor =
     scanPhase === "searching"
-      ? "#EF4444"
+      ? Colors.error
       : scanPhase === "processing"
         ? Colors.secondary
         : scanPhase === "error"
-          ? "#EF4444"
-          : "#22C55E";
+          ? Colors.error
+          : Colors.success;
 
   const scanStatusText =
     scanPhase === "searching"
-      ? "Position your Emirates ID within the frame and tap to scan"
+      ? `Position your ${scanDocLabel} within the frame and tap to scan`
       : scanPhase === "processing"
         ? "Reading document..."
         : "";
@@ -393,12 +556,13 @@ export default function PersonalDetailsScreen() {
     idFieldFilled &&
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
-    gender !== "";
+    gender !== "" &&
+    dob !== null;
 
   const buttonLabel =
     (emiratesIdCheck.status === "available" ||
       passportCheck.status === "available") &&
-    linkedPatientId
+      linkedPatientId
       ? "Continue"
       : "Register";
 
@@ -457,7 +621,7 @@ export default function PersonalDetailsScreen() {
                 const _j = JSON.parse(_d);
                 _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
               }
-            } catch (_) {}
+            } catch (_) { }
             if (!_mobile) _mobile = (route.params as any)?.phone_number ?? "";
             const patientRes = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
@@ -522,13 +686,17 @@ export default function PersonalDetailsScreen() {
     if (check.status === "checking")
       return <ActivityIndicator size="small" color={Colors.secondary} />;
     if (check.status === "available")
-      return <Ionicons name="checkmark-circle" size={20} color="#22C55E" />;
+      return (
+        <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+      );
     if (
       check.status === "exists" ||
       check.status === "error" ||
       check.status === "invalid"
     )
-      return <Ionicons name="close-circle" size={20} color="#EF4444" />;
+      return (
+        <Ionicons name="close-circle" size={20} color={Colors.error} />
+      );
     return null;
   };
 
@@ -646,7 +814,7 @@ export default function PersonalDetailsScreen() {
                 USER_FULL_DATA,
                 JSON.stringify(stored),
               );
-            } catch (_) {}
+            } catch (_) { }
           }
           Toast.show({
             type: "success",
@@ -702,7 +870,7 @@ export default function PersonalDetailsScreen() {
               USER_FULL_DATA,
               JSON.stringify(stored),
             );
-          } catch (_) {}
+          } catch (_) { }
 
           await callSuggestusAPI(
             spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
@@ -789,6 +957,14 @@ export default function PersonalDetailsScreen() {
       });
       return;
     }
+    if (!dob) {
+      Toast.show({
+        type: "error",
+        text1: "Required Field",
+        text2: "Please select your date of birth.",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -801,9 +977,9 @@ export default function PersonalDetailsScreen() {
       // Final existence check — skip if already verified as available for this value
       const alreadyVerified = isResident
         ? emiratesIdCheck.status === "available" &&
-          emiratesIdCheck.checkedValue === emiratesId
+        emiratesIdCheck.checkedValue === emiratesId
         : passportCheck.status === "available" &&
-          passportCheck.checkedValue === passportNo;
+        passportCheck.checkedValue === passportNo;
 
       if (!alreadyVerified) {
         const regUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
@@ -856,7 +1032,7 @@ export default function PersonalDetailsScreen() {
       if (currentDataStr) {
         try {
           updatedData = { ...JSON.parse(currentDataStr), ...updatedData };
-        } catch (_) {}
+        } catch (_) { }
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
@@ -1018,7 +1194,10 @@ export default function PersonalDetailsScreen() {
           bounces={false}
         >
           <View
-            style={[styles.content, { paddingTop: isSmallScreen ? 20 : 40 }]}
+            style={[
+              styles.content,
+              { paddingTop: isSmallScreen ? Spacing.xl : Spacing["4xl"] },
+            ]}
           >
             {/* Resident / Non-Resident tabs */}
             <CustomTabs
@@ -1038,7 +1217,10 @@ export default function PersonalDetailsScreen() {
                   <Text style={styles.inputLabel}>Emirates ID</Text>
                   <TouchableOpacity
                     style={styles.scanButton}
-                    onPress={() => setShowScanModal(true)}
+                    onPress={() => {
+                      setScanTarget("emirates");
+                      setShowScanModal(true);
+                    }}
                     activeOpacity={0.7}
                   >
                     <Ionicons
@@ -1054,9 +1236,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
                     emiratesIdCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     emiratesIdCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -1071,7 +1253,7 @@ export default function PersonalDetailsScreen() {
                         if (emiratesIdCheck.status === "available") {
                           setFirstName("");
                           setLastName("");
-                          setDob(new Date());
+                          setDob(null);
                           setGender("Male");
                           setLinkedPatientId("");
                         }
@@ -1120,15 +1302,32 @@ export default function PersonalDetailsScreen() {
               </View>
             ) : (
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Passport no.</Text>
+                <View style={styles.labelRow}>
+                  <Text style={styles.inputLabel}>Passport no.</Text>
+                  <TouchableOpacity
+                    style={styles.scanButton}
+                    onPress={() => {
+                      setScanTarget("passport");
+                      setShowScanModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name="scan-outline"
+                      size={16}
+                      color={Colors.secondary}
+                    />
+                    <Text style={styles.scanButtonText}>Scan</Text>
+                  </TouchableOpacity>
+                </View>
                 <View
                   style={[
                     styles.inputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
                     passportCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     passportCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -1143,7 +1342,7 @@ export default function PersonalDetailsScreen() {
                         if (passportCheck.status === "available") {
                           setFirstName("");
                           setLastName("");
-                          setDob(new Date());
+                          setDob(null);
                           setGender("Male");
                           setLinkedPatientId("");
                         }
@@ -1197,14 +1396,17 @@ export default function PersonalDetailsScreen() {
               {/* First Name & Last Name */}
               <View style={styles.rowContainer}>
                 <View
-                  style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
+                  style={[
+                    styles.inputContainer,
+                    { flex: 1, marginRight: Spacing.sm },
+                  ]}
                 >
                   <Text style={styles.inputLabel}>First name</Text>
                   <View
                     style={[
                       styles.inputWrapper,
                       focusedField === "firstName" &&
-                        styles.inputWrapperFocused,
+                      styles.inputWrapperFocused,
                     ]}
                   >
                     <Ionicons
@@ -1226,7 +1428,10 @@ export default function PersonalDetailsScreen() {
                   </View>
                 </View>
                 <View
-                  style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}
+                  style={[
+                    styles.inputContainer,
+                    { flex: 1, marginLeft: Spacing.sm },
+                  ]}
                 >
                   <Text style={styles.inputLabel}>Last name</Text>
                   <View
@@ -1264,16 +1469,20 @@ export default function PersonalDetailsScreen() {
                     showDatePicker && styles.inputWrapperFocused,
                   ]}
                   onPress={() => {
-                    setCalendarMonth(dayjs(dob).format("YYYY-MM-DD"));
+                    setCalendarMonth(dayjs(dob ?? undefined).format("YYYY-MM-DD"));
                     setShowYearGrid(false);
                     setShowDatePicker(true);
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.input}>
-                    {dayjs(dob).format("MMM DD, YYYY")}
+                  <Text
+                    style={[styles.input, !dob && styles.inputPlaceholderText]}
+                  >
+                    {dob ? dayjs(dob).format("MMM DD, YYYY") : "MMM DD, YYYY"}
                   </Text>
-                  <Text style={styles.changeLinkText}>Change</Text>
+                  <Text style={styles.changeLinkText}>
+                    {dob ? "Change" : <Ionicons name="calendar-outline" size={20} color={Colors.secondary} style={styles.inputIcon} />}
+                  </Text>
                 </TouchableOpacity>
               </View>
 
@@ -1285,7 +1494,7 @@ export default function PersonalDetailsScreen() {
                     style={[
                       styles.genderBox,
                       gender === "Male" && styles.genderBoxActive,
-                      { marginRight: 8 },
+                      { marginRight: Spacing.sm },
                     ]}
                     onPress={() => setGender("Male")}
                     activeOpacity={0.8}
@@ -1308,7 +1517,7 @@ export default function PersonalDetailsScreen() {
                     style={[
                       styles.genderBox,
                       gender === "Female" && styles.genderBoxActive,
-                      { marginLeft: 8 },
+                      { marginLeft: Spacing.sm },
                     ]}
                     onPress={() => setGender("Female")}
                     activeOpacity={0.8}
@@ -1370,7 +1579,11 @@ export default function PersonalDetailsScreen() {
             styles.bottomBtnContainer,
             {
               paddingBottom:
-                Platform.OS === "ios" ? (isSmallScreen ? 16 : 36) : 24,
+                Platform.OS === "ios"
+                  ? isSmallScreen
+                    ? Spacing.lg
+                    : Spacing["3xl"] + Spacing.xs
+                  : Spacing["2xl"],
             },
           ]}
         >
@@ -1499,7 +1712,7 @@ export default function PersonalDetailsScreen() {
                           name="caret-down"
                           size={12}
                           color={Colors.primary}
-                          style={{ marginLeft: 4 }}
+                          style={{ marginLeft: Spacing.xs }}
                         />
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -1543,12 +1756,16 @@ export default function PersonalDetailsScreen() {
                 }}
                 minDate="1900-01-01"
                 maxDate={dayjs().format("YYYY-MM-DD")}
-                markedDates={{
-                  [dayjs(dob).format("YYYY-MM-DD")]: {
-                    selected: true,
-                    selectedColor: Colors.primary,
-                  },
-                }}
+                markedDates={
+                  dob
+                    ? {
+                      [dayjs(dob).format("YYYY-MM-DD")]: {
+                        selected: true,
+                        selectedColor: Colors.primary,
+                      },
+                    }
+                    : {}
+                }
                 theme={{
                   backgroundColor: Colors.background,
                   calendarBackground: Colors.background,
@@ -1616,7 +1833,7 @@ export default function PersonalDetailsScreen() {
         </View>
       </Modal>
 
-      {/* Emirates ID scan — real camera + on-device ML Kit OCR */}
+      {/* Emirates ID / Passport scan — real camera + on-device ML Kit OCR */}
       <Modal
         visible={showScanModal}
         animationType="fade"
@@ -1626,12 +1843,21 @@ export default function PersonalDetailsScreen() {
         <View style={styles.scanOverlay}>
           {scanPhase === "success" && scannedData ? (
             <View style={styles.scanSuccessCard}>
-              <View style={styles.scanSuccessIconWrap}>
-                <Ionicons name="checkmark-circle" size={40} color="#22C55E" />
+              <View
+                style={[
+                  styles.scanSuccessIconWrap,
+                  { backgroundColor: SUCCESS_TINT },
+                ]}
+              >
+                <Ionicons
+                  name="checkmark-circle"
+                  size={36}
+                  color={Colors.success}
+                />
               </View>
               <Text style={styles.scanSuccessTitle}>Scan Successful!</Text>
               <Text style={styles.scanSuccessSubtitle}>
-                Emirates ID : {scannedData.emiratesId}
+                {scanDocLabel} : {scannedData.idNumber}
               </Text>
               <View style={styles.scanSuccessDivider} />
               <View style={styles.scanSuccessRow}>
@@ -1657,11 +1883,26 @@ export default function PersonalDetailsScreen() {
               >
                 <Text style={styles.scanDoneButtonText}>Done</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleScanRetry}
+                style={styles.scanCancelButton}
+              >
+                <Text
+                  style={[styles.scanCancelText, { color: Colors.textLabel }]}
+                >
+                  Retake
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : scanPhase === "error" ? (
             <View style={styles.scanSuccessCard}>
-              <View style={styles.scanSuccessIconWrap}>
-                <Ionicons name="alert-circle" size={40} color="#EF4444" />
+              <View
+                style={[
+                  styles.scanSuccessIconWrap,
+                  { backgroundColor: ERROR_TINT },
+                ]}
+              >
+                <Ionicons name="alert-circle" size={36} color={Colors.error} />
               </View>
               <Text style={styles.scanSuccessTitle}>Scan Failed</Text>
               <Text style={styles.scanSuccessSubtitle}>{scanErrorMessage}</Text>
@@ -1685,15 +1926,21 @@ export default function PersonalDetailsScreen() {
             </View>
           ) : !cameraPermission?.granted ? (
             <View style={styles.scanSuccessCard}>
-              <Ionicons
-                name="camera-outline"
-                size={40}
-                color={Colors.textLabel}
-                style={{ marginBottom: 12 }}
-              />
+              <View
+                style={[
+                  styles.scanSuccessIconWrap,
+                  { backgroundColor: NEUTRAL_TINT },
+                ]}
+              >
+                <Ionicons
+                  name="camera-outline"
+                  size={36}
+                  color={Colors.textLabel}
+                />
+              </View>
               <Text style={styles.scanSuccessTitle}>Camera Access Needed</Text>
               <Text style={styles.scanSuccessSubtitle}>
-                Please allow camera access to scan your Emirates ID.
+                Please allow camera access to scan your {scanDocLabel}.
               </Text>
               <TouchableOpacity
                 style={styles.scanDoneButton}
@@ -1714,71 +1961,132 @@ export default function PersonalDetailsScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.scanCameraArea}>
-              <View style={styles.scanFrameBox}>
-                <CameraView
-                  ref={cameraRef}
-                  style={StyleSheet.absoluteFill}
-                  facing="back"
-                />
-                <View
-                  style={[
-                    styles.scanCorner,
-                    styles.scanCornerTL,
-                    { borderColor: scanFrameColor },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.scanCorner,
-                    styles.scanCornerTR,
-                    { borderColor: scanFrameColor },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.scanCorner,
-                    styles.scanCornerBL,
-                    { borderColor: scanFrameColor },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.scanCorner,
-                    styles.scanCornerBR,
-                    { borderColor: scanFrameColor },
-                  ]}
-                />
+            <View style={styles.scanFullScreen}>
+              {/* Always mounted — never unmounted/remounted between phases,
+                  so there's no black gap while swapping in the captured
+                  photo underneath the scanning overlay. */}
+              <CameraView
+                ref={cameraRef}
+                style={StyleSheet.absoluteFill}
+                facing="back"
+              />
+
+              {/* Dimmed scrim with a clear cutout around the frame */}
+              <View style={styles.scanScrimColumn} pointerEvents="none">
+                <View style={styles.scanScrimBlock} />
+                <View style={styles.scanScrimMiddleRow}>
+                  <View style={styles.scanScrimBlock} />
+                  <View style={styles.scanFrameWindow}>
+                    {/* Captured photo pops in on top of the live feed the
+                        moment it's ready — the dim + scan-line overlay
+                        (already running since the instant of the tap)
+                        masks the swap so it reads as one continuous
+                        freeze rather than a flicker. */}
+                    {scanPhase === "processing" && capturedImageUri && (
+                      <Image
+                        source={{ uri: capturedImageUri }}
+                        style={styles.scanCapturedImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                    {scanPhase === "processing" && (
+                      <>
+                        <View style={styles.scanCapturedImageDim} />
+                        <Animated.View
+                          style={[
+                            styles.scanLine,
+                            { backgroundColor: scanFrameColor },
+                            {
+                              transform: [
+                                {
+                                  translateY: scanLineProgress.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [0, SCAN_FRAME_HEIGHT - 3],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
+                        />
+                      </>
+                    )}
+                    <View
+                      style={[
+                        styles.scanCorner,
+                        styles.scanCornerTL,
+                        { borderColor: scanFrameColor },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.scanCorner,
+                        styles.scanCornerTR,
+                        { borderColor: scanFrameColor },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.scanCorner,
+                        styles.scanCornerBL,
+                        { borderColor: scanFrameColor },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.scanCorner,
+                        styles.scanCornerBR,
+                        { borderColor: scanFrameColor },
+                      ]}
+                    />
+                  </View>
+                  <View style={styles.scanScrimBlock} />
+                </View>
+                <View style={styles.scanScrimBlock} />
               </View>
-              {scanPhase === "processing" && (
-                <ActivityIndicator
-                  color={scanFrameColor}
-                  style={{ marginTop: 28 }}
-                />
-              )}
-              <Text style={[styles.scanStatusText, { color: scanFrameColor }]}>
-                {scanStatusText}
-              </Text>
-              {scanPhase === "searching" && (
+
+              {/* Header */}
+              <View style={styles.scanHeader}>
                 <TouchableOpacity
-                  style={styles.scanCaptureButton}
-                  onPress={handleCaptureTap}
-                  activeOpacity={0.85}
+                  onPress={() => setShowScanModal(false)}
+                  style={styles.scanHeaderCloseBtn}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons
-                    name="scan-outline"
-                    size={18}
-                    color={Colors.lightgray}
-                  />
-                  <Text style={styles.scanCaptureButtonText}>Tap to Scan</Text>
+                  <Ionicons name="close" size={20} color={Colors.lightgray} />
                 </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={() => setShowScanModal(false)}
-                style={styles.scanCancelButton}
-              >
-                <Text style={styles.scanCancelText}>Cancel</Text>
-              </TouchableOpacity>
+                <Text style={styles.scanHeaderTitle}>
+                  Scan {scanDocLabel}
+                </Text>
+                <View style={styles.scanHeaderSpacer} />
+              </View>
+
+              {/* Bottom controls */}
+              <View style={styles.scanBottomPanel}>
+                {scanPhase === "processing" && (
+                  <ActivityIndicator
+                    color={scanFrameColor}
+                    style={{ marginBottom: Spacing.md }}
+                  />
+                )}
+                <Text
+                  style={[styles.scanStatusText, { color: scanFrameColor }]}
+                >
+                  {scanStatusText}
+                </Text>
+                {scanPhase === "searching" && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.scanShutterButton}
+                      onPress={handleCaptureTap}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.scanShutterInner} />
+                    </TouchableOpacity>
+                    <Text style={styles.scanShutterHint}>
+                      Tap to capture
+                    </Text>
+                  </>
+                )}
+              </View>
             </View>
           )}
         </View>
@@ -1795,62 +2103,91 @@ const styles: any = StyleSheet.create({
   },
   dobModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.15)",
+    backgroundColor: `${Colors.text}26`,
     justifyContent: "center",
     alignItems: "center",
   },
   dobModalCard: {
     backgroundColor: Colors.background,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
     minWidth: 320,
     elevation: 4,
   },
   dobModalCancelButton: {
-    marginTop: 10,
+    marginTop: Spacing.sm,
     alignSelf: "flex-end",
   },
   dobModalCancelText: {
     color: Colors.primary,
     fontFamily: FontFamilies.semiBold,
-    fontSize: 15,
+    fontSize: FontSizes.lg,
   },
   locationList: {
     maxHeight: 320,
   },
   locationRow: {
-    paddingVertical: 14,
+    paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   locationRowText: {
-    fontSize: 15,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.medium,
     color: Colors.text,
   },
   locationEmptyText: {
-    fontSize: 14,
+    fontSize: FontSizes.base,
     fontFamily: FontFamilies.medium,
     color: Colors.textLabel,
-    paddingVertical: 20,
+    paddingVertical: Spacing.xl,
     textAlign: "center",
   },
   scanOverlay: {
     flex: 1,
-    backgroundColor: "#141414",
+    backgroundColor: Colors.backgroundDark,
     alignItems: "center",
     justifyContent: "center",
   },
-  scanCameraArea: {
-    alignItems: "center",
-    justifyContent: "center",
+  scanFullScreen: {
+    width: "100%",
+    height: "100%",
   },
-  scanFrameBox: {
-    width: 260,
-    height: 170,
+  scanScrimColumn: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: "column",
+  },
+  scanScrimMiddleRow: {
+    height: SCAN_FRAME_HEIGHT,
+    flexDirection: "row",
+  },
+  scanScrimBlock: {
+    flex: 1,
+    backgroundColor: Colors.shadow,
+  },
+  scanFrameWindow: {
+    width: SCAN_FRAME_WIDTH,
+    height: SCAN_FRAME_HEIGHT,
     position: "relative",
     overflow: "hidden",
-    borderRadius: 8,
+  },
+  scanCapturedImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  scanCapturedImageDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: Colors.shadowMedium,
+  },
+  scanLine: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 3,
+    borderRadius: BorderRadius.sm,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
   },
   scanCorner: {
     position: "absolute",
@@ -1862,127 +2199,185 @@ const styles: any = StyleSheet.create({
     left: 0,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderTopLeftRadius: 8,
+    borderTopLeftRadius: BorderRadius.lg,
   },
   scanCornerTR: {
     top: 0,
     right: 0,
     borderTopWidth: 4,
     borderRightWidth: 4,
-    borderTopRightRadius: 8,
+    borderTopRightRadius: BorderRadius.lg,
   },
   scanCornerBL: {
     bottom: 0,
     left: 0,
     borderBottomWidth: 4,
     borderLeftWidth: 4,
-    borderBottomLeftRadius: 8,
+    borderBottomLeftRadius: BorderRadius.lg,
   },
   scanCornerBR: {
     bottom: 0,
     right: 0,
     borderBottomWidth: 4,
     borderRightWidth: 4,
-    borderBottomRightRadius: 8,
+    borderBottomRightRadius: BorderRadius.lg,
   },
-  scanStatusText: {
-    marginTop: 28,
-    fontSize: 15,
-    fontFamily: FontFamilies.semiBold,
-    textAlign: "center",
-    paddingHorizontal: 32,
-  },
-  scanCaptureButton: {
+  scanHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginTop: 20,
-    backgroundColor: Colors.primary,
-    borderRadius: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 28,
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === "ios" ? Spacing["4xl"] + Spacing.md : Spacing["2xl"],
+    paddingBottom: Spacing.md,
   },
-  scanCaptureButtonText: {
+  scanHeaderCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.overlayOnDark,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scanHeaderTitle: {
     color: Colors.lightgray,
-    fontSize: 15,
-    fontFamily: FontFamilies.bold,
+    fontSize: FontSizes.lg,
+    fontFamily: FontFamilies.semiBold,
+  },
+  scanHeaderSpacer: {
+    width: 36,
+  },
+  scanBottomPanel: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    paddingTop: Spacing["2xl"],
+    paddingBottom: Platform.OS === "ios" ? Spacing["4xl"] + Spacing.sm : Spacing["3xl"],
+    paddingHorizontal: Spacing["3xl"],
+  },
+  scanStatusText: {
+    fontSize: FontSizes.lg,
+    fontFamily: FontFamilies.semiBold,
+    textAlign: "center",
+    marginBottom: Spacing.xs,
+  },
+  scanShutterButton: {
+    width: 72,
+    height: 72,
+    borderRadius: BorderRadius.full,
+    borderWidth: 4,
+    borderColor: Colors.lightgray,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: Spacing.xl,
+  },
+  scanShutterInner: {
+    width: 56,
+    height: 56,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.lightgray,
+  },
+  scanShutterHint: {
+    marginTop: Spacing.sm,
+    color: Colors.lightgray,
+    fontSize: FontSizes.base,
+    fontFamily: FontFamilies.medium,
   },
   scanCancelButton: {
-    marginTop: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
+    marginTop: Spacing["2xl"],
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing["2xl"],
   },
   scanCancelText: {
     color: Colors.lightgray,
-    fontSize: 15,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.semiBold,
   },
   scanSuccessCard: {
     width: 300,
     backgroundColor: Colors.background,
-    borderRadius: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
+    borderRadius: BorderRadius.xl,
+    paddingVertical: Spacing["2xl"],
+    paddingHorizontal: Spacing["2xl"],
     alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.text,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+      },
+      android: { elevation: 8 },
+    }),
   },
   scanSuccessIconWrap: {
-    marginBottom: 8,
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.md,
   },
   scanSuccessTitle: {
-    fontSize: 17,
+    fontSize: FontSizes.xl,
     fontFamily: FontFamilies.bold,
     color: Colors.text,
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   scanSuccessSubtitle: {
-    fontSize: 13,
+    fontSize: FontSizes.base,
     fontFamily: FontFamilies.medium,
     color: Colors.textLabel,
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
   },
   scanSuccessDivider: {
     width: "100%",
     height: 1,
     backgroundColor: Colors.border,
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   scanSuccessRow: {
     width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: Spacing.sm,
   },
   scanSuccessLabel: {
-    fontSize: 14,
+    fontSize: FontSizes.base,
     fontFamily: FontFamilies.medium,
     color: Colors.textLabel,
   },
   scanSuccessValue: {
-    fontSize: 14,
+    fontSize: FontSizes.base,
     fontFamily: FontFamilies.semiBold,
     color: Colors.text,
   },
   scanDoneButton: {
     width: "100%",
-    marginTop: 12,
+    marginTop: Spacing.md,
     backgroundColor: Colors.primary,
-    borderRadius: 8,
-    paddingVertical: 14,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.lg,
     alignItems: "center",
   },
   scanDoneButtonText: {
     color: Colors.lightgray,
-    fontSize: 16,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.bold,
   },
   calendarHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingBottom: 8,
+    paddingBottom: Spacing.sm,
   },
   calendarNavBtn: {
-    padding: 6,
+    padding: Spacing.sm,
   },
   calendarHeaderLabelBtn: {
     flex: 1,
@@ -1991,7 +2386,7 @@ const styles: any = StyleSheet.create({
     justifyContent: "center",
   },
   calendarHeaderText: {
-    fontSize: 16,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.semiBold,
     color: Colors.text,
   },
@@ -1999,11 +2394,11 @@ const styles: any = StyleSheet.create({
     minHeight: 300,
   },
   yearGridTitle: {
-    fontSize: 16,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.semiBold,
     color: Colors.text,
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   yearGridScroll: {
     maxHeight: 300,
@@ -2015,17 +2410,17 @@ const styles: any = StyleSheet.create({
   },
   yearCell: {
     width: "31%",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
     backgroundColor: Colors.lightgray,
   },
   yearCellSelected: {
     backgroundColor: Colors.primary,
   },
   yearCellText: {
-    fontSize: 15,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.medium,
     color: Colors.text,
   },
@@ -2035,26 +2430,26 @@ const styles: any = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingHorizontal: Spacing["2xl"],
+    paddingBottom: Spacing["2xl"],
   },
 
   subtext: {
-    fontSize: 16,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.medium,
     color: Colors.label,
-    marginBottom: 24,
+    marginBottom: Spacing["2xl"],
     lineHeight: 20,
     textAlign: "left",
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: Spacing.xl,
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.semiBold,
     color: Colors.textLabel,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
     textAlign: "left",
   },
   labelRow: {
@@ -2065,11 +2460,11 @@ const styles: any = StyleSheet.create({
   scanButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    marginBottom: 8,
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   scanButtonText: {
-    fontSize: 14,
+    fontSize: FontSizes.base,
     fontFamily: FontFamilies.semiBold,
     color: Colors.secondary,
   },
@@ -2079,39 +2474,39 @@ const styles: any = StyleSheet.create({
     backgroundColor: Colors.lightgray,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.lg,
     height: 56,
   },
   inputWrapperFocused: {
     borderColor: Colors.secondary,
   },
   inputWrapperError: {
-    borderColor: "#EF4444",
-    backgroundColor: "#FFF5F5",
+    borderColor: Colors.error,
+    backgroundColor: ERROR_SURFACE,
   },
   inputWrapperSuccess: {
-    borderColor: "#22C55E",
-    backgroundColor: "#F0FDF4",
+    borderColor: Colors.success,
+    backgroundColor: SUCCESS_SURFACE,
   },
   fieldError: {
-    fontSize: 12,
+    fontSize: FontSizes.sm,
     fontFamily: FontFamilies.medium,
-    color: "#EF4444",
-    marginTop: 6,
+    color: Colors.error,
+    marginTop: Spacing.sm,
   },
   fieldInfo: {
-    fontSize: 12,
+    fontSize: FontSizes.sm,
     fontFamily: FontFamilies.medium,
-    color: "#F59E0B",
-    marginTop: 6,
+    color: Colors.warning,
+    marginTop: Spacing.xs + Spacing.xs,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FontSizes.lg,
     color: Colors.text,
     fontFamily: FontFamilies.semiBold,
     paddingVertical: 0,
@@ -2130,19 +2525,19 @@ const styles: any = StyleSheet.create({
     justifyContent: "space-between",
   },
   changeLinkText: {
-    fontSize: 14,
+    fontSize: FontSizes.base,
     fontFamily: FontFamilies.bold,
     color: Colors.secondary,
   },
   genderBox: {
     flex: 1,
     height: 56,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.lightgray,
     justifyContent: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.lg,
   },
   genderBoxActive: {
     borderColor: Colors.primary,
@@ -2155,12 +2550,12 @@ const styles: any = StyleSheet.create({
   radioOuter: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: BorderRadius.full,
     borderWidth: 2,
     borderColor: Colors.inactive,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   radioOuterActive: {
     borderColor: Colors.primary,
@@ -2168,23 +2563,23 @@ const styles: any = StyleSheet.create({
   radioInner: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: BorderRadius.full,
     backgroundColor: Colors.primary,
   },
   genderText: {
-    fontSize: 16,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.bold,
     color: Colors.text,
   },
   bottomBtnContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 12,
+    paddingHorizontal: Spacing["2xl"],
+    paddingTop: Spacing.md,
     backgroundColor: Colors.background,
   },
   continueBtn: {
     width: "100%",
-    borderRadius: 8,
-    paddingVertical: 14,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.lg,
     alignItems: "center",
   },
   continueBtnEnabled: {
@@ -2207,7 +2602,7 @@ const styles: any = StyleSheet.create({
   },
   continueBtnText: {
     color: Colors.lightgray,
-    fontSize: 16,
+    fontSize: FontSizes.lg,
     fontFamily: FontFamilies.bold,
   },
 });

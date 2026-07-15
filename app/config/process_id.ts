@@ -128,4 +128,6 @@ export const spd_processId_config = {
   sgconf_save_mst_user_attribute_mapping: "sgconf_save_mst_user_attribute_mapping",
   sgconf_save_update_mst_user_org_mapping_custom:
     "sgconf_save_update_mst_user_org_mapping_custom",
+  sgconf_save_update_mst_user_org_mapping_custom_mark_default:
+    "sgconf_save_update_mst_user_org_mapping_custom_mark_default",
 };

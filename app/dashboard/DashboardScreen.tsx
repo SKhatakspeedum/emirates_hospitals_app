@@ -11,6 +11,9 @@ import {
   SafeAreaView,
   Pressable,
   ActivityIndicator,
+  Modal,
+  FlatList,
+  TouchableOpacity,
 } from "react-native";
 import {
   useNavigation,
@@ -28,13 +31,19 @@ import {
   SPD_USER_NAME,
   SPD_SELECTED_PATIENT,
   USER_FULL_DATA,
+  SPD_AI_CODE,
 } from "@/app/config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
-import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+import {
+  fetchDataFromLocalStorage,
+  getDecryptedID,
+} from "../suggestus_plugin/util/util_functions";
 import { useDashboardSections } from "../hooks/useDashboardSections";
+import { fetchAndApplyOrgConfig } from "../services/orgConfig";
+import { SiteConfig } from "../config/site_config";
 
 const { width, height } = Dimensions.get("window");
 
@@ -232,6 +241,17 @@ type FullAppointment = {
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const [userProfileName, setUserProfileName] = useState<string>("John");
+  const [orgLocationName, setOrgLocationName] = useState<string>("");
+  type LocationOption = {
+    id: string;
+    name: string;
+    orgAiCode: string;
+    isDefault: boolean;
+  };
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [selectedLocationCode, setSelectedLocationCode] = useState<string>("");
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [switchingLocation, setSwitchingLocation] = useState(false);
   const [patientId, setPatientId] = useState<string | null>(null);
   const [patientMeta, setPatientMeta] = useState<{
     age: number;
@@ -250,112 +270,122 @@ export default function DashboardScreen() {
     FullAppointment[]
   >([]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const load = async () => {
-        const patStr = await AsyncStorage.getItem(SPD_SELECTED_PATIENT);
-        if (patStr) {
-          try {
-            const p = JSON.parse(patStr);
-            if (p.name) setUserProfileName(p.name);
-            if (p.age || p.gender)
-              setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-          } catch (_) {}
-        } else {
-          const name = await AsyncStorage.getItem(SPD_USER_NAME);
-          if (name) setUserProfileName(name);
-        }
-        const pid = await AsyncStorage.getItem("sg_patientId");
-        setPatientId(pid);
+  // Extracted so it can be re-run both on screen focus and right after the
+  // user switches location (its org-scoped fetches need to reflect the
+  // newly selected org's sgOrgId/sgAiCode, not just re-run on next focus).
+  const loadDashboardData = useCallback(async () => {
+    const patStr = await AsyncStorage.getItem(SPD_SELECTED_PATIENT);
+    if (patStr) {
+      try {
+        const p = JSON.parse(patStr);
+        if (p.name) setUserProfileName(p.name);
+        if (p.age || p.gender)
+          setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
+      } catch (_) {}
+    } else {
+      const name = await AsyncStorage.getItem(SPD_USER_NAME);
+      if (name) setUserProfileName(name);
+    }
+    const pid = await AsyncStorage.getItem("sg_patientId");
+    setPatientId(pid);
 
-        if (pid && pid !== "null") {
-          try {
-            const response = await callSuggestusAPI(
-              spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
-              {
-                p_patient_id: pid,
-                p_visit_id: null,
-                menu_name: "Wellness",
-                menu_tab_type: "always_patient_specific",
-                maximization_redirection_label: "Make appointment",
-                p_max_offset: 100,
-                p_process_type: "fetch_all_appointments",
-                p_offset: 0,
-              },
-            );
-            if (
-              response?.returnCode === true &&
-              response.returnData?.length > 0
-            ) {
-              // Same mapping AppointmentScreen uses, so the full lists are
-              // directly usable there without remapping.
-              const mapFull = (a: any): FullAppointment => ({
-                id: String(a.p_appt_id ?? a.appt_id ?? ""),
-                doctorName: a.resource_name ?? "",
-                specialty: a.dpt_description ?? "",
-                avatar: a.p_doc_image_url ?? "",
-                date: a.appt_date_dashboard ?? "",
-                time: a.appt_start_time ?? "",
-                status: a.appstat_name ?? "Confirmed",
-                statusHtml: a.appstat_html_name ?? "",
-                type: a.appsubtyp_name ?? "In-Clinic",
-                apptypName: stripHtml(a.apptyp_name ?? ""),
-                patientDet: a.patient_det ?? "",
-                resourceId: String(a.appt_resource_id ?? a.resource_id ?? ""),
-                appSubtypeId: String(a.appsubtyp_id ?? ""),
-              });
+    // sg_org_name reflects whichever location the user is currently
+    // scoped to (each branch location is its own org_ai_code — see
+    // fetchAndApplyOrgConfig in services/orgConfig.ts).
+    const orgName = await AsyncStorage.getItem("sg_org_name");
+    setOrgLocationName(orgName || "");
+    const aiCode = await AsyncStorage.getItem(SPD_AI_CODE);
+    setSelectedLocationCode(aiCode || "");
 
-              const upcomingFull: FullAppointment[] = [];
-              const historyFull: FullAppointment[] = [];
-              response.returnData.forEach((a: any) => {
-                const histType = (
-                  a.appointment_history_type ?? ""
-                ).toLowerCase();
-                if (histType.includes("hist")) {
-                  historyFull.push(mapFull(a));
-                } else {
-                  upcomingFull.push(mapFull(a));
-                }
-              });
-              setUpcomingAppointmentsFull(upcomingFull);
-              setHistoryAppointmentsFull(historyFull);
+    if (pid && pid !== "null") {
+      try {
+        const response = await callSuggestusAPI(
+          spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
+          {
+            p_patient_id: pid,
+            p_visit_id: null,
+            menu_name: "Wellness",
+            menu_tab_type: "always_patient_specific",
+            maximization_redirection_label: "Make appointment",
+            p_max_offset: 100,
+            p_process_type: "fetch_all_appointments",
+            p_offset: 0,
+          },
+        );
+        if (
+          response?.returnCode === true &&
+          response.returnData?.length > 0
+        ) {
+          // Same mapping AppointmentScreen uses, so the full lists are
+          // directly usable there without remapping.
+          const mapFull = (a: any): FullAppointment => ({
+            id: String(a.p_appt_id ?? a.appt_id ?? ""),
+            doctorName: a.resource_name ?? "",
+            specialty: a.dpt_description ?? "",
+            avatar: a.p_doc_image_url ?? "",
+            date: a.appt_date_dashboard ?? "",
+            time: a.appt_start_time ?? "",
+            status: a.appstat_name ?? "Confirmed",
+            statusHtml: a.appstat_html_name ?? "",
+            type: a.appsubtyp_name ?? "In-Clinic",
+            apptypName: stripHtml(a.apptyp_name ?? ""),
+            patientDet: a.patient_det ?? "",
+            resourceId: String(a.appt_resource_id ?? a.resource_id ?? ""),
+            appSubtypeId: String(a.appsubtyp_id ?? ""),
+          });
 
-              // Simplified subset used by this screen's own dashboard card.
-              const upcoming: UpcomingAppointment[] = upcomingFull.map(
-                (a) => {
-                  const statusStyle = getStatusStyle(a.statusHtml);
-                  return {
-                    id: a.id,
-                    doctorName: a.doctorName,
-                    specialty: a.specialty,
-                    avatar: a.avatar,
-                    date: a.date,
-                    time: formatAmPm(a.time),
-                    statusLabel: stripHtml(a.statusHtml) || a.status,
-                    statusColor: statusStyle.color,
-                    statusBg: statusStyle.bg,
-                  };
-                },
-              );
-              setUpcomingAppointments(upcoming);
+          const upcomingFull: FullAppointment[] = [];
+          const historyFull: FullAppointment[] = [];
+          response.returnData.forEach((a: any) => {
+            const histType = (
+              a.appointment_history_type ?? ""
+            ).toLowerCase();
+            if (histType.includes("hist")) {
+              historyFull.push(mapFull(a));
             } else {
-              setUpcomingAppointments([]);
-              setUpcomingAppointmentsFull([]);
-              setHistoryAppointmentsFull([]);
+              upcomingFull.push(mapFull(a));
             }
-          } catch (_) {
-            setUpcomingAppointments([]);
-            setUpcomingAppointmentsFull([]);
-            setHistoryAppointmentsFull([]);
-          }
+          });
+          setUpcomingAppointmentsFull(upcomingFull);
+          setHistoryAppointmentsFull(historyFull);
+
+          // Simplified subset used by this screen's own dashboard card.
+          const upcoming: UpcomingAppointment[] = upcomingFull.map((a) => {
+            const statusStyle = getStatusStyle(a.statusHtml);
+            return {
+              id: a.id,
+              doctorName: a.doctorName,
+              specialty: a.specialty,
+              avatar: a.avatar,
+              date: a.date,
+              time: formatAmPm(a.time),
+              statusLabel: stripHtml(a.statusHtml) || a.status,
+              statusColor: statusStyle.color,
+              statusBg: statusStyle.bg,
+            };
+          });
+          setUpcomingAppointments(upcoming);
         } else {
           setUpcomingAppointments([]);
           setUpcomingAppointmentsFull([]);
           setHistoryAppointmentsFull([]);
         }
-      };
-      load();
-    }, []),
+      } catch (_) {
+        setUpcomingAppointments([]);
+        setUpcomingAppointmentsFull([]);
+        setHistoryAppointmentsFull([]);
+      }
+    } else {
+      setUpcomingAppointments([]);
+      setUpcomingAppointmentsFull([]);
+      setHistoryAppointmentsFull([]);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [loadDashboardData]),
   );
 
   const handleSeeAllProviders = () => {
@@ -414,49 +444,109 @@ export default function DashboardScreen() {
   // here too so the Home dashboard's "Providers" carousel shows real data,
   // and the full result is passed to NearbyProvidersScreen on "See all" so
   // it doesn't need to re-fetch (see handleSeeAllProviders above).
+  // Extracted (was inline in the effect below) so it can also be re-run
+  // right after a location switch, once the new org's sgOrgId is applied.
+  const fetchProviders = useCallback(async () => {
+    setLoadingProviders(true);
+    try {
+      const patientId = await fetchDataFromLocalStorage("sg_patientId");
+      const now = new Date();
+      const response = await callSuggestusAPI(
+        spd_processId_config.hospapp_get_resources,
+        {
+          p_patient_id: patientId ?? "",
+          p_resource_code: "",
+          p_month: now.getMonth() + 1,
+          p_year: now.getFullYear(),
+          p_process_type: "",
+          p_visit_id: null,
+          p_category_code: "CAT005",
+        },
+      );
+      if (response?.returnCode === true && response.returnData?.length > 0) {
+        const fetched = response.returnData.map((r: any) => ({
+          id: String(r.resource_id ?? r.id ?? Math.random()),
+          name: r.resource_name ?? r.name ?? "",
+          specialty: r.dpt_description ?? r.dept_name ?? "",
+          qualification:
+            r.doctor_education ?? r.doctor_short_description ?? "",
+          hospital: r.org_name ?? "",
+          distance: r.distance ?? "",
+          rating: String(r.rating ?? ""),
+          reviews: String(r.reviews ?? ""),
+          avatar: r.resource_image_url ?? "",
+          nextAvailable: r.next_available ?? r.next_slot ?? "",
+        }));
+        setProviders(fetched);
+      }
+    } catch (e) {
+      console.error("Error fetching providers:", e);
+      // Keep the fallback list on error
+    } finally {
+      setLoadingProviders(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const fetchProviders = async () => {
-      setLoadingProviders(true);
+    fetchProviders();
+  }, [fetchProviders]);
+
+  // Same location list registration uses (sgconf_get_mst_organization_location_patient_portal_list),
+  // scoped by spd_app_location_list from the cached org config — lets the
+  // dashboard's location pill offer the same switcher.
+  useEffect(() => {
+    const loadLocations = async () => {
       try {
-        const patientId = await fetchDataFromLocalStorage("sg_patientId");
-        const now = new Date();
+        const defaultJsonStr = await getDecryptedID("DEFAULT_JSON_DATA");
+        let orgCodes = SiteConfig.AI_CODE;
+        try {
+          const defaultJson = defaultJsonStr ? JSON.parse(defaultJsonStr) : {};
+          orgCodes = defaultJson?.spd_app_location_list ?? SiteConfig.AI_CODE;
+        } catch (parseError) {
+          console.error("Error parsing DEFAULT_JSON_DATA:", parseError);
+        }
+
         const response = await callSuggestusAPI(
-          spd_processId_config.hospapp_get_resources,
+          spd_processId_config.sgconf_get_mst_organization_location_patient_portal_list,
           {
-            p_patient_id: patientId ?? "",
-            p_resource_code: "",
-            p_month: now.getMonth() + 1,
-            p_year: now.getFullYear(),
-            p_process_type: "",
-            p_visit_id: null,
-            p_category_code: "CAT005",
+            p_org_ai_code: "",
+            p_org_codes: orgCodes,
           },
         );
         if (response?.returnCode === true && response.returnData?.length > 0) {
           const fetched = response.returnData.map((r: any) => ({
-            id: String(r.resource_id ?? r.id ?? Math.random()),
-            name: r.resource_name ?? r.name ?? "",
-            specialty: r.dpt_description ?? r.dept_name ?? "",
-            qualification:
-              r.doctor_education ?? r.doctor_short_description ?? "",
-            hospital: r.org_name ?? "",
-            distance: r.distance ?? "",
-            rating: String(r.rating ?? ""),
-            reviews: String(r.reviews ?? ""),
-            avatar: r.resource_image_url ?? "",
-            nextAvailable: r.next_available ?? r.next_slot ?? "",
+            id: String(r.id ?? ""),
+            name: r.description ?? r.name ?? "",
+            orgAiCode: r.org_ai_code ?? "",
+            isDefault: r.usr_org_default === "Y",
           }));
-          setProviders(fetched);
+          setLocations(fetched);
         }
       } catch (e) {
-        console.error("Error fetching providers:", e);
-        // Keep the fallback list on error
-      } finally {
-        setLoadingProviders(false);
+        console.error("Error fetching locations:", e);
       }
     };
-    fetchProviders();
+    loadLocations();
   }, []);
+
+  const handleSelectLocation = async (location: LocationOption) => {
+    setShowLocationPicker(false);
+    if (location.orgAiCode === selectedLocationCode) return;
+
+    setSwitchingLocation(true);
+    try {
+      await fetchAndApplyOrgConfig(location.orgAiCode);
+      setSelectedLocationCode(location.orgAiCode);
+      setOrgLocationName(location.name);
+      // Re-run org-scoped fetches so providers/appointments reflect the
+      // newly selected location's sgOrgId, not the previous one.
+      await Promise.all([loadDashboardData(), fetchProviders()]);
+    } catch (e) {
+      console.error("Error switching location:", e);
+    } finally {
+      setSwitchingLocation(false);
+    }
+  };
 
   const specialties = [
     {
@@ -1054,6 +1144,34 @@ export default function DashboardScreen() {
                 color={Colors.background}
               />
             </Pressable>
+
+            {orgLocationName ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.locationPill,
+                  { opacity: pressed ? 0.8 : 1 },
+                ]}
+                onPress={() => setShowLocationPicker(true)}
+              >
+                <Ionicons
+                  name="location-outline"
+                  size={16}
+                  color={Colors.primary}
+                />
+                <Text
+                  style={styles.locationPillText}
+                  numberOfLines={1}
+                >
+                  {orgLocationName}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={14}
+                  color={Colors.inactive}
+                />
+              </Pressable>
+            ) : null}
+
             <View style={styles.headerIconsRight}>
               <Pressable
                 style={({ pressed }) => [
@@ -1125,6 +1243,84 @@ export default function DashboardScreen() {
           <View style={styles.bottomSpacer} />
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showLocationPicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowLocationPicker(false)}
+      >
+        <Pressable
+          style={styles.locationSheetOverlay}
+          onPress={() => setShowLocationPicker(false)}
+        >
+          <Pressable style={styles.locationSheetCard} onPress={() => {}}>
+            <View style={styles.locationSheetHandle} />
+            <Text style={styles.locationSheetTitle}>Switch location</Text>
+            {locations.length === 0 ? (
+              <Text style={styles.locationEmptyText}>
+                No locations available.
+              </Text>
+            ) : (
+              <FlatList
+                data={locations}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  const isSelected = item.orgAiCode === selectedLocationCode;
+                  const isDefault = item.isDefault;
+                  return (
+                    <TouchableOpacity
+                      style={styles.locationSheetRow}
+                      onPress={() => handleSelectLocation(item)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.locationSheetIconWrap}>
+                        <Ionicons
+                          name="location"
+                          size={18}
+                          color={Colors.secondary}
+                        />
+                      </View>
+                      <View style={styles.locationSheetTextCol}>
+                        <View style={styles.locationSheetNameRow}>
+                          <Text style={styles.locationSheetName}>
+                            {item.name}
+                          </Text>
+                          {isDefault && (
+                            <View style={styles.locationSheetDefaultBadge}>
+                              <Text style={styles.locationSheetDefaultText}>
+                                DEFAULT
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <Ionicons
+                        name={
+                          isSelected ? "checkmark-circle" : "ellipse-outline"
+                        }
+                        size={22}
+                        color={isSelected ? Colors.secondary : Colors.border}
+                      />
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={switchingLocation} transparent animationType="fade">
+        <View style={styles.locationSwitchingOverlay}>
+          <View style={styles.locationSwitchingCard}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.locationSwitchingText}>
+              Switching location...
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1165,6 +1361,118 @@ const styles = StyleSheet.create({
   headerIconsRight: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  locationPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.background,
+    borderRadius: 18,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    maxWidth: 160,
+    gap: 4,
+  },
+  locationPillText: {
+    fontSize: 13,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
+    flexShrink: 1,
+  },
+  locationSheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  locationSheetCard: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === "ios" ? 32 : 20,
+    maxHeight: "70%",
+  },
+  locationSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  locationSheetTitle: {
+    fontSize: 16,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+    marginBottom: 12,
+  },
+  locationEmptyText: {
+    fontSize: 13,
+    fontFamily: FontFamilies.medium,
+    color: Colors.textLabel,
+    textAlign: "center",
+    paddingVertical: 20,
+  },
+  locationSheetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  locationSheetIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.pressed,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  locationSheetTextCol: {
+    flex: 1,
+  },
+  locationSheetNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  locationSheetName: {
+    fontSize: 15,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
+  },
+  locationSheetDefaultBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: Colors.pressed,
+  },
+  locationSheetDefaultText: {
+    fontSize: 10,
+    fontFamily: FontFamilies.bold,
+    color: Colors.secondary,
+    letterSpacing: 0.5,
+  },
+  locationSwitchingOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  locationSwitchingCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    minWidth: 160,
+  },
+  locationSwitchingText: {
+    marginTop: 14,
+    fontSize: 15,
+    color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
   },
   iconButton: {
     marginLeft: 16,

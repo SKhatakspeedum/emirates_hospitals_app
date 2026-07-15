@@ -300,15 +300,16 @@ export default function PersonalDetailsScreen() {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
 
-  const [locations, setLocations] = useState<
-    { id: string; name: string; orgAiCode: string }[]
-  >([]);
-  const [loadingLocations, setLoadingLocations] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{
+  type LocationOption = {
     id: string;
     name: string;
     orgAiCode: string;
-  } | null>(null);
+    isDefault: boolean;
+  };
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [selectedLocation, setSelectedLocation] =
+    useState<LocationOption | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   // Real camera capture + on-device ML Kit OCR. "searching" waits on the
@@ -522,18 +523,20 @@ export default function PersonalDetailsScreen() {
             id: String(r.id ?? ""),
             name: r.description ?? r.name ?? "",
             orgAiCode: r.org_ai_code ?? "",
+            isDefault: r.usr_org_default === "Y",
           }));
           setLocations(fetched);
 
-          // Default location = the one whose org_ai_code matches this
-          // site's configured AI code, so it's pre-selected and used for
-          // any location-scoped API calls until the user explicitly picks
-          // a different one.
+          // Default location = whichever the backend flags usr_org_default
+          // "Y" for, falling back to the site's configured AI code (then
+          // the first entry) when no location is flagged yet — e.g. a
+          // brand-new user with no prior default set.
           const defaultLocation =
+            fetched.find((loc: LocationOption) => loc.isDefault) ??
             fetched.find(
-              (loc: { orgAiCode: string }) =>
-                loc.orgAiCode === SiteConfig.AI_CODE,
-            ) ?? fetched[0];
+              (loc: LocationOption) => loc.orgAiCode === SiteConfig.AI_CODE,
+            ) ??
+            fetched[0];
           if (defaultLocation) setSelectedLocation(defaultLocation);
         }
       } catch (e) {
@@ -1178,6 +1181,27 @@ export default function PersonalDetailsScreen() {
           console.error(
             "[PersonalDetails] user-org mapping failed:",
             orgMapErr,
+          );
+        }
+
+        // Mark the location the user actually registered under (not every
+        // mapped org above) as their default, so it's the one restored on
+        // login/logout instead of falling back to the static site config.
+        try {
+          await callSuggestusAPI(
+            spd_processId_config.sgconf_save_update_mst_user_org_mapping_custom_mark_default,
+            {
+              p_map_user_id: newUserId,
+              p_org_codes: currentOrgAiCode,
+              p_process_flag: "mark_default_single",
+              p_additional_attribute: "",
+              p_internal_flag: "N",
+            },
+          );
+        } catch (markDefaultErr) {
+          console.error(
+            "[PersonalDetails] mark-default-location failed:",
+            markDefaultErr,
           );
         }
       }
@@ -1901,7 +1925,7 @@ export default function PersonalDetailsScreen() {
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => {
                   const isSelected = selectedLocation?.id === item.id;
-                  const isDefault = item.orgAiCode === SiteConfig.AI_CODE;
+                  const isDefault = item.isDefault;
                   return (
                     <TouchableOpacity
                       style={styles.locationSheetRow}

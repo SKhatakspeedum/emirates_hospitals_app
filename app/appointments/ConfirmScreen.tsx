@@ -38,10 +38,12 @@ export default function ConfirmScreen() {
     patientAge,
     patientGender,
     appSubtypeId,
+    apptypId,
     type,
     date,
     time,
     slotId,
+    symptoms,
   } = route.params || {
     doctorId: "1",
     doctorName: "Dr. Harry Dewson",
@@ -53,10 +55,12 @@ export default function ConfirmScreen() {
     patientAge: "",
     patientGender: "",
     appSubtypeId: "",
+    apptypId: "",
     type: "Video Consult",
     date: "02 Mar 2026",
     time: "09:30 AM",
     slotId: "",
+    symptoms: "",
   };
 
   const [locationText, setLocationText] = useState<string>(hospital ?? "");
@@ -93,12 +97,16 @@ export default function ConfirmScreen() {
           p_doctor_id: doctorId ?? "",
           p_patient_id: pid,
           p_slots_list: pSlotsList,
-          p_appt_id: apptId ?? "",
+          // apptId (an existing appointment's own ID) takes precedence when
+          // rescheduling; otherwise this is a fresh booking, so fall back to
+          // apptyp_id resolved from xcelschconf_get_mst_appointment_subtype_pntapp
+          // on the Appointment Reason screen.
+          p_appt_id: apptId || apptypId || "",
           p_org_id: orgId,
           p_online_appointment_flag: "Y",
           p_appt_subtype: appSubtypeId ?? "",
           p_reschedule_appointment: "",
-          p_remarks: "",
+          p_remarks: symptoms ?? "",
         },
       );
 

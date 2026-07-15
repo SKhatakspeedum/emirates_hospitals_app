@@ -54,7 +54,6 @@ export default function PatientDetailsScreen() {
   const [patientAge, setPatientAge] = useState("");
   const [patientGender, setPatientGender] = useState("Female");
   const [relationship, setRelationship] = useState("Spouse");
-  const [symptoms, setSymptoms] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -66,17 +65,12 @@ export default function PatientDetailsScreen() {
         try {
           const selectedStr = await AsyncStorage.getItem(SPD_SELECTED_PATIENT);
           const selected = selectedStr ? JSON.parse(selectedStr) : {};
-          navigation.replace("AppointmentType", {
-            doctorId,
-            doctorName,
-            specialty,
-            avatar,
-            hospital,
+          goToAppointmentReason({
+            patientId,
             patientName: selected.name ?? "",
             patientAge: String(selected.age ?? ""),
             patientGender: selected.gender ?? "Male",
             relationship: "Self",
-            symptoms: "",
           });
           return;
         } catch (_) {}
@@ -86,6 +80,27 @@ export default function PatientDetailsScreen() {
     };
     init();
   }, []);
+
+  // Hands off to the "Appointment reason" screen, which now owns collecting
+  // the visit reason/symptoms and resolving the org's default appointment
+  // subtype (xcelschconf_get_mst_appointment_subtype_pntapp) before finally
+  // navigating to ScheduleBook.
+  const goToAppointmentReason = (params: {
+    patientId?: string | null;
+    patientName: string;
+    patientAge: string;
+    patientGender: string;
+    relationship: string;
+  }) => {
+    navigation.navigate("AppointmentReason", {
+      doctorId,
+      doctorName,
+      specialty,
+      avatar,
+      hospital,
+      ...params,
+    });
+  };
 
   const fetchPatientData = async (p_patient_id?: string) => {
     const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
@@ -235,17 +250,12 @@ export default function PatientDetailsScreen() {
   };
 
   const handleSelectPatientAndContinue = (patient: (typeof patients)[0]) => {
-    navigation.replace("AppointmentType", {
-      doctorId,
-      doctorName,
-      specialty,
-      avatar,
-      hospital,
+    goToAppointmentReason({
+      patientId: patient.id,
       patientName: patient.name,
       patientAge: patient.age,
       patientGender: patient.gender,
       relationship: patient.relationship,
-      symptoms: symptoms,
     });
   };
 
@@ -310,18 +320,12 @@ export default function PatientDetailsScreen() {
 
     setShowAddForm(false);
 
-    navigation.replace("AppointmentType", {
-      doctorId,
-      doctorName,
-      specialty,
-      avatar,
-      hospital,
+    goToAppointmentReason({
       patientId: savedPatientId,
       patientName,
       patientAge,
       patientGender,
       relationship,
-      symptoms,
     });
   };
 
@@ -599,20 +603,6 @@ export default function PatientDetailsScreen() {
                   </View>
                 </>
               )}
-
-              <Text style={styles.inputLabel}>
-                Describe Symptoms (Optional)
-              </Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={symptoms}
-                onChangeText={setSymptoms}
-                placeholder="Describe what you or the patient are feeling (e.g. fever, headache, skin rash...)"
-                placeholderTextColor={Colors.label}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
             </View>
           </ScrollView>
         )}

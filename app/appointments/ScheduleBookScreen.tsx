@@ -119,6 +119,7 @@ export default function ScheduleBookScreen() {
     symptoms,
     type,
     appSubtypeId,
+    apptypId,
     rescheduleDate,
   } = route.params || {
     doctorId: "1",
@@ -134,6 +135,7 @@ export default function ScheduleBookScreen() {
     symptoms: "",
     type: "Virtual urgent care",
     appSubtypeId: "",
+    apptypId: "",
   };
 
   const initialAPIDate =
@@ -218,6 +220,7 @@ export default function ScheduleBookScreen() {
       relationship,
       symptoms,
       appSubtypeId,
+      apptypId,
       type,
       date: selectedDate.fullDate,
       time: selectedSlot.display,

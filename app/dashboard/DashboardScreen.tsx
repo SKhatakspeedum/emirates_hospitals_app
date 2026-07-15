@@ -436,6 +436,7 @@ export default function DashboardScreen() {
       setLoadingProviders(true);
       try {
         const patientId = await fetchDataFromLocalStorage("sg_patientId");
+        const orgId = await fetchDataFromLocalStorage("sg_org_id");
         const now = new Date();
         const response = await callSuggestusAPI(
           spd_processId_config.hospapp_get_resources,
@@ -444,9 +445,10 @@ export default function DashboardScreen() {
             p_resource_code: "",
             p_month: now.getMonth() + 1,
             p_year: now.getFullYear(),
-            p_process_type: "",
+            p_process_type: "recent_appts",
             p_visit_id: null,
             p_category_code: "CAT005",
+            p_org_id: orgId,
           },
         );
         if (response?.returnCode === true && response.returnData?.length > 0) {
@@ -1054,10 +1056,7 @@ export default function DashboardScreen() {
                 size={16}
                 color={Colors.background}
               />
-              <Text
-                style={styles.locationTriggerText}
-                numberOfLines={1}
-              >
+              <Text style={styles.locationTriggerText} numberOfLines={1}>
                 {orgLocationName || "Select location"}
               </Text>
               {switchingLocation ? (

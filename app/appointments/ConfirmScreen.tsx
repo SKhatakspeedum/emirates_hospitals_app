@@ -80,6 +80,16 @@ export default function ConfirmScreen() {
     return `${datePart}~${startPart}~${endPart}`;
   };
 
+  // react-native-web doesn't render Alert.alert dialogs — window.alert is
+  // the web-native equivalent, so error feedback isn't silently swallowed.
+  const showError = (message: string) => {
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined") window.alert(message);
+    } else {
+      Alert.alert("Error", message);
+    }
+  };
+
   const handleDone = async () => {
     if (isSaving) return;
     setIsSaving(true);
@@ -129,13 +139,12 @@ export default function ConfirmScreen() {
           });
         }, 1000);
       } else {
-        Alert.alert(
-          "Error",
+        showError(
           res?.returnMessage ?? "Failed to save appointment. Please try again.",
         );
       }
     } catch (_) {
-      Alert.alert("Error", "Something went wrong. Please try again.");
+      showError("Something went wrong. Please try again.");
     } finally {
       setIsSaving(false);
     }

@@ -205,25 +205,67 @@ export default function AppointmentScreen() {
     }
   }, [fromBooking, navigation]);
 
-  const handleCancelAppointment = (id: string, name: string) => {
-    Alert.alert(
-      "Cancel Appointment",
-      `Are you sure you want to cancel your appointment with ${name}?`,
-      [
-        { text: "No", style: "cancel" },
+  // react-native-web's Alert.alert doesn't render anything for multi-button
+  // dialogs (it's a native-only API) — on web the "Yes, Cancel" callback
+  // simply never fires, so tapping Cancel looked like it did nothing.
+  // window.confirm/alert are the web-native equivalents.
+  const confirmCancel = (message: string): Promise<boolean> => {
+    if (Platform.OS === "web") {
+      return Promise.resolve(
+        typeof window !== "undefined" ? window.confirm(message) : false,
+      );
+    }
+    return new Promise((resolve) => {
+      Alert.alert("Cancel Appointment", message, [
+        { text: "No", style: "cancel", onPress: () => resolve(false) },
         {
           text: "Yes, Cancel",
           style: "destructive",
-          onPress: () => {
-            if (activeTab === "upcoming") {
-              setUpcomingList((prev: Appointment[]) => prev.filter((item: Appointment) => item.id !== id));
-            } else {
-              setHistoryList((prev: Appointment[]) => prev.filter((item: Appointment) => item.id !== id));
-            }
-          },
+          onPress: () => resolve(true),
         },
-      ]
+      ]);
+    });
+  };
+
+  const showError = (message: string) => {
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined") window.alert(message);
+    } else {
+      Alert.alert("Error", message);
+    }
+  };
+
+  const handleCancelAppointment = async (id: string, name: string) => {
+    const confirmed = await confirmCancel(
+      `Are you sure you want to cancel your appointment with ${name}?`,
     );
+    if (!confirmed) return;
+
+    try {
+      const res = await callSuggestusAPI(
+        spd_processId_config.xcelsch_update_trn_appointment_status_hv_patient_portal,
+        {
+          p_appt_id: id,
+          appt_id: id,
+          p_status: "CANC",
+        },
+      );
+      if (res?.returnCode !== true) {
+        showError(
+          res?.returnMessage ?? "Failed to cancel appointment. Please try again.",
+        );
+        return;
+      }
+    } catch (e) {
+      showError("Something went wrong. Please try again.");
+      return;
+    }
+
+    if (activeTab === "upcoming") {
+      setUpcomingList((prev: Appointment[]) => prev.filter((item: Appointment) => item.id !== id));
+    } else {
+      setHistoryList((prev: Appointment[]) => prev.filter((item: Appointment) => item.id !== id));
+    }
   };
 
   const handleReschedule = (item: Appointment) => {

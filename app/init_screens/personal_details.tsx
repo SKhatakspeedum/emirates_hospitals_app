@@ -54,6 +54,7 @@ import { fetchAndApplyOrgConfig } from "../services/orgConfig";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import TextRecognition from "@react-native-ml-kit/text-recognition";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as Haptics from "expo-haptics";
 
 type CheckStatus =
@@ -123,6 +124,7 @@ type ParsedIdScan = {
   firstName: string;
   lastName: string;
   dob: Date | null;
+  gender?: "Male" | "Female" | "";
 };
 
 // Best-effort parser for Emirates ID card OCR text (ML Kit's recognized
@@ -184,7 +186,19 @@ const parseEmiratesIdText = (rawText: string): ParsedIdScan | null => {
     }
   }
 
-  return { idNumber, firstName, lastName, dob };
+  let gender: "Male" | "Female" | "" = "";
+  const sexMatch = rawText.match(/\b(?:sex|gender)\b.*?([MF])/i);
+  if (sexMatch) {
+    gender = sexMatch[1].toUpperCase() === "M" ? "Male" : "Female";
+  } else {
+    const sexLine = lines.find((l) => /sex/i.test(l));
+    if (sexLine) {
+      const match = sexLine.match(/\b(M|F)\b/i);
+      if (match) gender = match[1].toUpperCase() === "M" ? "Male" : "Female";
+    }
+  }
+
+  return { idNumber, firstName, lastName, dob, gender };
 };
 
 // Best-effort parser for passport bio-page OCR text. Primary source is the
@@ -208,6 +222,7 @@ const parsePassportText = (rawText: string): ParsedIdScan | null => {
   let firstName = "";
   let lastName = "";
   let dob: Date | null = null;
+  let gender: "Male" | "Female" | "" = "";
 
   if (mrzLine1) {
     const [surname, given] = mrzLine1.slice(5).split("<<");
@@ -230,6 +245,10 @@ const parsePassportText = (rawText: string): ParsedIdScan | null => {
       const parsed = new Date(year, Number(mm) - 1, Number(dd));
       if (!isNaN(parsed.getTime())) dob = parsed;
     }
+
+    const sexChar = mrzLine2.charAt(20);
+    if (sexChar === "M") gender = "Male";
+    else if (sexChar === "F") gender = "Female";
   }
 
   // Fallback — no clean MRZ, look for a labeled passport number instead
@@ -278,7 +297,14 @@ const parsePassportText = (rawText: string): ParsedIdScan | null => {
     }
   }
 
-  return { idNumber: formatPassport(idNumber), firstName, lastName, dob };
+  if (!gender) {
+    const sexMatch = rawText.match(/\b(?:sex|gender)\b.*?([MF])/i);
+    if (sexMatch) {
+      gender = sexMatch[1].toUpperCase() === "M" ? "Male" : "Female";
+    }
+  }
+
+  return { idNumber: formatPassport(idNumber), firstName, lastName, dob, gender };
 };
 
 export default function PersonalDetailsScreen() {
@@ -416,8 +442,33 @@ export default function PersonalDetailsScreen() {
         shutterSound: false,
       });
       if (!photo?.uri) throw new Error("No image captured");
-      setCapturedImageUri(photo.uri);
-      await processScannedImage(photo.uri);
+
+      const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+      const scale = Math.max(photo.width / screenWidth, photo.height / screenHeight);
+
+      const cropWidth = SCAN_FRAME_WIDTH * scale;
+      const cropHeight = SCAN_FRAME_HEIGHT * scale;
+
+      const originX = (photo.width - cropWidth) / 2;
+      const originY = (photo.height - cropHeight) / 2;
+
+      const manipResult = await ImageManipulator.manipulateAsync(
+        photo.uri,
+        [
+          {
+            crop: {
+              originX: Math.max(0, originX),
+              originY: Math.max(0, originY),
+              width: Math.min(photo.width, cropWidth),
+              height: Math.min(photo.height, cropHeight),
+            },
+          },
+        ],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      setCapturedImageUri(manipResult.uri);
+      await processScannedImage(manipResult.uri);
     } catch (e) {
       console.error(`${scanDocLabel} capture error:`, e);
       setScanErrorMessage(
@@ -477,6 +528,7 @@ export default function PersonalDetailsScreen() {
     if (scannedData.firstName) setFirstName(scannedData.firstName);
     if (scannedData.lastName) setLastName(scannedData.lastName);
     if (scannedData.dob) setDob(scannedData.dob);
+    if (scannedData.gender) setGender(scannedData.gender);
   };
 
   const scanFrameColor =
@@ -611,7 +663,7 @@ export default function PersonalDetailsScreen() {
   const buttonLabel =
     (emiratesIdCheck.status === "available" ||
       passportCheck.status === "available") &&
-    linkedPatientId
+      linkedPatientId
       ? "Continue"
       : "Register";
 
@@ -670,7 +722,7 @@ export default function PersonalDetailsScreen() {
                 const _j = JSON.parse(_d);
                 _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
               }
-            } catch (_) {}
+            } catch (_) { }
             if (!_mobile) _mobile = (route.params as any)?.phone_number ?? "";
             const patientRes = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
@@ -857,7 +909,7 @@ export default function PersonalDetailsScreen() {
                 USER_FULL_DATA,
                 JSON.stringify(stored),
               );
-            } catch (_) {}
+            } catch (_) { }
           }
           Toast.show({
             type: "success",
@@ -913,7 +965,7 @@ export default function PersonalDetailsScreen() {
               USER_FULL_DATA,
               JSON.stringify(stored),
             );
-          } catch (_) {}
+          } catch (_) { }
 
           await callSuggestusAPI(
             spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
@@ -1020,9 +1072,9 @@ export default function PersonalDetailsScreen() {
       // Final existence check — skip if already verified as available for this value
       const alreadyVerified = isResident
         ? emiratesIdCheck.status === "available" &&
-          emiratesIdCheck.checkedValue === emiratesId
+        emiratesIdCheck.checkedValue === emiratesId
         : passportCheck.status === "available" &&
-          passportCheck.checkedValue === passportNo;
+        passportCheck.checkedValue === passportNo;
 
       if (!alreadyVerified) {
         const regUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
@@ -1075,7 +1127,7 @@ export default function PersonalDetailsScreen() {
       if (currentDataStr) {
         try {
           updatedData = { ...JSON.parse(currentDataStr), ...updatedData };
-        } catch (_) {}
+        } catch (_) { }
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
@@ -1336,9 +1388,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
                     emiratesIdCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     emiratesIdCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -1425,9 +1477,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
                     passportCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     passportCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -1506,7 +1558,7 @@ export default function PersonalDetailsScreen() {
                     style={[
                       styles.inputWrapper,
                       focusedField === "firstName" &&
-                        styles.inputWrapperFocused,
+                      styles.inputWrapperFocused,
                     ]}
                   >
                     <Ionicons
@@ -1868,11 +1920,11 @@ export default function PersonalDetailsScreen() {
                 markedDates={
                   dob
                     ? {
-                        [dayjs(dob).format("YYYY-MM-DD")]: {
-                          selected: true,
-                          selectedColor: Colors.primary,
-                        },
-                      }
+                      [dayjs(dob).format("YYYY-MM-DD")]: {
+                        selected: true,
+                        selectedColor: Colors.primary,
+                      },
+                    }
                     : {}
                 }
                 theme={{
@@ -1912,7 +1964,7 @@ export default function PersonalDetailsScreen() {
           style={styles.locationSheetOverlay}
           onPress={() => setShowLocationPicker(false)}
         >
-          <Pressable style={styles.locationSheetCard} onPress={() => {}}>
+          <Pressable style={styles.locationSheetCard} onPress={() => { }}>
             <View style={styles.locationSheetHandle} />
             <Text style={styles.locationSheetTitle}>Switch location</Text>
             {locations.length === 0 ? (
@@ -2001,18 +2053,39 @@ export default function PersonalDetailsScreen() {
               <View style={styles.scanSuccessDivider} />
               <View style={styles.scanSuccessRow}>
                 <Text style={styles.scanSuccessLabel}>Name</Text>
-                <Text style={styles.scanSuccessValue}>
+                <Text
+                  style={[
+                    styles.scanSuccessValue,
+                    !(scannedData.firstName || scannedData.lastName) && { color: Colors.inactive }
+                  ]}
+                >
                   {scannedData.firstName || scannedData.lastName
                     ? `${scannedData.firstName} ${scannedData.lastName}`.trim()
-                    : "Not detected — please enter manually"}
+                    : "N/A"}
                 </Text>
               </View>
               <View style={styles.scanSuccessRow}>
                 <Text style={styles.scanSuccessLabel}>Date of Birth</Text>
-                <Text style={styles.scanSuccessValue}>
+                <Text
+                  style={[
+                    styles.scanSuccessValue,
+                    !scannedData.dob && { color: Colors.inactive }
+                  ]}
+                >
                   {scannedData.dob
                     ? dayjs(scannedData.dob).format("MMM DD, YYYY")
-                    : "Not detected — please enter manually"}
+                    : "N/A"}
+                </Text>
+              </View>
+              <View style={styles.scanSuccessRow}>
+                <Text style={styles.scanSuccessLabel}>Gender</Text>
+                <Text
+                  style={[
+                    styles.scanSuccessValue,
+                    !scannedData.gender && { color: Colors.inactive }
+                  ]}
+                >
+                  {scannedData.gender || "N/A"}
                 </Text>
               </View>
               <TouchableOpacity

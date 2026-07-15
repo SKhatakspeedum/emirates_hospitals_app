@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   Pressable,
   ActivityIndicator,
+  useWindowDimensions,
 } from "react-native";
 import {
   useNavigation,
@@ -35,133 +36,9 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 import { useDashboardSections } from "../hooks/useDashboardSections";
+import CarouselBanner from "../components/BannerCarousel";
 
-const { width, height } = Dimensions.get("window");
 
-// Isolated in its own component so the frequent onScroll-driven index
-// updates while swiping only re-render this small carousel — not the
-// entire DashboardScreen tree (which was the cause of the jank/stutter).
-const PromoBannerCarousel = React.memo(function PromoBannerCarousel({
-  bannerUrls,
-  bannerWidth,
-}: {
-  bannerUrls: string[];
-  bannerWidth: number;
-}) {
-  const [index, setIndex] = useState(0);
-  const scrollRef = React.useRef<ScrollView>(null);
-  const loopEnabled = bannerUrls.length > 1;
-  // While a programmatic snap (scrollTo) is animating, its own onScroll
-  // events report transient in-between offsets. If those were allowed to
-  // set the index too, the dot could land one off from the banner that's
-  // actually settled — snapToNearest is the sole source of truth for the
-  // final index; this just suppresses onScroll's live updates until that
-  // animation has had time to finish.
-  const isSnappingRef = React.useRef(false);
-  const snapTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-
-  // For looping: clone the last banner before the first and the first
-  // banner after the last, so swiping past either end lands on a clone
-  // that looks identical to the real slide — then we silently (no
-  // animation) jump the scroll position back to the matching real slide,
-  // making the swipe feel infinite in both directions.
-  const loopedBannerUrls = loopEnabled
-    ? [bannerUrls[bannerUrls.length - 1], ...bannerUrls, bannerUrls[0]]
-    : bannerUrls;
-
-  const updateIndexFromOffset = (offsetX: number) => {
-    if (isSnappingRef.current) return;
-    const rawIdx = Math.round(offsetX / bannerWidth);
-    if (!loopEnabled) {
-      setIndex(rawIdx);
-      return;
-    }
-    const real = ((rawIdx - 1) + bannerUrls.length) % bannerUrls.length;
-    setIndex(real);
-  };
-
-  // Explicitly computes and snaps to the nearest page — react-native-web's
-  // `pagingEnabled` doesn't reliably snap on its own (especially with mouse
-  // drag), so the carousel can end up stuck mid-scroll or the loop-wrap
-  // never triggers. This is called on both drag-release and momentum-end
-  // so it's reliable across native touch and web mouse/touch alike; being
-  // idempotent (always scrolls to the exact correct offset) makes it safe
-  // to fire from both without visible double-jumps.
-  const snapToNearest = (offsetX: number) => {
-    const rawIdx = Math.round(offsetX / bannerWidth);
-
-    isSnappingRef.current = true;
-    if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
-    snapTimeoutRef.current = setTimeout(() => {
-      isSnappingRef.current = false;
-    }, 350);
-
-    if (!loopEnabled) {
-      scrollRef.current?.scrollTo({ x: rawIdx * bannerWidth, animated: true });
-      setIndex(rawIdx);
-      return;
-    }
-
-    if (rawIdx <= 0) {
-      // Dragged onto (or past) the cloned last slide — snap instantly to
-      // the real last slide.
-      scrollRef.current?.scrollTo({
-        x: bannerWidth * bannerUrls.length,
-        animated: false,
-      });
-      setIndex(bannerUrls.length - 1);
-    } else if (rawIdx >= loopedBannerUrls.length - 1) {
-      // Dragged onto (or past) the cloned first slide — snap instantly to
-      // the real first slide.
-      scrollRef.current?.scrollTo({ x: bannerWidth, animated: false });
-      setIndex(0);
-    } else {
-      scrollRef.current?.scrollTo({ x: rawIdx * bannerWidth, animated: true });
-      setIndex(rawIdx - 1);
-    }
-  };
-
-  return (
-    <>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        decelerationRate="fast"
-        showsHorizontalScrollIndicator={false}
-        scrollEventThrottle={32}
-        contentOffset={loopEnabled ? { x: bannerWidth, y: 0 } : undefined}
-        onScroll={(e) => updateIndexFromOffset(e.nativeEvent.contentOffset.x)}
-        onScrollEndDrag={(e) => snapToNearest(e.nativeEvent.contentOffset.x)}
-        onMomentumScrollEnd={(e) =>
-          snapToNearest(e.nativeEvent.contentOffset.x)
-        }
-      >
-        {loopedBannerUrls.map((url, i) => (
-          <Image
-            key={`${url}-${i}`}
-            source={{ uri: url }}
-            style={[styles.promoBannerImage, { width: bannerWidth }]}
-            resizeMode="cover"
-          />
-        ))}
-      </ScrollView>
-
-      {bannerUrls.length > 1 && (
-        <View style={styles.paginationDots}>
-          {bannerUrls.map((_, i) => (
-            <View
-              key={i}
-              style={[styles.dot, i === index && styles.dotActive]}
-            />
-          ))}
-        </View>
-      )}
-    </>
-  );
-});
 
 const getGreetingTime = () => {
   const currentHour = new Date().getHours();
@@ -230,6 +107,7 @@ type FullAppointment = {
 };
 
 export default function DashboardScreen() {
+  const { width, height } = useWindowDimensions();
   const navigation = useNavigation<any>();
   const [userProfileName, setUserProfileName] = useState<string>("John");
   const [patientId, setPatientId] = useState<string | null>(null);
@@ -260,7 +138,7 @@ export default function DashboardScreen() {
             if (p.name) setUserProfileName(p.name);
             if (p.age || p.gender)
               setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-          } catch (_) {}
+          } catch (_) { }
         } else {
           const name = await AsyncStorage.getItem(SPD_USER_NAME);
           if (name) setUserProfileName(name);
@@ -363,7 +241,7 @@ export default function DashboardScreen() {
     // have to re-hit hospapp_get_resources — it reuses this data directly.
     navigation.navigate("NearbyProviders", { preloadedProviders: Providers });
   };
-  const handleSeeAllSpecialties = () => {};
+  const handleSeeAllSpecialties = () => { };
 
   // Fallback shown only if the backend fetch below fails or returns nothing.
   // Matches NearbyProvidersScreen's Provider shape so this same list can be
@@ -469,8 +347,8 @@ export default function DashboardScreen() {
     },
     {
       label: "ENT",
-      Icon: MaterialCommunityIcons,
-      iconName: "nose",
+      Icon: FontAwesome5,
+      iconName: "diagnoses",
       iconSize: 26,
       iconColor: "#E87722",
       bgColor: "#FDF1EB",
@@ -532,7 +410,7 @@ export default function DashboardScreen() {
                 const _j = JSON.parse(_d);
                 _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
               }
-            } catch (_) {}
+            } catch (_) { }
             const response = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
@@ -569,7 +447,7 @@ export default function DashboardScreen() {
               const parsed = JSON.parse(fullDataStr);
               phone = parsed.contact || "";
             }
-          } catch (e) {}
+          } catch (e) { }
 
           // router.push({
           //   pathname: "/patient/registered_patients",
@@ -600,7 +478,7 @@ export default function DashboardScreen() {
       IconFamily: Ionicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
-      onPress: () => {},
+      onPress: () => { },
     },
     {
       label: "Rx refill",
@@ -608,7 +486,7 @@ export default function DashboardScreen() {
       IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
-      onPress: () => {},
+      onPress: () => { },
     },
   ];
 
@@ -618,14 +496,15 @@ export default function DashboardScreen() {
   const { visibleSections, sections } = useDashboardSections(noPatient);
 
   // Debug log to verify sections are being loaded
-  useEffect(() => {
-    console.log(
-      "[DashboardScreen] visibleSections:",
-      visibleSections,
-      "sections:",
-      sections,
-    );
-  }, [visibleSections, sections]);
+
+  // useEffect(() => {
+  //   console.log(
+  //     "[DashboardScreen] visibleSections:",
+  //     visibleSections,
+  //     "sections:",
+  //     sections,
+  //   );
+  // }, [visibleSections, sections]);
 
   // Renders each "body" section (everything below the greeting hero) by key.
   // Called in the order of `visibleSections`, so the backend's
@@ -635,48 +514,12 @@ export default function DashboardScreen() {
       case "promoBanner": {
         const promoBannerUrls =
           sections.find((s) => s.key === "promoBanner")?.bannerUrls ?? [];
-        const bannerWidth = width - 40; // matches bodyContent's paddingHorizontal: 20
 
-        if (promoBannerUrls.length > 0) {
-          return (
-            <PromoBannerCarousel
-              key={key}
-              bannerUrls={promoBannerUrls}
-              bannerWidth={bannerWidth}
-            />
-          );
-        }
 
-        // Fallback — static promo card when no backend banners are configured
         return (
-          <React.Fragment key={key}>
-            <View style={styles.promoBanner}>
-              <View style={styles.promoContent}>
-                <View style={styles.promoBadge}>
-                  <Text style={styles.promoBadgeText}>SAVE 20%</Text>
-                </View>
-                <Text style={styles.promoTitle}>
-                  20% off on Health Checkups
-                </Text>
-                <Text style={styles.promoSub}>
-                  Book before July 20th • All branches
-                </Text>
-              </View>
-              <FontAwesome5
-                name="hospital"
-                size={80}
-                color="rgba(255,255,255,0.15)"
-                style={styles.promoIcon}
-              />
-            </View>
-
-            {/* Pagination dots */}
-            <View style={styles.paginationDots}>
-              <View style={[styles.dot, styles.dotActive]} />
-              <View style={styles.dot} />
-              <View style={styles.dot} />
-            </View>
-          </React.Fragment>
+          <View key={key} style={{ marginBottom: 14 }}>
+            <CarouselBanner urls={promoBannerUrls} itemWidth={width - 40} />
+          </View>
         );
       }
 
@@ -1117,7 +960,7 @@ export default function DashboardScreen() {
         )}
 
         {/* White Content Area — body sections render in backend sequence order */}
-        <View style={styles.bodyContent}>
+        <View style={[styles.bodyContent, { minHeight: height }]}>
           {visibleSections
             .filter((key) => key !== "greeting")
             .map((key) => renderBodySection(key))}
@@ -1256,56 +1099,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 24,
     marginTop: -24,
-    minHeight: height,
   },
-  promoBanner: {
-    backgroundColor: Colors.secondary,
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    overflow: "hidden",
-  },
-  promoContent: {
-    flex: 1,
-    zIndex: 2,
-  },
-  promoBadge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  promoBadgeText: {
-    color: Colors.background,
-    fontSize: 12,
-    fontFamily: FontFamilies.bold,
-  },
-  promoTitle: {
-    color: Colors.background,
-    fontSize: 16,
-    fontFamily: FontFamilies.bold,
-    marginBottom: 6,
-  },
-  promoSub: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 14,
-    fontFamily: FontFamilies.medium,
-  },
-  promoBannerImage: {
-    height: 140,
-    borderRadius: 16,
-    backgroundColor: Colors.border,
-  },
-  promoIcon: {
-    position: "absolute",
-    right: -10,
-    bottom: -15,
-    zIndex: 1,
-  },
+
+
   paginationDots: {
     flexDirection: "row",
     justifyContent: "center",

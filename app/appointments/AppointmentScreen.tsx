@@ -31,6 +31,7 @@ type Appointment = {
   avatar: string;
   date: string;
   time: string;
+  endTime: string;
   status: string;
   statusHtml: string;
   type: string;
@@ -38,6 +39,8 @@ type Appointment = {
   patientDet: string;
   resourceId: string;
   appSubtypeId: string;
+  hospitalName: string;
+  hospitalArea: string;
 };
 
 
@@ -66,15 +69,36 @@ const formatAmPm = (timeStr: string): string => {
   return `${String(h12).padStart(2, "0")}:${m} ${suffix}`;
 };
 
-// Parses "Friday, Jul 03 2026" or "02 Mar 2026" → { month, day }
-const parseDateBadge = (dateStr: string) => {
-  const clean = dateStr.replace(/^\w+,\s*/, "").trim(); // strip "Friday, "
+// "Friday, Jul 03 2026" or "02 Mar 2026" → "Fri - Jul 03, 2026"
+const formatDateWithDay = (dateStr: string): string => {
+  if (!dateStr) return "";
+  const clean = dateStr.replace(/^\w+,\s*/, "").trim();
   const parts = clean.split(" ");
-  if (parts.length >= 3) {
-    if (isNaN(Number(parts[0]))) return { month: parts[0], day: parts[1] }; // "Jul 03 2026"
-    return { month: parts[1], day: parts[0] };                              // "02 Mar 2026"
+  if (parts.length < 3) return dateStr;
+
+  let month: string, day: string, year: string;
+  if (isNaN(Number(parts[0]))) {
+    [month, day, year] = parts; // "Jul 03 2026"
+  } else {
+    [day, month, year] = parts; // "02 Mar 2026"
   }
-  return { month: "Mar", day: "02" };
+
+  const monthIndex = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ].indexOf(month);
+  if (monthIndex === -1 || !day || !year) return dateStr;
+
+  const d = new Date(Number(year), monthIndex, Number(day));
+  const daysShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return `${daysShort[d.getDay()]} - ${month} ${String(day).padStart(2, "0")}, ${year}`;
+};
+
+// "09:15:00" → "09:15" (strips seconds; leaves already-short strings as-is)
+const toHHMM = (timeStr: string): string => {
+  if (!timeStr) return "";
+  const parts = timeStr.split(":");
+  return parts.length >= 2 ? `${parts[0]}:${parts[1]}` : timeStr;
 };
 
 export default function AppointmentScreen() {
@@ -137,12 +161,15 @@ export default function AppointmentScreen() {
             date: a.appt_date_dashboard ?? a.sch_date ?? a.appointment_date ?? "",
             time: a.appt_start_time ?? a.sch_time ?? a.appointment_time ?? "",
             status: a.appstat_name ?? a.sch_status ?? a.appointment_status ?? "Confirmed",
+            endTime: a.appt_end_time ?? a.sch_end_time ?? a.appointment_end_time ?? "",
             statusHtml: a.appstat_html_name ?? "",
             type: a.appsubtyp_name ?? a.appointment_type ?? a.visit_type ?? "In-Clinic",
             apptypName: stripHtml(a.apptyp_name ?? ""),
             patientDet: a.patient_det ?? "",
             resourceId: String(a.appt_resource_id ?? a.resource_id ?? ""),
             appSubtypeId: String(a.appsubtyp_id ?? ""),
+            hospitalName: a.org_name ?? a.hospital_name ?? "",
+            hospitalArea: a.area_name ?? a.city ?? a.branch_name ?? "",
           });
 
           const upcoming: Appointment[] = [];
@@ -197,6 +224,30 @@ export default function AppointmentScreen() {
         },
       ]
     );
+  };
+
+  const handleReschedule = (item: Appointment) => {
+    navigation.navigate("ScheduleBook", {
+      apptId: item.id,
+      doctorId: item.resourceId || item.id,
+      doctorName: item.doctorName,
+      specialty: item.specialty,
+      avatar: item.avatar,
+      patientName: item.patientDet,
+      type: item.type || "Primary care visit",
+      appSubtypeId: item.appSubtypeId,
+      rescheduleDate: item.date,
+    });
+  };
+
+  const handleBookAgain = (item: Appointment) => {
+    navigation.navigate("PatientDetails", {
+      doctorId: item.resourceId || item.id,
+      doctorName: item.doctorName,
+      specialty: item.specialty,
+      avatar: item.avatar,
+      hospital: item.hospitalName,
+    });
   };
 
   return (
@@ -254,79 +305,203 @@ export default function AppointmentScreen() {
           ) : (
             // Populated State UI (Screen 3)
             appointments.map((item: Appointment) => {
-              const { month: dateMonth, day: dateNum } = parseDateBadge(item.date);
-              const startTime = formatAmPm(item.time.split(" - ")[0] || item.time);
+              const dateDisplay = formatDateWithDay(item.date);
+              const timeDisplay = item.endTime
+                ? `${toHHMM(item.time)} - ${toHHMM(item.endTime)}`
+                : formatAmPm(item.time.split(" - ")[0] || item.time);
               const statusLabel = item.statusHtml ? stripHtml(item.statusHtml) : item.status;
               const statusStyle = getStatusStyle(item.statusHtml ?? "");
+              const isUpcoming = activeTab === "upcoming";
+
+              const goToDetails = () =>
+                navigation.navigate("AppointmentDetails", {
+                  apptId: item.id,
+                  doctorId: item.resourceId || item.id,
+                  doctorName: item.doctorName,
+                  specialty: item.specialty,
+                  avatar: item.avatar,
+                  patientDet: item.patientDet,
+                  type: item.type || "Primary care visit",
+                  apptypName: item.apptypName,
+                  appSubtypeId: item.appSubtypeId,
+                  date: item.date,
+                  time: timeDisplay,
+                  isHistory: activeTab === "history",
+                });
 
               return (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.appointmentRow,
-                    activeTab === "history" && styles.appointmentRowCompact,
-                  ]}
-                >
+                <View key={item.id} style={styles.card}>
                   <Pressable
-                    style={({ pressed }) => [
-                      styles.rowClickArea,
-                      { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-                    ]}
-                    onPress={() => navigation.navigate("AppointmentDetails", {
-                      apptId: item.id,
-                      doctorId: item.resourceId || item.id,
-                      doctorName: item.doctorName,
-                      specialty: item.specialty,
-                      avatar: item.avatar,
-                      patientDet: item.patientDet,
-                      type: item.type || "Primary care visit",
-                      apptypName: item.apptypName,
-                      appSubtypeId: item.appSubtypeId,
-                      date: item.date,
-                      time: startTime,
-                      isHistory: activeTab === "history",
-                    })}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+                    onPress={goToDetails}
                   >
-                    {/* Date Badge */}
-                    <View style={styles.dateBadge}>
-                      <View style={styles.dateBadgeHeader}>
-                        <Text style={styles.dateMonthText}>{dateMonth}</Text>
+                    {/* Doctor row */}
+                    <View style={styles.cardTopRow}>
+                      <Image
+                        source={{ uri: item.avatar }}
+                        style={styles.cardAvatar}
+                      />
+                      <View style={styles.cardDoctorCol}>
+                        <Text style={styles.cardDoctorName} numberOfLines={1}>
+                          {item.doctorName}
+                        </Text>
+                        {!!item.specialty && (
+                          <Text style={styles.cardSpecialty} numberOfLines={1}>
+                            {item.specialty}
+                          </Text>
+                        )}
                       </View>
-                      <View style={styles.dateBadgeBody}>
-                        <Text style={styles.dateNumText}>{dateNum}</Text>
-                      </View>
-                    </View>
-
-                    {/* Details Column */}
-                    <View style={styles.detailsCol}>
-                      {/* resource_name */}
-                      <Text style={styles.appointmentTitle}>{item.doctorName}</Text>
-
-                      {/* appt_date (time part) */}
-                      <View style={styles.metaRow}>
-                        <Ionicons name="time-outline" size={14} color={styles.iconColor.color} />
-                        <Text style={styles.metaText}>{startTime}</Text>
-                      </View>
-
-                      {/* appstat_html_name → status badge (Upcoming only) */}
-                      {activeTab === "upcoming" && !!statusLabel && (
-                        <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                          <Text style={[styles.statusBadgeText, { color: statusStyle.color }]}>
+                      {!!statusLabel && (
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            { backgroundColor: statusStyle.bg },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.statusBadgeText,
+                              { color: statusStyle.color },
+                            ]}
+                          >
                             {statusLabel}
                           </Text>
                         </View>
                       )}
                     </View>
+
+                    {isUpcoming ? (
+                      <>
+                        {/* Date */}
+                        {!!dateDisplay && (
+                          <View style={styles.metaRow}>
+                            <Ionicons
+                              name="calendar-outline"
+                              size={15}
+                              color={styles.iconColor.color}
+                            />
+                            <Text style={styles.metaText}>{dateDisplay}</Text>
+                          </View>
+                        )}
+
+                        {/* Time */}
+                        {!!timeDisplay && (
+                          <View style={styles.metaRow}>
+                            <Ionicons
+                              name="time-outline"
+                              size={15}
+                              color={styles.iconColor.color}
+                            />
+                            <Text style={styles.metaText}>{timeDisplay}</Text>
+                          </View>
+                        )}
+
+                        {/* Location */}
+                        {!!(item.hospitalName || item.hospitalArea) && (
+                          <View style={styles.metaRow}>
+                            <Ionicons
+                              name="location-outline"
+                              size={15}
+                              color={styles.iconColor.color}
+                            />
+                            <View>
+                              {!!item.hospitalName && (
+                                <Text style={styles.metaText}>
+                                  {item.hospitalName}
+                                </Text>
+                              )}
+                              {!!item.hospitalArea && (
+                                <Text style={styles.metaSubText}>
+                                  {item.hospitalArea}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        )}
+                      </>
+                    ) : (
+                      // History: date/time and location sit side-by-side in
+                      // two columns instead of stacked rows.
+                      <View style={styles.cardInfoRow}>
+                        <View style={styles.cardInfoCol}>
+                          {!!dateDisplay && (
+                            <View style={styles.metaRow}>
+                              <Ionicons
+                                name="calendar-outline"
+                                size={15}
+                                color={styles.iconColor.color}
+                              />
+                              <Text style={styles.metaText}>{dateDisplay}</Text>
+                            </View>
+                          )}
+                          {!!timeDisplay && (
+                            <Text style={styles.metaIndentedText}>
+                              {timeDisplay}
+                            </Text>
+                          )}
+                        </View>
+
+                        <View style={styles.cardInfoCol}>
+                          {!!(item.hospitalName || item.hospitalArea) && (
+                            <>
+                              <View style={styles.metaRow}>
+                                <Ionicons
+                                  name="location-outline"
+                                  size={15}
+                                  color={styles.iconColor.color}
+                                />
+                                <Text style={styles.metaText}>
+                                  {item.hospitalName}
+                                </Text>
+                              </View>
+                              {!!item.hospitalArea && (
+                                <Text style={styles.metaIndentedText}>
+                                  {item.hospitalArea}
+                                </Text>
+                              )}
+                            </>
+                          )}
+                        </View>
+                      </View>
+                    )}
                   </Pressable>
 
-                  {/* Options Ellipsis */}
-                  {/* <TouchableOpacity
-                    style={styles.menuButton}
-                    onPress={() => handleCancelAppointment(item.id, item.doctorName)}
-                    activeOpacity={0.6}
-                  >
-                    <Ionicons name="ellipsis-vertical" size={18} color="#757575" />
-                  </TouchableOpacity> */}
+                  {/* Reschedule / Cancel (Upcoming only) */}
+                  {isUpcoming && (
+                    <View style={styles.cardActionsRow}>
+                      <TouchableOpacity
+                        style={styles.rescheduleButton}
+                        activeOpacity={0.8}
+                        onPress={() => handleReschedule(item)}
+                      >
+                        <Text style={styles.rescheduleButtonText}>
+                          Reschedule
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.cancelButton}
+                        activeOpacity={0.8}
+                        onPress={() =>
+                          handleCancelAppointment(item.id, item.doctorName)
+                        }
+                      >
+                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Re-Book (History only) */}
+                  {!isUpcoming && (
+                    <View style={styles.rebookRow}>
+                      <TouchableOpacity
+                        style={styles.rebookButton}
+                        activeOpacity={0.8}
+                        onPress={() => handleBookAgain(item)}
+                      >
+                        <Text style={styles.rebookButtonText}>Re-Book</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               );
             })
@@ -425,83 +600,116 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontFamily: FontFamilies.bold,
   },
-  appointmentRow: {
+  card: {
+    backgroundColor: "#EAF3FF",
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  cardTopRow: {
     flexDirection: "row",
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
     alignItems: "center",
+    marginBottom: 10,
   },
-  appointmentRowCompact: {
-    paddingVertical: 12,
+  cardAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.lightgray,
+    marginRight: 12,
   },
-  dateBadge: {
-    width: 46,
-    height: 58,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.background,
-    overflow: "hidden",
-    marginRight: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  dateBadgeHeader: {
-    backgroundColor: Colors.primary,
-    width: "100%",
-    height: 25,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dateBadgeBody: {
+  cardDoctorCol: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.background,
   },
-  dateMonthText: {
-    color: Colors.background,
+  cardDoctorName: {
     fontSize: 15,
     fontFamily: FontFamilies.bold,
-  },
-  dateNumText: {
     color: Colors.text,
-    fontSize: 18,
-    fontFamily: FontFamilies.bold,
   },
-  detailsCol: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  appointmentTitle: {
-    fontSize: 16,
-    fontFamily: FontFamilies.bold,
-    color: Colors.text,
-    marginBottom: 6,
+  cardSpecialty: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontFamily: FontFamilies.semiBold,
+    marginTop: 2,
   },
   metaRow: {
     flexDirection: "row",
-    alignItems: "center",
-    marginTop: 3,
-    gap: 6,
+    alignItems: "flex-start",
+    marginTop: 6,
+    gap: 8,
   },
   metaText: {
     fontSize: 13,
-    color: Colors.label,
+    color: Colors.text,
     fontFamily: FontFamilies.medium,
   },
-  menuButton: {
-    padding: 8,
+  metaSubText: {
+    fontSize: 12,
+    color: Colors.label,
+    fontFamily: FontFamilies.medium,
+    marginTop: 1,
   },
-  rowClickArea: {
+  cardInfoRow: {
     flexDirection: "row",
-    alignItems: "center",
+  },
+  cardInfoCol: {
     flex: 1,
+  },
+  metaIndentedText: {
+    fontSize: 13,
+    color: Colors.text,
+    fontFamily: FontFamilies.medium,
+    marginLeft: 23,
+    marginTop: 2,
+  },
+  cardActionsRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+  },
+  rescheduleButton: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  rescheduleButtonText: {
+    fontSize: 13,
+    color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: "#FDECEC",
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    fontSize: 13,
+    color: "#DC2626",
+    fontFamily: FontFamilies.semiBold,
+  },
+  rebookRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 16,
+  },
+  rebookButton: {
+    backgroundColor: Colors.pressed,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  rebookButtonText: {
+    fontSize: 13,
+    color: Colors.secondary,
+    fontFamily: FontFamilies.semiBold,
   },
   fab: {
     position: "absolute",

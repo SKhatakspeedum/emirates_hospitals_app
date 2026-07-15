@@ -9,7 +9,10 @@ import {
   SPD_THEME_SETTING_CONFIG,
   SPD_COUNTRY_CODES_FOR_PHONE,
 } from "../config/config";
-import { setEncryptedID } from "../suggestus_plugin/util/util_functions";
+import {
+  setEncryptedID,
+  getDecryptedID,
+} from "../suggestus_plugin/util/util_functions";
 import { applyThemeColors, THEME_CACHE_KEY } from "../config/colors";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
@@ -50,8 +53,15 @@ export const ORG_CONFIG_STORAGE_KEYS = [
  * instead of the login screen briefly showing stale/cleared values.
  *
  * @param orgAiCode - Optional override for p_org_ai_code (e.g. a specific
- * location's org_ai_code selected during registration). Defaults to
- * SiteConfig.AI_CODE, preserving existing behavior for all current callers.
+ * location's org_ai_code selected during registration). When omitted, this
+ * falls back to whatever org_ai_code is already persisted in AsyncStorage
+ * (SPD_AI_CODE) — e.g. a location the user registered under — and only
+ * falls back further to the static SiteConfig.AI_CODE when nothing is
+ * persisted yet (fresh install / first boot). This matters because
+ * CustomDrawer's logout handler preserves SPD_AI_CODE across
+ * AsyncStorage.clear(), but the post-logout splash screen used to call
+ * fetchAndApplyOrgConfig() with no args, silently re-fetching the static
+ * default org and overwriting the preserved one right back.
  *
  * @returns true if org config was fetched and applied, false otherwise
  * (including when a one-time web reload was triggered — see below).
@@ -60,10 +70,13 @@ export async function fetchAndApplyOrgConfig(
   orgAiCode?: string,
 ): Promise<boolean> {
   try {
+    const persistedAiCode = await getDecryptedID(SPD_AI_CODE);
+    const resolvedAiCode = orgAiCode || persistedAiCode || SiteConfig.AI_CODE;
+
     const res = await callSuggestusAPI(
       spd_processId_config.sgconf_get_mst_organization_by_org_patient_portal_url,
       {
-        p_org_ai_code: orgAiCode || SiteConfig.AI_CODE,
+        p_org_ai_code: resolvedAiCode,
         p_org_patient_portal_url: SiteConfig.ACTION_URL,
       },
     );

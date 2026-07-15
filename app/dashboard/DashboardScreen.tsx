@@ -12,6 +12,9 @@ import {
   Pressable,
   ActivityIndicator,
   useWindowDimensions,
+  Modal,
+  FlatList,
+  TouchableOpacity,
 } from "react-native";
 import {
   useNavigation,
@@ -30,16 +33,20 @@ import {
   SPD_USER_NAME,
   SPD_SELECTED_PATIENT,
   USER_FULL_DATA,
+  SPD_AI_CODE,
 } from "@/app/config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
-import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+import {
+  fetchDataFromLocalStorage,
+  getDecryptedID,
+} from "../suggestus_plugin/util/util_functions";
 import { useDashboardSections } from "../hooks/useDashboardSections";
 import CarouselBanner from "../components/BannerCarousel";
-
-
+import { fetchAndApplyOrgConfig } from "../services/orgConfig";
+import { SiteConfig } from "../config/site_config";
 
 const getGreetingTime = () => {
   const currentHour = new Date().getHours();
@@ -129,6 +136,111 @@ export default function DashboardScreen() {
     FullAppointment[]
   >([]);
 
+  const [orgLocationName, setOrgLocationName] = useState<string>("");
+  type LocationOption = {
+    id: string;
+    name: string;
+    area: string;
+    orgAiCode: string;
+    isDefault: boolean;
+  };
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [selectedLocationCode, setSelectedLocationCode] = useState<string>("");
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [switchingLocation, setSwitchingLocation] = useState(false);
+
+  // Splits a description like "Emirates Hospital - Jumeirah" into a name
+  // + area subtitle for the two-line row in the "Switch location" sheet.
+  // Falls back to showing the whole string as the name when there's no
+  // separator (e.g. a location description with no branch suffix).
+  const splitLocationName = (description: string) => {
+    const parts = description.split(" - ");
+    return parts.length > 1
+      ? { name: parts[0].trim(), area: parts.slice(1).join(" - ").trim() }
+      : { name: description.trim(), area: "" };
+  };
+
+  // Same location list used by the signup flow's location picker
+  // (init_screens/personal_details.tsx) — loaded here so the dashboard
+  // header can show/switch the patient's currently active hospital branch.
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const [persistedAiCode, persistedOrgName, defaultJsonStr] =
+          await Promise.all([
+            getDecryptedID(SPD_AI_CODE),
+            getDecryptedID("sg_org_name"),
+            getDecryptedID("DEFAULT_JSON_DATA"),
+          ]);
+
+        if (persistedAiCode) setSelectedLocationCode(persistedAiCode);
+        if (persistedOrgName) setOrgLocationName(persistedOrgName);
+
+        let orgCodes = SiteConfig.AI_CODE;
+        try {
+          const defaultJson = defaultJsonStr ? JSON.parse(defaultJsonStr) : {};
+          orgCodes = defaultJson?.spd_app_location_list ?? SiteConfig.AI_CODE;
+        } catch (_) {}
+
+        const response = await callSuggestusAPI(
+          spd_processId_config.sgconf_get_mst_organization_location_patient_portal_list,
+          {
+            p_org_ai_code: "",
+            p_org_codes: orgCodes,
+          },
+        );
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const fetched: LocationOption[] = response.returnData.map(
+            (r: any) => {
+              const { name, area } = splitLocationName(
+                r.description ?? r.name ?? "",
+              );
+              return {
+                id: String(r.id ?? ""),
+                name,
+                area,
+                orgAiCode: r.org_ai_code ?? "",
+                isDefault: r.usr_org_default === "Y",
+              };
+            },
+          );
+          setLocations(fetched);
+
+          const currentOrCode = persistedAiCode || SiteConfig.AI_CODE;
+          const activeLocation =
+            fetched.find((loc) => loc.orgAiCode === currentOrCode) ??
+            fetched.find((loc) => loc.isDefault) ??
+            fetched[0];
+          if (activeLocation) {
+            setSelectedLocationCode(activeLocation.orgAiCode);
+            setOrgLocationName(activeLocation.name);
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching locations:", e);
+      }
+    };
+    loadLocations();
+  }, []);
+
+  const handleSelectLocation = async (location: LocationOption) => {
+    if (location.orgAiCode === selectedLocationCode) {
+      setShowLocationPicker(false);
+      return;
+    }
+    setSwitchingLocation(true);
+    try {
+      await fetchAndApplyOrgConfig(location.orgAiCode);
+      setSelectedLocationCode(location.orgAiCode);
+      setOrgLocationName(location.name);
+    } catch (e) {
+      console.error("Error switching location:", e);
+    } finally {
+      setSwitchingLocation(false);
+      setShowLocationPicker(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       const load = async () => {
@@ -139,7 +251,7 @@ export default function DashboardScreen() {
             if (p.name) setUserProfileName(p.name);
             if (p.age || p.gender)
               setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-          } catch (_) { }
+          } catch (_) {}
         } else {
           const name = await AsyncStorage.getItem(SPD_USER_NAME);
           if (name) setUserProfileName(name);
@@ -268,7 +380,7 @@ export default function DashboardScreen() {
     // have to re-hit hospapp_get_resources — it reuses this data directly.
     navigation.navigate("NearbyProviders", { preloadedProviders: Providers });
   };
-  const handleSeeAllSpecialties = () => { };
+  const handleSeeAllSpecialties = () => {};
 
   // Fallback shown only if the backend fetch below fails or returns nothing.
   // Matches NearbyProvidersScreen's Provider shape so this same list can be
@@ -437,7 +549,7 @@ export default function DashboardScreen() {
                 const _j = JSON.parse(_d);
                 _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
               }
-            } catch (_) { }
+            } catch (_) {}
             const response = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
@@ -474,7 +586,7 @@ export default function DashboardScreen() {
               const parsed = JSON.parse(fullDataStr);
               phone = parsed.contact || "";
             }
-          } catch (e) { }
+          } catch (e) {}
 
           // router.push({
           //   pathname: "/patient/registered_patients",
@@ -505,7 +617,7 @@ export default function DashboardScreen() {
       IconFamily: Ionicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
-      onPress: () => { },
+      onPress: () => {},
     },
     {
       label: "Rx refill",
@@ -513,7 +625,7 @@ export default function DashboardScreen() {
       IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
-      onPress: () => { },
+      onPress: () => {},
     },
   ];
 
@@ -541,7 +653,6 @@ export default function DashboardScreen() {
       case "promoBanner": {
         const promoBannerUrls =
           sections.find((s) => s.key === "promoBanner")?.bannerUrls ?? [];
-
 
         return (
           <View key={key} style={{ marginBottom: 14 }}>
@@ -929,6 +1040,37 @@ export default function DashboardScreen() {
                 resizeMode="contain"
               />
             </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.locationTrigger,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+              onPress={() => setShowLocationPicker(true)}
+              disabled={switchingLocation}
+            >
+              <Ionicons
+                name="location-sharp"
+                size={16}
+                color={Colors.background}
+              />
+              <Text
+                style={styles.locationTriggerText}
+                numberOfLines={1}
+              >
+                {orgLocationName || "Select location"}
+              </Text>
+              {switchingLocation ? (
+                <ActivityIndicator size="small" color={Colors.background} />
+              ) : (
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={Colors.background}
+                />
+              )}
+            </Pressable>
+
             <View style={styles.headerIconsRight}>
               <Pressable
                 style={({ pressed }) => [
@@ -974,7 +1116,6 @@ export default function DashboardScreen() {
             <View style={styles.bgCircleLarge} />
             <FontAwesome name="plus" size={35} style={styles.bgPlus} />
 
-
             <View style={styles.greetingContainer}>
               <Text style={styles.greetingText}>
                 {noPatient
@@ -1000,6 +1141,77 @@ export default function DashboardScreen() {
           <View style={styles.bottomSpacer} />
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showLocationPicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowLocationPicker(false)}
+      >
+        <Pressable
+          style={styles.locationSheetOverlay}
+          onPress={() => setShowLocationPicker(false)}
+        >
+          <Pressable style={styles.locationSheetCard} onPress={() => {}}>
+            <View style={styles.locationSheetHandle} />
+            <Text style={styles.locationSheetTitle}>Switch location</Text>
+            {locations.length === 0 ? (
+              <Text style={styles.locationEmptyText}>
+                No locations available.
+              </Text>
+            ) : (
+              <FlatList
+                data={locations}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  const isSelected = item.orgAiCode === selectedLocationCode;
+                  return (
+                    <TouchableOpacity
+                      style={styles.locationSheetRow}
+                      onPress={() => handleSelectLocation(item)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.locationSheetIconWrap}>
+                        <Ionicons
+                          name="location"
+                          size={18}
+                          color={Colors.secondary}
+                        />
+                      </View>
+                      <View style={styles.locationSheetTextCol}>
+                        <View style={styles.locationSheetNameRow}>
+                          <Text style={styles.locationSheetName}>
+                            {item.name}
+                          </Text>
+                          {item.isDefault && (
+                            <View style={styles.locationSheetDefaultBadge}>
+                              <Text style={styles.locationSheetDefaultText}>
+                                DEFAULT
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        {!!item.area && (
+                          <Text style={styles.locationSheetArea}>
+                            {item.area}
+                          </Text>
+                        )}
+                      </View>
+                      {isSelected && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={22}
+                          color={Colors.secondary}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1043,6 +1255,19 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     marginLeft: 16,
+  },
+  locationTrigger: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 12,
+    gap: 4,
+  },
+  locationTriggerText: {
+    flexShrink: 1,
+    fontSize: 14,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.background,
   },
   badgeDot: {
     position: "absolute",
@@ -1119,7 +1344,6 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     marginTop: -24,
   },
-
 
   paginationDots: {
     flexDirection: "row",
@@ -1388,5 +1612,87 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 40,
+  },
+  locationSheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  locationSheetCard: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === "ios" ? 32 : 20,
+    maxHeight: "70%",
+  },
+  locationSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  locationSheetTitle: {
+    fontSize: 16,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+    marginBottom: 12,
+  },
+  locationEmptyText: {
+    fontSize: 14,
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
+    paddingVertical: 24,
+    textAlign: "center",
+  },
+  locationSheetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  locationSheetIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.pressed,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  locationSheetTextCol: {
+    flex: 1,
+  },
+  locationSheetNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  locationSheetName: {
+    fontSize: 15,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.text,
+  },
+  locationSheetArea: {
+    fontSize: 12,
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
+    marginTop: 2,
+  },
+  locationSheetDefaultBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: Colors.pressed,
+  },
+  locationSheetDefaultText: {
+    fontSize: 10,
+    fontFamily: FontFamilies.bold,
+    color: Colors.secondary,
+    letterSpacing: 0.5,
   },
 });

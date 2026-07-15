@@ -8,7 +8,6 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
-  Dimensions,
   Alert,
   Platform,
   Pressable,
@@ -18,7 +17,6 @@ import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functio
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -183,38 +181,15 @@ export default function ConfirmScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <SafeAreaView style={{ flex: 1 }}>
         {/* Title Header */}
-        <CustomHeader title="Confirm" />
+        <CustomHeader title="Confirm details" />
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Banner Image */}
-          <Image
-            source={{
-              uri: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800",
-            }}
-            style={styles.bannerImage}
-            resizeMode="cover"
-          />
-
-          {/* List of Confirmation Details */}
-          <View style={styles.listContainer}>
-            {/* Finalize Appointment Title */}
-            <View style={styles.listItem}>
-              <Ionicons
-                name="calendar-outline"
-                size={22}
-                color={Colors.primary}
-                style={styles.itemIcon}
-              />
-              <Text style={styles.itemTitle}>Finalize your appointment</Text>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Doctor Info */}
-            <View style={styles.listItem}>
+          {/* Doctor card */}
+          <View style={styles.doctorCard}>
+            <View style={styles.doctorCardTopRow}>
               {avatar ? (
                 <Image source={{ uri: avatar }} style={styles.doctorAvatar} />
               ) : (
@@ -225,138 +200,86 @@ export default function ConfirmScreen() {
                 </View>
               )}
               <View style={styles.textColumn}>
-                <Text style={styles.itemValue}>{doctorName}</Text>
+                <Text style={styles.doctorName}>{doctorName}</Text>
                 {!!specialty && (
-                  <Text style={styles.itemSubValue}>{specialty}</Text>
+                  <Text style={styles.doctorSpecialty}>{specialty}</Text>
                 )}
               </View>
             </View>
 
-            <View style={styles.divider} />
+            {!!symptoms && (
+              <View style={styles.reasonBox}>
+                <Text style={styles.reasonText} numberOfLines={1}>
+                  {symptoms}
+                </Text>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={16}
+                  color={Colors.label}
+                />
+              </View>
+            )}
+          </View>
 
-            {/* Appointment Type */}
-            <View style={styles.listItem}>
+          {/* Date and Time Slot with Change link */}
+          <View style={[styles.listItem, styles.listItemSpaceBetween]}>
+            <View style={styles.listItemLeft}>
               <Ionicons
-                name="medical-outline"
-                size={22}
-                color={Colors.primary}
-                style={styles.itemIcon}
-              />
-              <Text style={styles.itemValue}>{type}</Text>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Patient Info */}
-            {/* <View style={styles.listItem}>
-              <Ionicons
-                name="person-outline"
-                size={22}
+                name="calendar-outline"
+                size={20}
                 color={Colors.primary}
                 style={styles.itemIcon}
               />
               <View style={styles.textColumn}>
-                <Text style={styles.itemValue}>{patientName}</Text>
-                {(patientAge || patientGender) && (
-                  <Text style={styles.itemSubValue}>
-                    {[patientAge && `${patientAge} yrs`, patientGender]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </Text>
-                )}
+                <Text style={styles.itemValue}>
+                  {getFormattedDateDisplay(date)}
+                </Text>
+                <Text style={styles.itemSubValue}>{time}</Text>
               </View>
             </View>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Text style={styles.changeLinkText}>Change</Text>
+            </TouchableOpacity>
+          </View>
 
-            <View style={styles.divider} /> */}
+          <View style={styles.divider} />
 
-            {/* Date and Time Slot with Change Button */}
-            <View style={[styles.listItem, styles.listItemSpaceBetween]}>
-              <View style={styles.listItemLeft}>
+          {/* Location */}
+          {!!locationText && (
+            <>
+              <View style={styles.listItem}>
                 <Ionicons
-                  name="time-outline"
-                  size={22}
+                  name="location-outline"
+                  size={20}
                   color={Colors.primary}
                   style={styles.itemIcon}
                 />
-                <View style={styles.textColumn}>
-                  <Text style={styles.itemValue}>
-                    {getFormattedDateDisplay(date)}
-                  </Text>
-                  <Text style={styles.itemSubValue}>{time}</Text>
-                </View>
+                <Text style={styles.itemValue}>{locationText}</Text>
               </View>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.changeButton,
-                  {
-                    backgroundColor: pressed ? Colors.primary : "transparent",
-                    transform: [{ scale: pressed ? 0.95 : 1 }],
-                  },
-                ]}
-                onPress={() => navigation.goBack()}
-              >
-                {({ pressed }) => (
-                  <Text
-                    style={[
-                      styles.changeButtonText,
-                      { color: pressed ? Colors.background : Colors.primary },
-                    ]}
-                  >
-                    Change
-                  </Text>
-                )}
-              </Pressable>
+              <View style={styles.divider} />
+            </>
+          )}
+
+          {/* Patient Info */}
+          <View style={styles.listItem}>
+            <Ionicons
+              name="person-outline"
+              size={20}
+              color={Colors.primary}
+              style={styles.itemIcon}
+            />
+            <View style={styles.textColumn}>
+              <Text style={styles.itemValue}>{patientName}</Text>
+              {(patientAge || patientGender) && (
+                <Text style={styles.itemSubValue}>
+                  {[patientAge && `${patientAge} yrs`, patientGender]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+              )}
             </View>
-
-            <View style={styles.divider} />
-
-            {/* Location / Address */}
-            {/* <View style={styles.listItem}>
-              <Ionicons
-                name="location-outline"
-                size={22}
-                color={Colors.primary}
-                style={styles.itemIcon}
-              />
-              <Text style={styles.itemValue}>
-                P.O Box 28973, Dubai,{"\n"}Emirates - 28973
-              </Text>
-            </View> */}
-
-            <View style={styles.divider} />
-
-            {/* Payment / Self Pay with Add Button */}
-            {/* <View style={[styles.listItem, styles.listItemSpaceBetween]}>
-              <View style={styles.listItemLeft}>
-                <Ionicons
-                  name="card-outline"
-                  size={22}
-                  color={Colors.primary}
-                  style={styles.itemIcon}
-                />
-                <Text style={styles.itemValue}>Self Pay</Text>
-              </View>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.addButton,
-                  {
-                    transform: [{ scale: pressed ? 0.95 : 1 }],
-                    opacity: pressed ? 0.8 : 1,
-                  },
-                ]}
-              >
-                <Text style={styles.addButtonText}>Add</Text>
-              </Pressable>
-            </View> */}
           </View>
         </ScrollView>
-
-        {/* Fade effect above footer */}
-        <LinearGradient
-          colors={["rgba(255,255,255,0)", Colors.background]}
-          style={styles.footerFade}
-          pointerEvents="none"
-        />
 
         {/* Footer with Continue Button */}
         <View style={styles.footerContainer}>
@@ -373,13 +296,8 @@ export default function ConfirmScreen() {
             disabled={isSaving}
           >
             <Text style={styles.confirmButtonText}>
-              {isSaving ? "Booking..." : "Book Appointment"}
+              {isSaving ? "Booking..." : "Book appointment"}
             </Text>
-            <Ionicons
-              name="arrow-forward"
-              size={18}
-              color={Colors.background}
-            />
           </Pressable>
         </View>
       </SafeAreaView>
@@ -410,12 +328,45 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 120,
   },
-  bannerImage: {
-    width: "100%",
-    height: Dimensions.get("window").height * 0.28,
+  doctorCard: {
+    backgroundColor: "#EAF3FF",
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 8,
   },
-  listContainer: {
-    width: "100%",
+  doctorCardTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  doctorName: {
+    fontSize: 15,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+  },
+  doctorSpecialty: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontFamily: FontFamilies.semiBold,
+    marginTop: 2,
+  },
+  reasonBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 12,
+    gap: 8,
+  },
+  reasonText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.label,
+    fontFamily: FontFamilies.medium,
   },
   listItem: {
     flexDirection: "row",
@@ -439,11 +390,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
     width: 24,
     textAlign: "center",
-  },
-  itemTitle: {
-    fontSize: 16,
-    color: Colors.primary,
-    fontFamily: FontFamilies.bold,
   },
   doctorAvatar: {
     width: 44,
@@ -474,33 +420,10 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.border,
   },
-  changeButton: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-  },
-  changeButtonText: {
+  changeLinkText: {
     fontSize: 14,
-    color: Colors.primary,
-    fontFamily: FontFamilies.bold,
-  },
-  addButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  addButtonText: {
-    fontSize: 15,
-    color: Colors.label,
+    color: Colors.secondary,
     fontFamily: FontFamilies.semiBold,
-  },
-  footerFade: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 120,
   },
   footerContainer: {
     position: "absolute",

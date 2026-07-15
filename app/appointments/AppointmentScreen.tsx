@@ -313,28 +313,9 @@ export default function AppointmentScreen() {
               const statusStyle = getStatusStyle(item.statusHtml ?? "");
               const isUpcoming = activeTab === "upcoming";
 
-              const goToDetails = () =>
-                navigation.navigate("AppointmentDetails", {
-                  apptId: item.id,
-                  doctorId: item.resourceId || item.id,
-                  doctorName: item.doctorName,
-                  specialty: item.specialty,
-                  avatar: item.avatar,
-                  patientDet: item.patientDet,
-                  type: item.type || "Primary care visit",
-                  apptypName: item.apptypName,
-                  appSubtypeId: item.appSubtypeId,
-                  date: item.date,
-                  time: timeDisplay,
-                  isHistory: activeTab === "history",
-                });
-
               return (
                 <View key={item.id} style={styles.card}>
-                  <Pressable
-                    style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
-                    onPress={goToDetails}
-                  >
+                  <View>
                     {/* Doctor row */}
                     <View style={styles.cardTopRow}>
                       <Image
@@ -464,7 +445,7 @@ export default function AppointmentScreen() {
                         </View>
                       </View>
                     )}
-                  </Pressable>
+                  </View>
 
                   {/* Reschedule / Cancel (Upcoming only) */}
                   {isUpcoming && (

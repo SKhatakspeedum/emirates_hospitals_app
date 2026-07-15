@@ -126,4 +126,6 @@ export const spd_processId_config = {
   sgconf_get_mst_organization_location_patient_portal_list:
     "sgconf_get_mst_organization_location_patient_portal_list",
   sgconf_save_mst_user_attribute_mapping: "sgconf_save_mst_user_attribute_mapping",
+  sgconf_save_update_mst_user_org_mapping_custom:
+    "sgconf_save_update_mst_user_org_mapping_custom",
 };

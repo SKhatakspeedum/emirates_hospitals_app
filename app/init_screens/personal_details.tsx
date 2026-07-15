@@ -1155,6 +1155,33 @@ export default function PersonalDetailsScreen() {
 
       await AsyncStorage.setItem(IS_LOGGED_IN, "true");
 
+      // Map the newly created user to every location org from
+      // sgconf_get_mst_organization_location_patient_portal_list (the same
+      // list populating the Location dropdown), not just the one selected.
+      // sgUserId / sgRoleId / sgOrgId are "userdata" — auto-injected by
+      // callSuggestusAPI from the session set just above, not passed here.
+      if (newUserId) {
+        try {
+          const defaultJsonStr = await getDecryptedID("DEFAULT_JSON_DATA");
+          const defaultJson = defaultJsonStr ? JSON.parse(defaultJsonStr) : {};
+          const orgCodes = defaultJson?.spd_app_location_list ?? "";
+          await callSuggestusAPI(
+            spd_processId_config.sgconf_save_update_mst_user_org_mapping_custom,
+            {
+              p_map_user_id: newUserId,
+              p_org_codes: orgCodes || "",
+              p_process_flag: "map_multiple_user",
+              p_additional_attribute: "",
+            },
+          );
+        } catch (orgMapErr) {
+          console.error(
+            "[PersonalDetails] user-org mapping failed:",
+            orgMapErr,
+          );
+        }
+      }
+
       // If a patient record already existed for this Emirates ID / Passport,
       // link it to the new user account and go straight to HomeScreen.
       if (linkedPatientId && newUserId) {

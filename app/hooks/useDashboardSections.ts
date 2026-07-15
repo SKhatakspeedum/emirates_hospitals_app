@@ -38,7 +38,7 @@ interface UseDashboardSectionsReturn {
  */
 export const useDashboardSections = (
   noPatient: boolean = false,
-  p_ai_code: string = suggestusClientConfig.SUGGESTUS_AI_CODE,
+  p_ai_code?: string,
   p_menu_type: string = "",
 ): UseDashboardSectionsReturn => {
   const [sections, setSections] = useState<SectionConfig[]>(DEFAULT_SECTIONS);
@@ -58,7 +58,10 @@ export const useDashboardSections = (
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       setError(error);
-      console.error("[useDashboardSections] Error fetching dashboard sections:", error);
+      console.error(
+        "[useDashboardSections] Error fetching dashboard sections:",
+        error,
+      );
       // Fallback to defaults on error
       setSections(DEFAULT_SECTIONS);
     } finally {

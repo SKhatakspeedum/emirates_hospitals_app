@@ -1,4 +1,5 @@
 import { BackendMenuWidget, getMenuAppWidgets } from "../services/dashboardApi";
+import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 import suggestusClientConfig from "./suggestus_client_config";
 
 export type SectionKey =
@@ -134,21 +135,29 @@ export const parseSectionsFromBackend = (
  * @returns Sections configuration (always returns at least defaults)
  */
 export const fetchSectionsFromBackend = async (
-  p_ai_code: string = suggestusClientConfig.SUGGESTUS_AI_CODE,
+  p_ai_code?: string,
   p_menu_type: string = "",
 ): Promise<SectionConfig[]> => {
   try {
+    const resolvedAiCode =
+      p_ai_code ||
+      (await fetchDataFromLocalStorage("sg_AICODE")) ||
+      suggestusClientConfig.SUGGESTUS_AI_CODE;
+
     console.log("[fetchSectionsFromBackend] Fetching with params:", {
-      p_ai_code,
+      p_ai_code: resolvedAiCode,
       p_menu_type,
     });
 
     const backendSections = await getMenuAppWidgets({
-      p_ai_code,
+      p_ai_code: resolvedAiCode,
       p_menu_type,
     });
 
-    console.log("[fetchSectionsFromBackend] Raw backend sections:", backendSections);
+    console.log(
+      "[fetchSectionsFromBackend] Raw backend sections:",
+      backendSections,
+    );
 
     // If backend returns valid data, use it
     if (backendSections && backendSections.length > 0) {

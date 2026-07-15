@@ -26,7 +26,9 @@ export async function createSuggestusSession() {
   try {
     const url = suggestusClientConfig.SUGGESTUS_INTERNAL_URL;
     const env = suggestusClientConfig.SUGGESTUS_EVN;
-    const ai_code = suggestusClientConfig.SUGGESTUS_AI_CODE;
+    const ai_code =
+      (await fetchDataFromLocalStorage("sg_AICODE")) ||
+      suggestusClientConfig.SUGGESTUS_AI_CODE;
     const uuid = await getDecryptedID("device_unique_id");
 
     sg_session_body.setAiCode(ai_code);
@@ -86,7 +88,9 @@ export async function createSuggestusFootPrint() {
   try {
     const url = suggestusClientConfig.SUGGESTUS_INTERNAL_URL;
     const env = suggestusClientConfig.SUGGESTUS_EVN;
-    const ai_code = suggestusClientConfig.SUGGESTUS_AI_CODE;
+    const ai_code =
+      (await fetchDataFromLocalStorage("sg_AICODE")) ||
+      suggestusClientConfig.SUGGESTUS_AI_CODE;
     const uuid = Math.random().toString().slice(2, 11);
 
     await setEncryptedID("device_unique_id", uuid);

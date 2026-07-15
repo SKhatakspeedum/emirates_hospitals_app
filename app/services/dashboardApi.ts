@@ -235,7 +235,9 @@ export const getHomeScreenWidgets = async (): Promise<
   BackendMenuWidget[] | null
 > => {
   return getMenuAppWidgets({
-    p_ai_code: suggestusClientConfig?.SUGGESTUS_AI_CODE,
+    p_ai_code:
+      (await fetchDataFromLocalStorage("sg_AICODE")) ||
+      suggestusClientConfig?.SUGGESTUS_AI_CODE,
     p_menu_type: "",
   });
 };
@@ -250,7 +252,9 @@ export const getMenuWidgetsByType = async (
   menuType: string,
 ): Promise<BackendMenuWidget[] | null> => {
   return getMenuAppWidgets({
-    p_ai_code: suggestusClientConfig?.SUGGESTUS_AI_CODE,
+    p_ai_code:
+      (await fetchDataFromLocalStorage("sg_AICODE")) ||
+      suggestusClientConfig?.SUGGESTUS_AI_CODE,
     p_menu_type: menuType,
   });
 };

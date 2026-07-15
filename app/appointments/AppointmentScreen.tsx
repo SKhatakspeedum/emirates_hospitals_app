@@ -23,7 +23,6 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 
-
 type Appointment = {
   id: string;
   doctorName: string;
@@ -42,7 +41,6 @@ type Appointment = {
   hospitalName: string;
   hospitalArea: string;
 };
-
 
 // Strips HTML tags: "<div class="badge-success">BOOKED</div>" → "BOOKED"
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
@@ -84,8 +82,18 @@ const formatDateWithDay = (dateStr: string): string => {
   }
 
   const monthIndex = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ].indexOf(month);
   if (monthIndex === -1 || !day || !year) return dateStr;
 
@@ -117,7 +125,9 @@ export default function AppointmentScreen() {
   const goToNearbyProviders = () =>
     navigation.navigate("NearbyProviders", { preloadedProviders });
 
-  const [activeTab, setActiveTab] = useState<"upcoming" | "history">("upcoming");
+  const [activeTab, setActiveTab] = useState<"upcoming" | "history">(
+    "upcoming",
+  );
   const [upcomingList, setUpcomingList] = useState<Appointment[]>(
     preloadedUpcoming ?? [],
   );
@@ -125,8 +135,22 @@ export default function AppointmentScreen() {
     preloadedHistory ?? [],
   );
   const [isLoading, setIsLoading] = useState(false);
-
+  const [orgId, setOrgId] = useState<string>("");
   const appointments = activeTab === "upcoming" ? upcomingList : historyList;
+
+  useEffect(() => {
+    const loadOrgId = async () => {
+      try {
+        const storedOrgId = await fetchDataFromLocalStorage("sg_org_name");
+        if (storedOrgId) {
+          setOrgId(storedOrgId);
+        }
+      } catch (e) {
+        console.error("Error loading orgId:", e);
+      }
+    };
+    loadOrgId();
+  }, []);
 
   useEffect(() => {
     // Dashboard already fetched this via the same
@@ -143,7 +167,7 @@ export default function AppointmentScreen() {
           {
             p_patient_id: patientId ?? "",
             p_visit_id: null,
-            
+
             menu_name: "Wellness",
             menu_tab_type: "always_patient_specific",
             maximization_redirection_label: "Make appointment",
@@ -152,18 +176,30 @@ export default function AppointmentScreen() {
             p_offset: 0,
           },
         );
+
         if (response?.returnCode === true && response.returnData?.length > 0) {
           const mapItem = (a: any): Appointment => ({
             id: String(a.p_appt_id ?? a.sch_id ?? a.appointment_id ?? ""),
             doctorName: a.resource_name ?? a.phy_name ?? a.doctor_name ?? "",
-            specialty: a.dpt_description ?? a.dept_name ?? a.speciality_name ?? "",
+            specialty:
+              a.dpt_description ?? a.dept_name ?? a.speciality_name ?? "",
             avatar: a.p_doc_image_url ?? a.phy_photo ?? a.doctor_photo ?? "",
-            date: a.appt_date_dashboard ?? a.sch_date ?? a.appointment_date ?? "",
+            date:
+              a.appt_date_dashboard ?? a.sch_date ?? a.appointment_date ?? "",
             time: a.appt_start_time ?? a.sch_time ?? a.appointment_time ?? "",
-            status: a.appstat_name ?? a.sch_status ?? a.appointment_status ?? "Confirmed",
-            endTime: a.appt_end_time ?? a.sch_end_time ?? a.appointment_end_time ?? "",
+            status:
+              a.appstat_name ??
+              a.sch_status ??
+              a.appointment_status ??
+              "Confirmed",
+            endTime:
+              a.appt_end_time ?? a.sch_end_time ?? a.appointment_end_time ?? "",
             statusHtml: a.appstat_html_name ?? "",
-            type: a.appsubtyp_name ?? a.appointment_type ?? a.visit_type ?? "In-Clinic",
+            type:
+              a.appsubtyp_name ??
+              a.appointment_type ??
+              a.visit_type ??
+              "In-Clinic",
             apptypName: stripHtml(a.apptyp_name ?? ""),
             patientDet: a.patient_det ?? "",
             resourceId: String(a.appt_resource_id ?? a.resource_id ?? ""),
@@ -252,7 +288,8 @@ export default function AppointmentScreen() {
       );
       if (res?.returnCode !== true) {
         showError(
-          res?.returnMessage ?? "Failed to cancel appointment. Please try again.",
+          res?.returnMessage ??
+            "Failed to cancel appointment. Please try again.",
         );
         return;
       }
@@ -262,9 +299,13 @@ export default function AppointmentScreen() {
     }
 
     if (activeTab === "upcoming") {
-      setUpcomingList((prev: Appointment[]) => prev.filter((item: Appointment) => item.id !== id));
+      setUpcomingList((prev: Appointment[]) =>
+        prev.filter((item: Appointment) => item.id !== id),
+      );
     } else {
-      setHistoryList((prev: Appointment[]) => prev.filter((item: Appointment) => item.id !== id));
+      setHistoryList((prev: Appointment[]) =>
+        prev.filter((item: Appointment) => item.id !== id),
+      );
     }
   };
 
@@ -294,9 +335,7 @@ export default function AppointmentScreen() {
 
   return (
     <View style={styles.container}>
-
       <SafeAreaView style={styles.safeArea}>
-
         {/* Title Header */}
         <CustomHeader title="Appointments" />
 
@@ -305,7 +344,9 @@ export default function AppointmentScreen() {
           <CustomTabs
             tabs={["Upcoming", "History"]}
             activeTab={activeTab === "upcoming" ? "Upcoming" : "History"}
-            onTabChange={(tab) => setActiveTab(tab === "Upcoming" ? "upcoming" : "history")}
+            onTabChange={(tab) =>
+              setActiveTab(tab === "Upcoming" ? "upcoming" : "history")
+            }
           />
         </View>
 
@@ -340,7 +381,9 @@ export default function AppointmentScreen() {
                   activeOpacity={0.8}
                   onPress={goToNearbyProviders}
                 >
-                  <Text style={styles.outlineBookButtonText}>Book an appointment</Text>
+                  <Text style={styles.outlineBookButtonText}>
+                    Book an appointment
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -351,7 +394,9 @@ export default function AppointmentScreen() {
               const timeDisplay = item.endTime
                 ? `${toHHMM(item.time)} - ${toHHMM(item.endTime)}`
                 : formatAmPm(item.time.split(" - ")[0] || item.time);
-              const statusLabel = item.statusHtml ? stripHtml(item.statusHtml) : item.status;
+              const statusLabel = item.statusHtml
+                ? stripHtml(item.statusHtml)
+                : item.status;
               const statusStyle = getStatusStyle(item.statusHtml ?? "");
               const isUpcoming = activeTab === "upcoming";
 
@@ -420,7 +465,11 @@ export default function AppointmentScreen() {
                         )}
 
                         {/* Location */}
-                        {!!(item.hospitalName || item.hospitalArea) && (
+                        {!!(
+                          item.hospitalName ||
+                          item.hospitalArea ||
+                          orgId
+                        ) && (
                           <View style={styles.metaRow}>
                             <Ionicons
                               name="location-outline"
@@ -437,6 +486,9 @@ export default function AppointmentScreen() {
                                 <Text style={styles.metaSubText}>
                                   {item.hospitalArea}
                                 </Text>
+                              )}
+                              {!!orgId && (
+                                <Text style={styles.metaSubText}>{orgId}</Text>
                               )}
                             </View>
                           </View>
@@ -539,7 +591,7 @@ export default function AppointmentScreen() {
               {
                 opacity: pressed ? 0.7 : 1,
                 transform: [{ scale: pressed ? 0.95 : 1 }],
-              }
+              },
             ]}
             onPress={goToNearbyProviders}
             disabled={false}
@@ -548,7 +600,7 @@ export default function AppointmentScreen() {
           </Pressable>
         )}
       </SafeAreaView>
-    </View >
+    </View>
   );
 }
 
@@ -564,7 +616,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
     marginVertical: 15,
     backgroundColor: Colors.background,
   },

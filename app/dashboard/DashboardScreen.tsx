@@ -198,34 +198,60 @@ export default function DashboardScreen() {
               });
               setUpcomingAppointmentsFull(upcomingFull);
               setHistoryAppointmentsFull(historyFull);
-
-              // Simplified subset used by this screen's own dashboard card.
-              const upcoming: UpcomingAppointment[] = upcomingFull.map(
-                (a) => {
-                  const statusStyle = getStatusStyle(a.statusHtml);
-                  return {
-                    id: a.id,
-                    doctorName: a.doctorName,
-                    specialty: a.specialty,
-                    avatar: a.avatar,
-                    date: a.date,
-                    time: formatAmPm(a.time),
-                    statusLabel: stripHtml(a.statusHtml) || a.status,
-                    statusColor: statusStyle.color,
-                    statusBg: statusStyle.bg,
-                  };
-                },
-              );
-              setUpcomingAppointments(upcoming);
             } else {
-              setUpcomingAppointments([]);
               setUpcomingAppointmentsFull([]);
               setHistoryAppointmentsFull([]);
             }
           } catch (_) {
-            setUpcomingAppointments([]);
             setUpcomingAppointmentsFull([]);
             setHistoryAppointmentsFull([]);
+          }
+
+          // Separate, isolated call just for the dashboard card: asks the
+          // same process for only the single most recent upcoming
+          // appointment (p_process_flag: "recent_single"), so this card
+          // no longer depends on the full-list fetch above.
+          try {
+            const singleResponse = await callSuggestusAPI(
+              spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
+              {
+                p_patient_id: pid,
+                p_visit_id: null,
+                menu_name: "Wellness",
+                menu_tab_type: "always_patient_specific",
+                maximization_redirection_label: "Make appointment",
+                p_max_offset: 1,
+                p_process_type: "fetch_all_appointments",
+                p_offset: 0,
+                p_process_flag: "recent_single",
+              },
+            );
+            if (
+              singleResponse?.returnCode === true &&
+              singleResponse.returnData?.length > 0
+            ) {
+              const a = singleResponse.returnData[0];
+              const statusStyle = getStatusStyle(a.appstat_html_name ?? "");
+              setUpcomingAppointments([
+                {
+                  id: String(a.p_appt_id ?? a.appt_id ?? ""),
+                  doctorName: a.resource_name ?? "",
+                  specialty: a.dpt_description ?? "",
+                  avatar: a.p_doc_image_url ?? "",
+                  date: a.appt_date_dashboard ?? "",
+                  time: formatAmPm(a.appt_start_time ?? ""),
+                  statusLabel:
+                    stripHtml(a.appstat_html_name ?? "") ||
+                    (a.appstat_name ?? "Confirmed"),
+                  statusColor: statusStyle.color,
+                  statusBg: statusStyle.bg,
+                },
+              ]);
+            } else {
+              setUpcomingAppointments([]);
+            }
+          } catch (_) {
+            setUpcomingAppointments([]);
           }
         } else {
           setUpcomingAppointments([]);

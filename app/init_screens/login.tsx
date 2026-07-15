@@ -48,6 +48,7 @@ export default function LoginScreen() {
   // Check if phone number length matches the selected country's placeholder length
   const expectedLength = selectedCountry.placeholder.replace(/[^0-9]/g, "").length;
   const isLengthMatching = phoneDigits.length === expectedLength;
+  const maskedPlaceholder = selectedCountry.placeholder.replace(/[0-9]/g, "X");
 
   // Clear query on modal toggle
   useEffect(() => {
@@ -219,7 +220,7 @@ export default function LoginScreen() {
                   keyboardType="phone-pad"
                   value={phoneDigits}
                   onChangeText={handlePhoneChange}
-                  placeholder={selectedCountry.placeholder}
+                  placeholder={maskedPlaceholder}
                   placeholderTextColor={Colors.inactive}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}

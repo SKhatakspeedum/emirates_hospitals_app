@@ -38,6 +38,131 @@ import { useDashboardSections } from "../hooks/useDashboardSections";
 
 const { width, height } = Dimensions.get("window");
 
+// Isolated in its own component so the frequent onScroll-driven index
+// updates while swiping only re-render this small carousel — not the
+// entire DashboardScreen tree (which was the cause of the jank/stutter).
+const PromoBannerCarousel = React.memo(function PromoBannerCarousel({
+  bannerUrls,
+  bannerWidth,
+}: {
+  bannerUrls: string[];
+  bannerWidth: number;
+}) {
+  const [index, setIndex] = useState(0);
+  const scrollRef = React.useRef<ScrollView>(null);
+  const loopEnabled = bannerUrls.length > 1;
+  // While a programmatic snap (scrollTo) is animating, its own onScroll
+  // events report transient in-between offsets. If those were allowed to
+  // set the index too, the dot could land one off from the banner that's
+  // actually settled — snapToNearest is the sole source of truth for the
+  // final index; this just suppresses onScroll's live updates until that
+  // animation has had time to finish.
+  const isSnappingRef = React.useRef(false);
+  const snapTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  // For looping: clone the last banner before the first and the first
+  // banner after the last, so swiping past either end lands on a clone
+  // that looks identical to the real slide — then we silently (no
+  // animation) jump the scroll position back to the matching real slide,
+  // making the swipe feel infinite in both directions.
+  const loopedBannerUrls = loopEnabled
+    ? [bannerUrls[bannerUrls.length - 1], ...bannerUrls, bannerUrls[0]]
+    : bannerUrls;
+
+  const updateIndexFromOffset = (offsetX: number) => {
+    if (isSnappingRef.current) return;
+    const rawIdx = Math.round(offsetX / bannerWidth);
+    if (!loopEnabled) {
+      setIndex(rawIdx);
+      return;
+    }
+    const real = ((rawIdx - 1) + bannerUrls.length) % bannerUrls.length;
+    setIndex(real);
+  };
+
+  // Explicitly computes and snaps to the nearest page — react-native-web's
+  // `pagingEnabled` doesn't reliably snap on its own (especially with mouse
+  // drag), so the carousel can end up stuck mid-scroll or the loop-wrap
+  // never triggers. This is called on both drag-release and momentum-end
+  // so it's reliable across native touch and web mouse/touch alike; being
+  // idempotent (always scrolls to the exact correct offset) makes it safe
+  // to fire from both without visible double-jumps.
+  const snapToNearest = (offsetX: number) => {
+    const rawIdx = Math.round(offsetX / bannerWidth);
+
+    isSnappingRef.current = true;
+    if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
+    snapTimeoutRef.current = setTimeout(() => {
+      isSnappingRef.current = false;
+    }, 350);
+
+    if (!loopEnabled) {
+      scrollRef.current?.scrollTo({ x: rawIdx * bannerWidth, animated: true });
+      setIndex(rawIdx);
+      return;
+    }
+
+    if (rawIdx <= 0) {
+      // Dragged onto (or past) the cloned last slide — snap instantly to
+      // the real last slide.
+      scrollRef.current?.scrollTo({
+        x: bannerWidth * bannerUrls.length,
+        animated: false,
+      });
+      setIndex(bannerUrls.length - 1);
+    } else if (rawIdx >= loopedBannerUrls.length - 1) {
+      // Dragged onto (or past) the cloned first slide — snap instantly to
+      // the real first slide.
+      scrollRef.current?.scrollTo({ x: bannerWidth, animated: false });
+      setIndex(0);
+    } else {
+      scrollRef.current?.scrollTo({ x: rawIdx * bannerWidth, animated: true });
+      setIndex(rawIdx - 1);
+    }
+  };
+
+  return (
+    <>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        decelerationRate="fast"
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={32}
+        contentOffset={loopEnabled ? { x: bannerWidth, y: 0 } : undefined}
+        onScroll={(e) => updateIndexFromOffset(e.nativeEvent.contentOffset.x)}
+        onScrollEndDrag={(e) => snapToNearest(e.nativeEvent.contentOffset.x)}
+        onMomentumScrollEnd={(e) =>
+          snapToNearest(e.nativeEvent.contentOffset.x)
+        }
+      >
+        {loopedBannerUrls.map((url, i) => (
+          <Image
+            key={`${url}-${i}`}
+            source={{ uri: url }}
+            style={[styles.promoBannerImage, { width: bannerWidth }]}
+            resizeMode="cover"
+          />
+        ))}
+      </ScrollView>
+
+      {bannerUrls.length > 1 && (
+        <View style={styles.paginationDots}>
+          {bannerUrls.map((_, i) => (
+            <View
+              key={i}
+              style={[styles.dot, i === index && styles.dotActive]}
+            />
+          ))}
+        </View>
+      )}
+    </>
+  );
+});
+
 const getGreetingTime = () => {
   const currentHour = new Date().getHours();
   if (currentHour < 12) {
@@ -492,10 +617,6 @@ export default function DashboardScreen() {
   // Fetch dynamic sections from backend (with automatic fallback to defaults)
   const { visibleSections, sections } = useDashboardSections(noPatient);
 
-  // Tracks which slide of the promo banner carousel is currently showing,
-  // driving the pagination dots as the user swipes.
-  const [promoBannerIndex, setPromoBannerIndex] = useState(0);
-
   // Debug log to verify sections are being loaded
   useEffect(() => {
     console.log(
@@ -518,42 +639,11 @@ export default function DashboardScreen() {
 
         if (promoBannerUrls.length > 0) {
           return (
-            <React.Fragment key={key}>
-              <ScrollView
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={(e) => {
-                  const idx = Math.round(
-                    e.nativeEvent.contentOffset.x / bannerWidth,
-                  );
-                  setPromoBannerIndex(idx);
-                }}
-              >
-                {promoBannerUrls.map((url, index) => (
-                  <Image
-                    key={`${url}-${index}`}
-                    source={{ uri: url }}
-                    style={[styles.promoBannerImage, { width: bannerWidth }]}
-                    resizeMode="cover"
-                  />
-                ))}
-              </ScrollView>
-
-              {promoBannerUrls.length > 1 && (
-                <View style={styles.paginationDots}>
-                  {promoBannerUrls.map((_, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.dot,
-                        index === promoBannerIndex && styles.dotActive,
-                      ]}
-                    />
-                  ))}
-                </View>
-              )}
-            </React.Fragment>
+            <PromoBannerCarousel
+              key={key}
+              bannerUrls={promoBannerUrls}
+              bannerWidth={bannerWidth}
+            />
           );
         }
 

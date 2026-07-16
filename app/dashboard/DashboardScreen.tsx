@@ -477,7 +477,7 @@ export default function DashboardScreen() {
     fetchProviders();
   }, []);
 
-  const specialties = [
+  const FALLBACK_SPECIALTIES = [
     {
       label: "Neurology",
       Icon: MaterialCommunityIcons,
@@ -511,6 +511,137 @@ export default function DashboardScreen() {
       bgColor: "#FEF9E7",
     },
   ];
+
+  // Best-effort icon/color lookup for departments returned by the backend —
+  // the API only gives us a name, not an icon, so match on common keywords
+  // and fall back to a generic icon for anything unrecognized.
+  const getSpecialtyIconMeta = (label: string) => {
+    const key = label.toLowerCase();
+    if (key.includes("neuro")) {
+      return {
+        Icon: MaterialCommunityIcons,
+        iconName: "brain",
+        iconSize: 28,
+        iconColor: "#6B7280",
+        bgColor: "#F3F4F6",
+      };
+    }
+    if (key.includes("ent") || key.includes("ear")) {
+      return {
+        Icon: FontAwesome5,
+        iconName: "diagnoses",
+        iconSize: 26,
+        iconColor: "#E87722",
+        bgColor: "#FDF1EB",
+      };
+    }
+    if (key.includes("pediatric") || key.includes("paediatric")) {
+      return {
+        Icon: MaterialCommunityIcons,
+        iconName: "baby-face-outline",
+        iconSize: 28,
+        iconColor: "#F1C40F",
+        bgColor: "#FEF9E7",
+      };
+    }
+    if (key.includes("cardio") || key.includes("heart")) {
+      return {
+        Icon: FontAwesome5,
+        iconName: "heartbeat",
+        iconSize: 24,
+        iconColor: "#E74C3C",
+        bgColor: "#FDEDEC",
+      };
+    }
+    if (key.includes("ortho") || key.includes("bone")) {
+      return {
+        Icon: MaterialCommunityIcons,
+        iconName: "bone",
+        iconSize: 26,
+        iconColor: "#3498DB",
+        bgColor: "#EBF5FB",
+      };
+    }
+    if (key.includes("dental") || key.includes("dent")) {
+      return {
+        Icon: MaterialCommunityIcons,
+        iconName: "tooth-outline",
+        iconSize: 26,
+        iconColor: "#3498DB",
+        bgColor: "#EBF5FB",
+      };
+    }
+    if (key.includes("gyn") || key.includes("obstet")) {
+      return {
+        Icon: MaterialCommunityIcons,
+        iconName: "human-pregnant",
+        iconSize: 26,
+        iconColor: "#9B59B6",
+        bgColor: "#F5EEF8",
+      };
+    }
+    if (key.includes("eye") || key.includes("ophthal")) {
+      return {
+        Icon: MaterialCommunityIcons,
+        iconName: "eye-outline",
+        iconSize: 26,
+        iconColor: "#3498DB",
+        bgColor: "#EBF5FB",
+      };
+    }
+    if (key.includes("medicine") || key.includes("general")) {
+      return {
+        Icon: FontAwesome5,
+        iconName: "briefcase-medical",
+        iconSize: 22,
+        iconColor: "#2ECC71",
+        bgColor: "#EAF6F0",
+      };
+    }
+    return {
+      Icon: Ionicons,
+      iconName: "medkit-outline",
+      iconSize: 24,
+      iconColor: "#6B7280",
+      bgColor: "#F3F4F6",
+    };
+  };
+
+  const [specialties, setSpecialties] = useState(FALLBACK_SPECIALTIES);
+  const [loadingSpecialties, setLoadingSpecialties] = useState(true);
+
+  // Populates the Home dashboard's "Specialties" carousel from the
+  // department master list (sgOrgId comes from userdata, auto-injected by
+  // callSuggestusAPI — not passed here).
+  useEffect(() => {
+    const fetchSpecialties = async () => {
+      setLoadingSpecialties(true);
+      try {
+        const response = await callSuggestusAPI(
+          spd_processId_config.hosapp_get_ct_department_pntapp,
+          {
+            p_additional_attributes: "",
+            p_process_type: "home_screen_recent",
+            p_internal_flag: "",
+          },
+        );
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const fetched = response.returnData.map((d: any) => {
+            const label =
+              d.dpt_description ?? d.dpt_name ?? d.ct_description ?? "";
+            return { label, ...getSpecialtyIconMeta(label) };
+          });
+          setSpecialties(fetched);
+        }
+      } catch (e) {
+        console.error("Error fetching specialties:", e);
+        // Keep the fallback list on error
+      } finally {
+        setLoadingSpecialties(false);
+      }
+    };
+    fetchSpecialties();
+  }, []);
 
   const healthSummary = [
     {
@@ -975,41 +1106,49 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.specialtiesScrollList}
-            >
-              {specialties.map((item, index) => {
-                const Icon = item.Icon;
-                return (
-                  <Pressable
-                    key={index}
-                    style={({ pressed }) => [
-                      styles.specialtyItem,
-                      {
-                        opacity: pressed ? 0.7 : 1,
-                        transform: [{ scale: pressed ? 0.95 : 1 }],
-                      },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.specialtyIconCircle,
-                        { backgroundColor: item.bgColor },
+            {loadingSpecialties ? (
+              <ActivityIndicator
+                size="small"
+                color={Colors.secondary}
+                style={{ marginVertical: 16 }}
+              />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.specialtiesScrollList}
+              >
+                {specialties.map((item, index) => {
+                  const Icon = item.Icon;
+                  return (
+                    <Pressable
+                      key={index}
+                      style={({ pressed }) => [
+                        styles.specialtyItem,
+                        {
+                          opacity: pressed ? 0.7 : 1,
+                          transform: [{ scale: pressed ? 0.95 : 1 }],
+                        },
                       ]}
                     >
-                      <Icon
-                        name={item.iconName as any}
-                        size={item.iconSize}
-                        color={item.iconColor}
-                      />
-                    </View>
-                    <Text style={styles.specialtyLabel}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+                      <View
+                        style={[
+                          styles.specialtyIconCircle,
+                          { backgroundColor: item.bgColor },
+                        ]}
+                      >
+                        <Icon
+                          name={item.iconName as any}
+                          size={item.iconSize}
+                          color={item.iconColor}
+                        />
+                      </View>
+                      <Text style={styles.specialtyLabel}>{item.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
         );
 

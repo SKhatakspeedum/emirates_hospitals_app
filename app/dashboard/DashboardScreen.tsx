@@ -39,6 +39,7 @@ import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
+import { getMenuWidgetsByType } from "../services/dashboardApi";
 import {
   fetchDataFromLocalStorage,
   getDecryptedID,
@@ -657,9 +658,28 @@ export default function DashboardScreen() {
     { title: "Last visit", value: "--", color: "#F39C12", bgColor: "#FEF5E7" },
   ];
 
-  const quickActions = [
+  // Backend-controlled: code, label, order — used as-is until the
+  // "quickActions" p_menu_type bucket resolves (see fetchQuickActions below).
+  const FALLBACK_QUICK_ACTIONS = [
+    { code: "appointments", label: "Appointments" },
+    { code: "healthPackages", label: "Health pkgs" },
+    { code: "orders", label: "Orders" },
+    { code: "rxRefill", label: "Rx refill" },
+  ];
+
+  // Local-only: icon/color/behavior per stable code. The backend can
+  // reorder/relabel/hide buttons but never owns what tapping one does.
+  const QUICK_ACTION_CODE_MAP: Record<
+    string,
     {
-      label: "Appointments",
+      icon: string;
+      IconFamily: typeof Ionicons | typeof MaterialCommunityIcons;
+      color: string;
+      bgColor: string;
+      onPress: () => void | Promise<void>;
+    }
+  > = {
+    appointments: {
       icon: "calendar-outline",
       IconFamily: Ionicons,
       color: "#3498DB",
@@ -736,31 +756,83 @@ export default function DashboardScreen() {
         }
       },
     },
-    {
-      label: "Health pkgs",
+    healthPackages: {
       icon: "medkit-outline",
       IconFamily: Ionicons,
       color: "#F39C12",
       bgColor: "#FEF5E7",
       onPress: () => navigation.navigate("HealthPackages"),
     },
-    {
-      label: "Orders",
+    orders: {
       icon: "receipt-outline",
       IconFamily: Ionicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
       onPress: () => {},
     },
-    {
-      label: "Rx refill",
+    rxRefill: {
       icon: "pill",
       IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
       onPress: () => {},
     },
-  ];
+  };
+
+  // Neutral fallback for a code the backend sends that the app doesn't
+  // recognize yet — avoids a crash or a silently-missing button.
+  const DEFAULT_QUICK_ACTION_META = {
+    icon: "apps-outline",
+    IconFamily: Ionicons,
+    color: "#6B7280",
+    bgColor: "#F3F4F6",
+    onPress: () => {},
+  };
+
+  const [quickActionsData, setQuickActionsData] = useState<
+    { code: string; label: string; sequence?: number }[]
+  >(FALLBACK_QUICK_ACTIONS);
+
+  // Populates the Home dashboard's Quick Actions row (code/label/order)
+  // from the "quickActions" widget's menu_additional_attributes — the
+  // backend models this as ONE widget row (widget_code "quickActions")
+  // carrying the button list nested inside additionalAttributes, e.g.
+  // [{ code: "appointments", label: "Appointments", enable: "Y" }, ...]
+  // — same nested-JSON idiom already used for promoBanner's bannerUrls.
+  // No loading gate here — unlike Specialties/Providers, the fallback is
+  // the fully correct, currently-shipped set of buttons, so we render it
+  // instantly and just relabel/reorder in place if/when the backend list
+  // resolves.
+  useEffect(() => {
+    const fetchQuickActions = async () => {
+      try {
+        const widgets = await getMenuWidgetsByType("quickActions");
+        const quickActionsWidget = widgets?.find(
+          (w) => w.widget_code === "quickActions",
+        );
+        const rawItems = quickActionsWidget?.additionalAttributes;
+        const items = Array.isArray(rawItems) ? rawItems : [];
+        const mapped = items
+          .filter((it: any) => it?.enable !== "N" && it?.code)
+          .map((it: any) => ({ code: it.code, label: it.label ?? it.code }));
+        if (mapped.length > 0) {
+          setQuickActionsData(mapped);
+        }
+        // empty/malformed -> keep FALLBACK_QUICK_ACTIONS
+      } catch (e) {
+        console.error("Error fetching quick actions:", e);
+      }
+    };
+    fetchQuickActions();
+  }, []);
+
+  // Recomputed every render so onPress always closes over the *current*
+  // Providers/appointments state rather than whatever it was when the
+  // fetch above resolved.
+  const quickActions = quickActionsData.map((item) => ({
+    ...item,
+    ...(QUICK_ACTION_CODE_MAP[item.code] ?? DEFAULT_QUICK_ACTION_META),
+  }));
 
   const noPatient = !patientId || patientId === "null";
 
@@ -797,11 +869,11 @@ export default function DashboardScreen() {
       case "quickActions":
         return (
           <View key={key} style={styles.quickActionsContainer}>
-            {quickActions.map((action, index) => {
+            {quickActions.map((action) => {
               const Icon = action.IconFamily;
               return (
                 <Pressable
-                  key={index}
+                  key={action.code}
                   style={({ pressed }) => [
                     styles.quickActionItem,
                     {

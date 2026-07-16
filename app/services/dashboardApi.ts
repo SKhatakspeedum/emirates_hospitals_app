@@ -19,8 +19,10 @@ export interface BackendMenuItem {
 }
 
 /**
- * Parses menu_additional_attributes (a JSON string or already-parsed
- * object) into a plain object. Returns {} on any malformed/missing input.
+ * Parses menu_additional_attributes (a JSON string, a JS-object-literal
+ * string with unquoted keys e.g. `{code: "x"}`, or an already-parsed
+ * object/array) into a plain object/array. Returns {} on any
+ * malformed/missing input.
  */
 const parseAdditionalAttributes = (
   raw: string | Record<string, any> | undefined,
@@ -30,7 +32,19 @@ const parseAdditionalAttributes = (
   try {
     return JSON.parse(raw);
   } catch {
-    return {};
+    try {
+      // Backend sometimes sends JS-object-literal syntax instead of
+      // strict JSON (bare identifier keys, e.g. `code: "x"` instead of
+      // `"code": "x"`) — quote any bare key immediately after `{` or `,`
+      // and retry. Already-quoted keys are left untouched.
+      const repaired = raw.replace(
+        /([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g,
+        '$1"$2":',
+      );
+      return JSON.parse(repaired);
+    } catch {
+      return {};
+    }
   }
 };
 
@@ -140,7 +154,7 @@ export const getMenuAppWidgets = async (
       {
         p_ai_code: params.p_ai_code,
         // sgOrgId: orgId,
-        p_menu_type: params.p_menu_type,
+        p_menu_type: "",
         p_process_flag: params.p_process_flag || "Y",
       },
     );

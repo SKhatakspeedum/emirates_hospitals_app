@@ -1370,7 +1370,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: Colors.notificationBadge,
     marginHorizontal: 3,
   },
   dotActive: {
@@ -1577,7 +1577,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     height: 160,
     position: "relative",
-    backgroundColor: "#E5E7EB",
+    backgroundColor: Colors.lightgray,
   },
   videoThumbnail: {
     width: "100%",
@@ -1591,7 +1591,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.2)",
   },
   healthSummaryGrid: {
     flexDirection: "row",
@@ -1632,7 +1631,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#E8F4FD",
+    backgroundColor: Colors.lightgray,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -1683,7 +1682,7 @@ const styles = StyleSheet.create({
   },
   locationSheetOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: Colors.overlayOnDark,
     justifyContent: "flex-end",
   },
   locationSheetCard: {

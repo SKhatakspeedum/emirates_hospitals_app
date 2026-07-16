@@ -51,6 +51,7 @@ import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 import CustomTabs from "../components/CustomTabs";
 import { fetchAndApplyOrgConfig } from "../services/orgConfig";
+import { mapPatientToAllOrgs } from "../services/patientOrgMapping";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import TextRecognition from "@react-native-ml-kit/text-recognition";
 import * as ImagePicker from "expo-image-picker";
@@ -976,6 +977,8 @@ export default function PersonalDetailsScreen() {
               JSON.stringify(stored),
             );
           } catch (_) {}
+
+          await mapPatientToAllOrgs(patientId, userId);
 
           await callSuggestusAPI(
             spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,

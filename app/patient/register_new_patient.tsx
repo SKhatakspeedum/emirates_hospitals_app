@@ -27,6 +27,7 @@ import {
   setPatientId,
 } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
+import { mapPatientToAllOrgs } from "../services/patientOrgMapping";
 
 type CheckStatus =
   | "idle"
@@ -316,6 +317,8 @@ export default function RegisterNewPatient() {
           } catch (_) {}
         }
       }
+
+      await mapPatientToAllOrgs(patientId, userId ?? "");
 
       if (isSelf) {
         await callSuggestusAPI(

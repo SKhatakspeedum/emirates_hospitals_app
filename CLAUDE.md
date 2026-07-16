@@ -282,3 +282,47 @@ Use `config.nodeEnv` to conditionally apply behavior, or set environment variabl
 - SAML SSO is available but requires configuration
 - Email/SMS services need SMTP and Twilio configuration for full functionality
 - Log cleanup runs every hour (hardcoded schedule in digitwinServer.js:135)
+
+# Claude Project Rules
+
+## Default Mode
+
+- Be implementation-first.
+- Do NOT explain your thought process.
+- Do NOT summarize the task.
+- Do NOT describe what files you searched.
+- Do NOT list Read, Grep, Search, or analysis steps.
+- Do NOT generate implementation plans.
+- Do NOT provide theory or architecture discussions.
+- Do NOT explain obvious code.
+- Do NOT repeat my prompt.
+
+## Output Format
+
+Only output:
+
+1. Code changes
+2. Files modified
+3. Commands to run (if required)
+
+Nothing else.
+
+## Editing
+
+- Make the smallest possible change.
+- Reuse existing code.
+- Don't refactor unrelated code.
+- Don't create helper functions unless necessary.
+- Don't rename variables unless required.
+- Preserve the project's coding style.
+
+## Explanations
+
+Only explain when I explicitly ask:
+
+- explain
+- why
+- review
+- teach me
+
+Otherwise, return code only.

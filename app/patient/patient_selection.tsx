@@ -28,6 +28,7 @@ import {
   setPatientId,
 } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
+import { mapPatientToAllOrgs } from "../services/patientOrgMapping";
 import dayjs from "dayjs";
 import { useOrgLogo } from "../hooks/useOrgLogo";
 
@@ -348,6 +349,8 @@ export default function PatientSelectionScreen() {
             userId = parsed?.usr_id ?? "";
           } catch (_) {}
         }
+
+        await mapPatientToAllOrgs(patientId, userId ?? "");
 
         await callSuggestusAPI(
           spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,

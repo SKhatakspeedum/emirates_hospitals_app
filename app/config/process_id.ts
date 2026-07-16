@@ -132,6 +132,8 @@ export const spd_processId_config = {
     "sgconf_save_update_mst_user_org_mapping_custom",
   sgconf_save_update_mst_user_org_mapping_custom_mark_default:
     "sgconf_save_update_mst_user_org_mapping_custom_mark_default",
+  hosapp_save_update_trn_patient_master_org_mapping_pnt_app:
+    "hosapp_save_update_trn_patient_master_org_mapping_pnt_app",
   xcelschconf_get_mst_appointment_subtype_pntapp:
     "xcelschconf_get_mst_appointment_subtype_pntapp",
   xcelsch_update_trn_appointment_status_hv_patient_portal:

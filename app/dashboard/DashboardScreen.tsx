@@ -571,7 +571,7 @@ export default function DashboardScreen() {
     fetchSpecialties();
   }, []);
 
-  const healthSummary = [
+  const FALLBACK_HEALTH_SUMMARY = [
     {
       title: "Blood pressure",
       value: "--",
@@ -584,6 +584,71 @@ export default function DashboardScreen() {
     { title: "Allergies", value: "--", color: "#9B59B6", bgColor: "#F5EEF8" },
     { title: "Last visit", value: "--", color: "#F39C12", bgColor: "#FEF5E7" },
   ];
+
+  const [healthSummary, setHealthSummary] = useState(FALLBACK_HEALTH_SUMMARY);
+
+  // Populates the "My health summary" tiles from the latest-vitals
+  // endpoint. The response is a single "latest reading" row with named
+  // fields (p_heart_rate, p_bp_sys/p_bp_dias, p_body_height,
+  // p_weight_measured, ...) rather than a list of vital rows — any field
+  // left as "" simply means that vital wasn't captured at the last visit.
+  // Only Blood pressure / Heart rate / BMI map to this vitals domain —
+  // Medications, Allergies, and Last visit have no vitals equivalent and
+  // stay "--" until a dedicated source is wired up.
+  useEffect(() => {
+    const fetchHealthSummary = async () => {
+      try {
+        const patientId = await fetchDataFromLocalStorage("sg_patientId");
+        if (!patientId || patientId === "null") return;
+
+        const response = await callSuggestusAPI(
+          spd_processId_config.hosapp_get_fb_trn_ff_data_detail_patient_vitals_details_pnt_app,
+          {
+            p_patient_id: patientId,
+            p_vitals_str: "",
+            p_addtional_attributes: { p_vital_latest_flag: "Y" },
+          },
+        );
+
+        if (response?.returnCode === true && response.returnData?.length > 0) {
+          const row = response.returnData[0];
+
+          const heartRate = row.p_heart_rate;
+          const hrValue = heartRate ? `${heartRate} bpm` : null;
+
+          const sys = row.p_bp_sys;
+          const dias = row.p_bp_dias;
+          const bpValue = sys && dias ? `${sys}/${dias}` : null;
+
+          // Backend doesn't send a computed BMI field — derive it from
+          // height/weight when both are present. Assumes cm and kg (the
+          // common convention), unconfirmed since both were empty in the
+          // sample response used to build this.
+          const heightCm = parseFloat(row.p_body_height);
+          const weightKg = parseFloat(row.p_weight_measured);
+          const bmiValue =
+            heightCm > 0 && weightKg > 0
+              ? (weightKg / (heightCm / 100) ** 2).toFixed(1)
+              : null;
+
+          setHealthSummary((prev) =>
+            prev.map((item) => {
+              if (item.title === "Blood pressure" && bpValue)
+                return { ...item, value: bpValue };
+              if (item.title === "Heart rate" && hrValue)
+                return { ...item, value: hrValue };
+              if (item.title === "BMI" && bmiValue)
+                return { ...item, value: bmiValue };
+              return item;
+            }),
+          );
+        }
+      } catch (e) {
+        console.error("Error fetching health summary vitals:", e);
+      }
+    };
+    fetchHealthSummary();
+  }, []);
 
   // Backend-controlled: code, label, order — used as-is until the
   // "quickActions" p_menu_type bucket resolves (see fetchQuickActions below).

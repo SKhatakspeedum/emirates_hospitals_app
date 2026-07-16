@@ -14,6 +14,8 @@ export const spd_processId_config = {
   hospapp_get_resources: "hospapp_get_resources",
   hosapp_get_ct_department_pntapp: "hosapp_get_ct_department_pntapp",
   hosapp_get_trn_order_all_ehg_pntapp: "hosapp_get_trn_order_all_ehg_pntapp",
+  hosapp_get_fb_trn_ff_data_detail_patient_vitals_details_pnt_app:
+    "hosapp_get_fb_trn_ff_data_detail_patient_vitals_details_pnt_app",
   hospapp_get_doctor_schedule: "hospapp_get_doctor_schedule",
   hospapp_save_patient_appointment_hv: "hospapp_save_patient_appointment_hv",
   sgconf_get_mst_user_validate_detail_for_ehg_pntapp:

@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
   cardTopSection: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0177C81A", // Light blue inner section
+    backgroundColor: Colors.backgroundCardLight, // Light blue inner section
     borderRadius: 12,
     padding: 12,
     marginBottom: 14,
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: "#FEF2F2", // Light red like image
+    backgroundColor: Colors.errorBackground, // Light red like image
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",

@@ -304,7 +304,13 @@ const parsePassportText = (rawText: string): ParsedIdScan | null => {
     }
   }
 
-  return { idNumber: formatPassport(idNumber), firstName, lastName, dob, gender };
+  return {
+    idNumber: formatPassport(idNumber),
+    firstName,
+    lastName,
+    dob,
+    gender,
+  };
 };
 
 export default function PersonalDetailsScreen() {
@@ -443,8 +449,12 @@ export default function PersonalDetailsScreen() {
       });
       if (!photo?.uri) throw new Error("No image captured");
 
-      const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-      const scale = Math.max(photo.width / screenWidth, photo.height / screenHeight);
+      const { width: screenWidth, height: screenHeight } =
+        Dimensions.get("window");
+      const scale = Math.max(
+        photo.width / screenWidth,
+        photo.height / screenHeight,
+      );
 
       const cropWidth = SCAN_FRAME_WIDTH * scale;
       const cropHeight = SCAN_FRAME_HEIGHT * scale;
@@ -464,7 +474,7 @@ export default function PersonalDetailsScreen() {
             },
           },
         ],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
       );
 
       setCapturedImageUri(manipResult.uri);
@@ -663,7 +673,7 @@ export default function PersonalDetailsScreen() {
   const buttonLabel =
     (emiratesIdCheck.status === "available" ||
       passportCheck.status === "available") &&
-      linkedPatientId
+    linkedPatientId
       ? "Continue"
       : "Register";
 
@@ -722,7 +732,7 @@ export default function PersonalDetailsScreen() {
                 const _j = JSON.parse(_d);
                 _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
               }
-            } catch (_) { }
+            } catch (_) {}
             if (!_mobile) _mobile = (route.params as any)?.phone_number ?? "";
             const patientRes = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
@@ -909,7 +919,7 @@ export default function PersonalDetailsScreen() {
                 USER_FULL_DATA,
                 JSON.stringify(stored),
               );
-            } catch (_) { }
+            } catch (_) {}
           }
           Toast.show({
             type: "success",
@@ -965,7 +975,7 @@ export default function PersonalDetailsScreen() {
               USER_FULL_DATA,
               JSON.stringify(stored),
             );
-          } catch (_) { }
+          } catch (_) {}
 
           await callSuggestusAPI(
             spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
@@ -1072,9 +1082,9 @@ export default function PersonalDetailsScreen() {
       // Final existence check — skip if already verified as available for this value
       const alreadyVerified = isResident
         ? emiratesIdCheck.status === "available" &&
-        emiratesIdCheck.checkedValue === emiratesId
+          emiratesIdCheck.checkedValue === emiratesId
         : passportCheck.status === "available" &&
-        passportCheck.checkedValue === passportNo;
+          passportCheck.checkedValue === passportNo;
 
       if (!alreadyVerified) {
         const regUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
@@ -1127,7 +1137,7 @@ export default function PersonalDetailsScreen() {
       if (currentDataStr) {
         try {
           updatedData = { ...JSON.parse(currentDataStr), ...updatedData };
-        } catch (_) { }
+        } catch (_) {}
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
@@ -1388,14 +1398,14 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
                     emiratesIdCheck.status === "exists" &&
-                    styles.inputWrapperError,
+                      styles.inputWrapperError,
                     emiratesIdCheck.status === "available" &&
-                    styles.inputWrapperSuccess,
+                      styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="000-0000-0000000-0"
+                    placeholder="784-0000-0000000-0"
                     placeholderTextColor={Colors.inactive}
                     value={emiratesId}
                     onChangeText={(text) => {
@@ -1477,9 +1487,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
                     passportCheck.status === "exists" &&
-                    styles.inputWrapperError,
+                      styles.inputWrapperError,
                     passportCheck.status === "available" &&
-                    styles.inputWrapperSuccess,
+                      styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -1558,7 +1568,7 @@ export default function PersonalDetailsScreen() {
                     style={[
                       styles.inputWrapper,
                       focusedField === "firstName" &&
-                      styles.inputWrapperFocused,
+                        styles.inputWrapperFocused,
                     ]}
                   >
                     <Ionicons
@@ -1920,11 +1930,11 @@ export default function PersonalDetailsScreen() {
                 markedDates={
                   dob
                     ? {
-                      [dayjs(dob).format("YYYY-MM-DD")]: {
-                        selected: true,
-                        selectedColor: Colors.primary,
-                      },
-                    }
+                        [dayjs(dob).format("YYYY-MM-DD")]: {
+                          selected: true,
+                          selectedColor: Colors.primary,
+                        },
+                      }
                     : {}
                 }
                 theme={{
@@ -1964,7 +1974,7 @@ export default function PersonalDetailsScreen() {
           style={styles.locationSheetOverlay}
           onPress={() => setShowLocationPicker(false)}
         >
-          <Pressable style={styles.locationSheetCard} onPress={() => { }}>
+          <Pressable style={styles.locationSheetCard} onPress={() => {}}>
             <View style={styles.locationSheetHandle} />
             <Text style={styles.locationSheetTitle}>Switch location</Text>
             {locations.length === 0 ? (
@@ -2056,7 +2066,9 @@ export default function PersonalDetailsScreen() {
                 <Text
                   style={[
                     styles.scanSuccessValue,
-                    !(scannedData.firstName || scannedData.lastName) && { color: Colors.inactive }
+                    !(scannedData.firstName || scannedData.lastName) && {
+                      color: Colors.inactive,
+                    },
                   ]}
                 >
                   {scannedData.firstName || scannedData.lastName
@@ -2069,7 +2081,7 @@ export default function PersonalDetailsScreen() {
                 <Text
                   style={[
                     styles.scanSuccessValue,
-                    !scannedData.dob && { color: Colors.inactive }
+                    !scannedData.dob && { color: Colors.inactive },
                   ]}
                 >
                   {scannedData.dob
@@ -2082,7 +2094,7 @@ export default function PersonalDetailsScreen() {
                 <Text
                   style={[
                     styles.scanSuccessValue,
-                    !scannedData.gender && { color: Colors.inactive }
+                    !scannedData.gender && { color: Colors.inactive },
                   ]}
                 >
                   {scannedData.gender || "N/A"}

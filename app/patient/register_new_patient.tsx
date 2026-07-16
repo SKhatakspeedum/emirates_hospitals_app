@@ -439,7 +439,7 @@ export default function RegisterNewPatient() {
                 >
                   <TextInput
                     style={[styles.input, styles.inputNoOutline]}
-                    placeholder="000-0000-0000000-0"
+                    placeholder="784-0000-0000000-0"
                     placeholderTextColor={Colors.inactive}
                     value={emiratesId}
                     onChangeText={(t) => {

@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import DashboardScreen from "@/app/dashboard/DashboardScreen";
 import AppointmentScreen from "@/app/appointments/AppointmentScreen";
 import NearbyProvidersScreen from "@/app/appointments/NearbyProvidersScreen";
+import AllSpecialtiesScreen from "@/app/appointments/AllSpecialtiesScreen";
 import PatientDetailsScreen from "@/app/appointments/PatientDetailsScreen";
 import AppointmentReasonScreen from "@/app/appointments/AppointmentReasonScreen";
 import ScheduleBookScreen from "@/app/appointments/ScheduleBookScreen";
@@ -22,6 +23,7 @@ export default function HomeStackScreen() {
       <HomeStack.Screen name="Dashboard" component={DashboardScreen} />
       <HomeStack.Screen name="Appointment" component={AppointmentScreen} />
       <HomeStack.Screen name="NearbyProviders" component={NearbyProvidersScreen} />
+      <HomeStack.Screen name="AllSpecialties" component={AllSpecialtiesScreen} />
       <HomeStack.Screen name="PatientDetails" component={PatientDetailsScreen} />
       <HomeStack.Screen name="AppointmentReason" component={AppointmentReasonScreen} />
       <HomeStack.Screen name="ScheduleBook" component={ScheduleBookScreen} />

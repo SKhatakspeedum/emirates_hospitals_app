@@ -40,6 +40,7 @@ import { FontFamilies } from "../config/fonts";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { getMenuWidgetsByType } from "../services/dashboardApi";
+import { getSpecialtyIconMeta } from "../config/specialtyIcons";
 import {
   fetchDataFromLocalStorage,
   getDecryptedID,
@@ -381,7 +382,12 @@ export default function DashboardScreen() {
     // have to re-hit hospapp_get_resources — it reuses this data directly.
     navigation.navigate("NearbyProviders", { preloadedProviders: Providers });
   };
-  const handleSeeAllSpecialties = () => {};
+  const handleSeeAllSpecialties = () => {
+    // Unlike Providers, the dashboard only ever fetched the curated
+    // "home_screen_recent" subset — AllSpecialtiesScreen fetches the full
+    // department list itself rather than reusing this partial data.
+    navigation.navigate("AllSpecialties");
+  };
 
   // Fallback shown only if the backend fetch below fails or returns nothing.
   // Matches NearbyProvidersScreen's Provider shape so this same list can be
@@ -512,101 +518,6 @@ export default function DashboardScreen() {
       bgColor: "#FEF9E7",
     },
   ];
-
-  // Best-effort icon/color lookup for departments returned by the backend —
-  // the API only gives us a name, not an icon, so match on common keywords
-  // and fall back to a generic icon for anything unrecognized.
-  const getSpecialtyIconMeta = (label: string) => {
-    const key = label.toLowerCase();
-    if (key.includes("neuro")) {
-      return {
-        Icon: MaterialCommunityIcons,
-        iconName: "brain",
-        iconSize: 28,
-        iconColor: "#6B7280",
-        bgColor: "#F3F4F6",
-      };
-    }
-    if (key.includes("ent") || key.includes("ear")) {
-      return {
-        Icon: FontAwesome5,
-        iconName: "diagnoses",
-        iconSize: 26,
-        iconColor: "#E87722",
-        bgColor: "#FDF1EB",
-      };
-    }
-    if (key.includes("pediatric") || key.includes("paediatric")) {
-      return {
-        Icon: MaterialCommunityIcons,
-        iconName: "baby-face-outline",
-        iconSize: 28,
-        iconColor: "#F1C40F",
-        bgColor: "#FEF9E7",
-      };
-    }
-    if (key.includes("cardio") || key.includes("heart")) {
-      return {
-        Icon: FontAwesome5,
-        iconName: "heartbeat",
-        iconSize: 24,
-        iconColor: "#E74C3C",
-        bgColor: "#FDEDEC",
-      };
-    }
-    if (key.includes("ortho") || key.includes("bone")) {
-      return {
-        Icon: MaterialCommunityIcons,
-        iconName: "bone",
-        iconSize: 26,
-        iconColor: "#3498DB",
-        bgColor: "#EBF5FB",
-      };
-    }
-    if (key.includes("dental") || key.includes("dent")) {
-      return {
-        Icon: MaterialCommunityIcons,
-        iconName: "tooth-outline",
-        iconSize: 26,
-        iconColor: "#3498DB",
-        bgColor: "#EBF5FB",
-      };
-    }
-    if (key.includes("gyn") || key.includes("obstet")) {
-      return {
-        Icon: MaterialCommunityIcons,
-        iconName: "human-pregnant",
-        iconSize: 26,
-        iconColor: "#9B59B6",
-        bgColor: "#F5EEF8",
-      };
-    }
-    if (key.includes("eye") || key.includes("ophthal")) {
-      return {
-        Icon: MaterialCommunityIcons,
-        iconName: "eye-outline",
-        iconSize: 26,
-        iconColor: "#3498DB",
-        bgColor: "#EBF5FB",
-      };
-    }
-    if (key.includes("medicine") || key.includes("general")) {
-      return {
-        Icon: FontAwesome5,
-        iconName: "briefcase-medical",
-        iconSize: 22,
-        iconColor: "#2ECC71",
-        bgColor: "#EAF6F0",
-      };
-    }
-    return {
-      Icon: Ionicons,
-      iconName: "medkit-outline",
-      iconSize: 24,
-      iconColor: "#6B7280",
-      bgColor: "#F3F4F6",
-    };
-  };
 
   const [specialties, setSpecialties] = useState(FALLBACK_SPECIALTIES);
   const [loadingSpecialties, setLoadingSpecialties] = useState(true);

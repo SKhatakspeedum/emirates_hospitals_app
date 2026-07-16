@@ -75,7 +75,12 @@ export default function NearbyProvidersScreen() {
   const route = useRoute<any>();
   const preloadedProviders: Provider[] | undefined =
     route.params?.preloadedProviders;
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  // Lets AllSpecialtiesScreen deep-link straight into a filtered view
+  // (e.g. tapping "Cardiology" opens this screen pre-filtered to it).
+  const initialCategory: string | undefined = route.params?.initialCategory;
+  const [selectedCategory, setSelectedCategory] = useState(
+    initialCategory || "All",
+  );
   const [showCategoriesScrollHint, setShowCategoriesScrollHint] =
     useState(false);
   const [showCategoriesScrollHintLeft, setShowCategoriesScrollHintLeft] =

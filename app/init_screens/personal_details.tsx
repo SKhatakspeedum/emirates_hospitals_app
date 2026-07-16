@@ -51,6 +51,8 @@ import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 import CustomTabs from "../components/CustomTabs";
 import { fetchAndApplyOrgConfig } from "../services/orgConfig";
+import { getUserEntityReferenceCode } from "../services/entityReferenceCode";
+import { getStoredAiCode } from "../services/aiCode";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import TextRecognition from "@react-native-ml-kit/text-recognition";
 import * as ImagePicker from "expo-image-picker";
@@ -853,6 +855,24 @@ export default function PersonalDetailsScreen() {
         const u = validateRes.returnData[0];
         let userId = String(u.usr_id ?? "");
 
+        const lookupEmiratesId = isResident ? emiratesId.replace(/-/g, "") : "";
+        const lookupPassportNo = !isResident ? passportNo.trim() : "";
+        const patientRes = await callSuggestusAPI(
+          spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+          {
+            p_additional_attribute: {
+              p_ptm_mobile_number: phoneE164,
+              p_emirates_id: lookupEmiratesId,
+              p_passport_no: lookupPassportNo,
+            },
+            p_process_flag: "validate_duplicate",
+          },
+        );
+        const resolvedPatientId =
+          patientRes?.returnData?.[0]?.p_patient_id ??
+          patientRes?.returnData?.[0]?.patient_id ??
+          "";
+
         await Promise.all([
           setUserId(userId),
           setRoleId(String(u.rol_id ?? "")),
@@ -861,8 +881,8 @@ export default function PersonalDetailsScreen() {
           // saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
           // saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
           saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(u)),
-          u.usr_patient_id
-            ? setPatientId(String(u.usr_patient_id))
+          resolvedPatientId
+            ? setPatientId(String(resolvedPatientId))
             : Promise.resolve(),
         ]);
         await AsyncStorage.setItem(IS_LOGGED_IN, "true");
@@ -991,9 +1011,9 @@ export default function PersonalDetailsScreen() {
             {
               p_patient_id: patientId,
               p_user_id: userId,
-              p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
+              p_entity_code: await getStoredAiCode(),
               p_entity_reference_id: patientId,
-              p_entity_reference_code: "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+              p_entity_reference_code: await getUserEntityReferenceCode(),
               p_active_status: "Y",
               p_process_flag: "Y",
               p_additional_attribites: {},
@@ -1198,6 +1218,23 @@ export default function PersonalDetailsScreen() {
         if (validateOk) {
           const u = validateRes.returnData[0];
           newUserId = String(u.usr_id ?? "");
+
+          const patientRes = await callSuggestusAPI(
+            spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+            {
+              p_additional_attribute: {
+                p_ptm_mobile_number: phoneE164,
+                p_emirates_id: isResident ? emiratesIdClean : "",
+                p_passport_no: !isResident ? passportNo.trim() : "",
+              },
+              p_process_flag: "validate_duplicate",
+            },
+          );
+          const resolvedPatientId =
+            patientRes?.returnData?.[0]?.p_patient_id ??
+            patientRes?.returnData?.[0]?.patient_id ??
+            "";
+
           await Promise.all([
             setUserId(newUserId),
             setRoleId(String(u.rol_id ?? "")),
@@ -1206,8 +1243,8 @@ export default function PersonalDetailsScreen() {
             // saveDataFromLocalStorage("sg_org_id", u.org_id ?? ""),
             // saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
             saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(u)),
-            u.usr_patient_id
-              ? setPatientId(String(u.usr_patient_id))
+            resolvedPatientId
+              ? setPatientId(String(resolvedPatientId))
               : Promise.resolve(),
           ]);
         }
@@ -1287,10 +1324,9 @@ export default function PersonalDetailsScreen() {
               {
                 p_patient_id: linkedPatientId,
                 p_user_id: newUserId,
-                p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
+                p_entity_code: await getStoredAiCode(),
                 p_entity_reference_id: linkedPatientId,
-                p_entity_reference_code:
-                  "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+                p_entity_reference_code: await getUserEntityReferenceCode(),
                 p_active_status: "Y",
                 p_process_flag: "Y",
                 p_additional_attribites: {},

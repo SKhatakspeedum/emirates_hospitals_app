@@ -30,6 +30,8 @@ import {
 import { spd_processId_config } from "../config/process_id";
 import dayjs from "dayjs";
 import { useOrgLogo } from "../hooks/useOrgLogo";
+import { getUserEntityReferenceCode } from "../services/entityReferenceCode";
+import { getStoredAiCode } from "../services/aiCode";
 
 interface Patient {
   id: string;
@@ -363,9 +365,9 @@ export default function PatientSelectionScreen() {
           {
             p_patient_id: patientId,
             p_user_id: userId ?? "",
-            p_entity_code: "EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_entity_code: await getStoredAiCode(),
             p_entity_reference_id: patientId,
-            p_entity_reference_code: "TRN_EHG_EHG_REHAB_PNTAPP_USER_PATIENTS",
+            p_entity_reference_code: await getUserEntityReferenceCode(),
             p_active_status: "Y",
             p_process_flag: "Y",
             p_additional_attribites: {},

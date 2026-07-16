@@ -159,6 +159,23 @@ export default function OTPVerificationScreen() {
           validateRes?.returnData?.length > 0
         ) {
           const u = validateRes.returnData[0];
+
+          const patientRes = await callSuggestusAPI(
+            spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+            {
+              p_additional_attribute: {
+                p_ptm_mobile_number: phoneE164,
+                p_emirates_id: "",
+                p_passport_no: "",
+              },
+              p_process_flag: "validate_duplicate",
+            },
+          );
+          const resolvedPatientId =
+            patientRes?.returnData?.[0]?.p_patient_id ??
+            patientRes?.returnData?.[0]?.patient_id ??
+            "";
+
           await Promise.all([
             setUserId(u.usr_id ?? ""),
             setRoleId(u.rol_id ?? ""),
@@ -168,8 +185,8 @@ export default function OTPVerificationScreen() {
             // saveDataFromLocalStorage("sg_org_name", u.org_name ?? ""),
             saveDataFromLocalStorage(USER_FULL_DATA, JSON.stringify(u)),
             saveDataFromLocalStorage("isLoggedIn", "true"),
-            u.usr_patient_id
-              ? setPatientId(String(u.usr_patient_id))
+            resolvedPatientId
+              ? setPatientId(String(resolvedPatientId))
               : Promise.resolve(),
           ]);
           Toast.show({

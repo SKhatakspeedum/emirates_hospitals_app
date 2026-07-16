@@ -15,7 +15,7 @@ function getResponsiveHorizontalMargin() {
   if (width > 1900) return 350;
   if (width < 1900 && width > 1200) return 200;
   if (width < 1200 && width > 800) return 0;
-  return 16;
+  return 3;
 }
 
 export default function useResponsiveHorizontalMargin() {

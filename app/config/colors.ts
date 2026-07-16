@@ -13,6 +13,7 @@ export const Colors = {
   backgroundOverlayLight: "rgba(35, 39, 82, 0.8)",
   backgroundOverlayVeryLight: "rgba(243, 238, 255, 0.9)",
   backgroundSheetLight: "#CDF0FB",
+  backgroundCardLight: "#EBF3FA",
   backgroundPurpleLight: "#3E3A6E",
 
   // Text colors
@@ -29,6 +30,13 @@ export const Colors = {
   borderDark: "#333333",
 
   // Status colors
+  successBackground: "#dcfce7",
+  successText: "#16a34a",
+  errorBackground: "#fee2e2",
+  errorText: "#dc2626",
+  warningBackground: "#fef3c7",
+  warningText: "#d97706",
+
   inactive: "#D0D4DF",
   active: "#0ea5e9",
   pressed: "#e0f2fe",
@@ -45,6 +53,7 @@ export const Colors = {
   shadow: "rgba(0,0,0,0.6)",
   shadowMedium: "rgba(0,0,0,0.5)",
   overlayOnDark: "rgba(255,255,255,0.15)",
+  notificationBadge: "#FF3B30",
 };
 
 /**

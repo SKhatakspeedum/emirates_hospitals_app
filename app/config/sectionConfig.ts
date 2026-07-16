@@ -104,7 +104,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
 export const parseSectionsFromBackend = (
   backendSections: BackendMenuWidget[],
 ): SectionConfig[] => {
-  return backendSections
+  const parsed = backendSections
     .map((item): SectionConfig | null => {
       const sectionKey = WIDGET_CODE_MAP[item.widget_code];
       if (!sectionKey) return null;
@@ -122,8 +122,19 @@ export const parseSectionsFromBackend = (
             : undefined,
       };
     })
-    .filter((s): s is SectionConfig => s !== null)
-    .sort((a, b) => a.order - b.order);
+    .filter((s): s is SectionConfig => s !== null);
+
+  // Frontend Override: Ensure 'upcomingAppointments' always appears before 'healthAwareness'
+  const upcoming = parsed.find((s) => s.key === "upcomingAppointments");
+  const health = parsed.find((s) => s.key === "healthAwareness");
+
+  if (upcoming && health && upcoming.order > health.order) {
+    const temp = upcoming.order;
+    upcoming.order = health.order;
+    health.order = temp;
+  }
+
+  return parsed.sort((a, b) => a.order - b.order);
 };
 
 /**

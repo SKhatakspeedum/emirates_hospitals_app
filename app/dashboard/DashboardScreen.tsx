@@ -75,6 +75,22 @@ const formatAmPm = (timeStr: string): string => {
   return `${String(h12).padStart(2, "0")}:${m} ${suffix}`;
 };
 
+// Helper to parse date string for the upcoming appointment badge
+const parseDateForBadge = (dateStr: string) => {
+  if (!dateStr) return { day: "", month: "" };
+  // Expected formats: "Friday, Jul 03 2026" or "02 Mar 2026"
+  const clean = dateStr.replace(/^\w+,\s*/, "").trim();
+  const parts = clean.split(" ");
+  if (parts.length >= 2) {
+    if (isNaN(Number(parts[0]))) {
+      return { month: parts[0], day: parts[1] };
+    } else {
+      return { day: parts[0], month: parts[1] };
+    }
+  }
+  return { day: "", month: dateStr };
+};
+
 // Returns color/bg from badge class: badge-outline-success, badge-outline-danger, etc.
 const getStatusStyle = (htmlStr: string) => {
   if (htmlStr.includes("success")) return { color: "#16a34a", bg: "#dcfce7" };
@@ -180,7 +196,7 @@ export default function DashboardScreen() {
         try {
           const defaultJson = defaultJsonStr ? JSON.parse(defaultJsonStr) : {};
           orgCodes = defaultJson?.spd_app_location_list ?? SiteConfig.AI_CODE;
-        } catch (_) {}
+        } catch (_) { }
 
         const response = await callSuggestusAPI(
           spd_processId_config.sgconf_get_mst_organization_location_patient_portal_list,
@@ -251,7 +267,7 @@ export default function DashboardScreen() {
             if (p.name) setUserProfileName(p.name);
             if (p.age || p.gender)
               setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-          } catch (_) {}
+          } catch (_) { }
         } else {
           const name = await AsyncStorage.getItem(SPD_USER_NAME);
           if (name) setUserProfileName(name);
@@ -380,7 +396,7 @@ export default function DashboardScreen() {
     // have to re-hit hospapp_get_resources — it reuses this data directly.
     navigation.navigate("NearbyProviders", { preloadedProviders: Providers });
   };
-  const handleSeeAllSpecialties = () => {};
+  const handleSeeAllSpecialties = () => { };
 
   // Fallback shown only if the backend fetch below fails or returns nothing.
   // Matches NearbyProvidersScreen's Provider shape so this same list can be
@@ -551,7 +567,7 @@ export default function DashboardScreen() {
                 const _j = JSON.parse(_d);
                 _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
               }
-            } catch (_) {}
+            } catch (_) { }
             const response = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
@@ -588,7 +604,7 @@ export default function DashboardScreen() {
               const parsed = JSON.parse(fullDataStr);
               phone = parsed.contact || "";
             }
-          } catch (e) {}
+          } catch (e) { }
 
           // router.push({
           //   pathname: "/patient/registered_patients",
@@ -619,7 +635,7 @@ export default function DashboardScreen() {
       IconFamily: Ionicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
-      onPress: () => {},
+      onPress: () => { },
     },
     {
       label: "Rx refill",
@@ -627,7 +643,7 @@ export default function DashboardScreen() {
       IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
-      onPress: () => {},
+      onPress: () => { },
     },
   ];
 
@@ -710,7 +726,7 @@ export default function DashboardScreen() {
             preloadedProviders: Providers,
           });
         return (
-          <View key={key} style={styles.sectionContainer}>
+          <View key={key}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Upcoming appointments</Text>
               <Pressable
@@ -728,56 +744,46 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
 
-            {upcomingAppointments.map((appt) => (
-              <Pressable
-                key={appt.id}
-                style={({ pressed }) => [
-                  styles.appointmentCard,
-                  { opacity: pressed ? 0.9 : 1 },
-                ]}
-                onPress={goToAppointments}
-              >
-                <Image
-                  source={{ uri: appt.avatar }}
-                  style={styles.appointmentAvatar}
-                />
-                <View style={styles.appointmentInfo}>
-                  <Text style={styles.appointmentDoctorName} numberOfLines={1}>
-                    {appt.doctorName}
-                  </Text>
-                  <Text style={styles.appointmentSpecialty} numberOfLines={1}>
-                    {appt.specialty}
-                  </Text>
-                  <View style={styles.appointmentMetaRow}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={12}
-                      color={Colors.label}
-                    />
-                    <Text style={styles.appointmentMetaText}>
-                      {appt.date} • {appt.time}
+            {upcomingAppointments.map((appt) => {
+              const { day, month } = parseDateForBadge(appt.date);
+              return (
+                <Pressable
+                  key={appt.id}
+                  style={({ pressed }) => [
+                    styles.appointmentCard,
+                    { opacity: pressed ? 0.9 : 1 },
+                  ]}
+                  onPress={goToAppointments}
+                >
+                  <Image
+                    source={{ uri: appt.avatar }}
+                    style={styles.appointmentAvatar}
+                  />
+                  <View style={styles.appointmentInfo}>
+                    <Text style={styles.appointmentDoctorName} numberOfLines={1}>
+                      {appt.doctorName}
                     </Text>
-                  </View>
-                </View>
-                {/* {!!appt.statusLabel && (
-                  <View
-                    style={[
-                      styles.appointmentStatusBadge,
-                      { backgroundColor: appt.statusBg },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.appointmentStatusText,
-                        { color: appt.statusColor },
-                      ]}
-                    >
-                      {appt.statusLabel}
+                    <Text style={styles.appointmentSpecialty} numberOfLines={1}>
+                      {appt.specialty}
                     </Text>
+                    <View style={styles.appointmentMetaRow}>
+                      <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color={Colors.secondary}
+                      />
+                      <Text style={styles.appointmentTimeText}>
+                        {appt.time}
+                      </Text>
+                    </View>
                   </View>
-                )} */}
-              </Pressable>
-            ))}
+                  <View style={styles.appointmentDateBadge}>
+                    <Text style={styles.appointmentDateDay}>{day}</Text>
+                    <Text style={styles.appointmentDateMonth}>{month}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
         );
       }
@@ -869,7 +875,7 @@ export default function DashboardScreen() {
 
       case "providers":
         return (
-          <View key={key} style={styles.sectionContainer}>
+          <View key={key} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
                 <Ionicons
@@ -947,7 +953,7 @@ export default function DashboardScreen() {
 
       case "specialties":
         return (
-          <View key={key} style={styles.sectionContainer}>
+          <View key={key} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
                 <Ionicons
@@ -1113,7 +1119,7 @@ export default function DashboardScreen() {
         {visibleSections.includes("greeting") && (
           <View style={styles.headerGreetingSection}>
             <View style={styles.bgCircleLarge} />
-            <FontAwesome name="plus" size={35} style={styles.bgPlus} />
+            <FontAwesome name="plus" size={40} style={styles.bgPlus} />
 
             <View style={styles.greetingContainer}>
               <Text style={styles.greetingText}>
@@ -1151,7 +1157,7 @@ export default function DashboardScreen() {
           style={styles.locationSheetOverlay}
           onPress={() => setShowLocationPicker(false)}
         >
-          <Pressable style={styles.locationSheetCard} onPress={() => {}}>
+          <Pressable style={styles.locationSheetCard} onPress={() => { }}>
             <View style={styles.locationSheetHandle} />
             <Text style={styles.locationSheetTitle}>Switch location</Text>
             {locations.length === 0 ? (
@@ -1170,11 +1176,14 @@ export default function DashboardScreen() {
                       onPress={() => handleSelectLocation(item)}
                       activeOpacity={0.7}
                     >
-                      <View style={styles.locationSheetIconWrap}>
+                      <View style={[
+                        styles.locationSheetIconWrap,
+                        { borderColor: isSelected ? Colors.primary : Colors.border }
+                      ]}>
                         <Ionicons
                           name="location"
                           size={18}
-                          color={Colors.secondary}
+                          color={isSelected ? Colors.primary : Colors.gray}
                         />
                       </View>
                       <View style={styles.locationSheetTextCol}>
@@ -1199,7 +1208,7 @@ export default function DashboardScreen() {
                       {isSelected && (
                         <Ionicons
                           name="checkmark-circle"
-                          size={22}
+                          size={25}
                           color={Colors.secondary}
                         />
                       )}
@@ -1256,16 +1265,22 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   locationTrigger: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: 12,
-    gap: 4,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Colors.background,
+    backgroundColor: Colors.overlayOnDark,
+    gap: 8,
+    maxWidth: "55%",
   },
   locationTriggerText: {
     flexShrink: 1,
-    fontSize: 14,
-    fontFamily: FontFamilies.semiBold,
+    fontSize: 12,
+    fontFamily: FontFamilies.medium,
     color: Colors.background,
   },
   badgeDot: {
@@ -1275,7 +1290,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#FF3B30",
+    backgroundColor: Colors.error,
   },
   headerGreetingSection: {
     backgroundColor: Colors.primary,
@@ -1290,15 +1305,15 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   greetingText: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: FontFamilies.bold,
     color: Colors.background,
     marginBottom: 6,
   },
   subGreetingText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: FontFamilies.medium,
-    color: "rgba(255, 255, 255, 0.8)",
+    color: Colors.textDark,
   },
   patientMetaRow: {
     flexDirection: "row",
@@ -1307,7 +1322,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   patientMetaBadge: {
-    backgroundColor: "rgba(255, 255, 255, 0.18)",
+    backgroundColor: Colors.overlayOnDark,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -1315,24 +1330,25 @@ const styles = StyleSheet.create({
   patientMetaText: {
     fontSize: 13,
     fontFamily: FontFamilies.semiBold,
-    color: "rgba(255, 255, 255, 0.9)",
+    color: Colors.background,
   },
   bgCircleLarge: {
     position: "absolute",
-    right: -25,
-    top: 30,
-    width: 100,
-    height: 100,
+    right: -30,
+    top: 20,
+    width: 110,
+    height: 110,
     borderRadius: 100,
     borderWidth: 17,
-    borderColor: "rgba(255, 255, 255, 0.03)",
+    borderColor: Colors.overlayOnDark,
+    opacity: 0.2,
     zIndex: 1,
   },
   bgPlus: {
     position: "absolute",
     right: 12,
-    top: 65,
-    color: "rgba(255, 255, 255, 0.03)",
+    top: 50,
+    color: Colors.overlayOnDark,
     zIndex: 1,
   },
   bodyContent: {
@@ -1365,6 +1381,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 32,
+    borderRadius: 10,
+    padding: 7,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 6,
   },
   quickActionItem: {
     flex: 1,
@@ -1386,6 +1409,20 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     marginBottom: 28,
+    backgroundColor: Colors.backgroundLight,
+    padding: 7,
+    borderRadius: 10,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  sectionContainerNoShadow: {
+    marginBottom: 28,
+    backgroundColor: Colors.backgroundLight,
+    padding: 7,
+    borderRadius: 10,
   },
   sectionHeaderRow: {
     flexDirection: "row",
@@ -1404,17 +1441,21 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
   },
   noAppointmentsCard: {
-    backgroundColor: "#F3F8FE",
     borderRadius: 16,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 6,
   },
   noAppointmentsIconContainer: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#E1EEFC",
+    backgroundColor: Colors.backgroundCardLight,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -1446,29 +1487,34 @@ const styles = StyleSheet.create({
   appointmentCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F3F8FE",
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 10,
+    backgroundColor: Colors.backgroundCardLight,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
   },
   appointmentAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: Colors.border,
-    marginRight: 12,
+    marginRight: 16,
   },
   appointmentInfo: {
     flex: 1,
   },
   appointmentDoctorName: {
-    fontSize: 14,
-    fontFamily: FontFamilies.semiBold,
+    fontSize: 15,
+    fontFamily: FontFamilies.medium,
     color: Colors.text,
   },
   appointmentSpecialty: {
-    fontSize: 12,
-    fontFamily: FontFamilies.medium,
+    fontSize: 13,
+    fontFamily: FontFamilies.regular,
     color: Colors.secondary,
     marginTop: 2,
   },
@@ -1478,10 +1524,33 @@ const styles = StyleSheet.create({
     marginTop: 6,
     gap: 4,
   },
-  appointmentMetaText: {
-    fontSize: 11,
+  appointmentTimeText: {
+    fontSize: 13,
     fontFamily: FontFamilies.medium,
-    color: Colors.label,
+    color: Colors.primary,
+  },
+  appointmentDateBadge: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+    backgroundColor: Colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 12,
+  },
+  appointmentDateDay: {
+    fontSize: 15,
+    fontFamily: FontFamilies.medium,
+    color: Colors.secondary,
+    lineHeight: 18,
+  },
+  appointmentDateMonth: {
+    fontSize: 12,
+    fontFamily: FontFamilies.regular,
+    color: Colors.text,
+    lineHeight: 14,
   },
   appointmentStatusBadge: {
     paddingHorizontal: 10,
@@ -1500,7 +1569,7 @@ const styles = StyleSheet.create({
   sectionHeaderIcon: {
     marginRight: 8,
     padding: 3,
-    backgroundColor: Colors.lightgray,
+    backgroundColor: Colors.pressed,
     borderRadius: 3,
   },
   videoCard: {
@@ -1636,8 +1705,8 @@ const styles = StyleSheet.create({
   },
   locationSheetTitle: {
     fontSize: 16,
-    fontFamily: FontFamilies.bold,
-    color: Colors.text,
+    fontFamily: FontFamilies.medium,
+    color: Colors.secondary,
     marginBottom: 12,
   },
   locationEmptyText: {
@@ -1658,10 +1727,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.pressed,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
   },
   locationSheetTextCol: {
     flex: 1,

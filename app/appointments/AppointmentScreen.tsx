@@ -47,10 +47,10 @@ const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 
 // Returns color/bg from badge class: badge-outline-success, badge-outline-danger, etc.
 const getStatusStyle = (htmlStr: string) => {
-  if (htmlStr.includes("success")) return { color: "#16a34a", bg: "#dcfce7" };
-  if (htmlStr.includes("danger")) return { color: "#dc2626", bg: "#fee2e2" };
-  if (htmlStr.includes("warning")) return { color: "#d97706", bg: "#fef3c7" };
-  return { color: Colors.primary, bg: "#e0f2fe" };
+  if (htmlStr.includes("success")) return { color: Colors.success, bg: "#dcfce7" };
+  if (htmlStr.includes("danger")) return { color: Colors.error, bg: "#fee2e2" };
+  if (htmlStr.includes("warning")) return { color: Colors.warning, bg: "#fef3c7" };
+  return { color: Colors.primary, bg: Colors.pressed };
 };
 
 // Converts "09:15:00" or "09:15 AM" → "09:15 AM"
@@ -289,7 +289,7 @@ export default function AppointmentScreen() {
       if (res?.returnCode !== true) {
         showError(
           res?.returnMessage ??
-            "Failed to cancel appointment. Please try again.",
+          "Failed to cancel appointment. Please try again.",
         );
         return;
       }
@@ -402,146 +402,80 @@ export default function AppointmentScreen() {
 
               return (
                 <View key={item.id} style={styles.card}>
-                  <View>
-                    {/* Doctor row */}
-                    <View style={styles.cardTopRow}>
-                      <Image
-                        source={{ uri: item.avatar }}
-                        style={styles.cardAvatar}
-                      />
-                      <View style={styles.cardDoctorCol}>
-                        <Text style={styles.cardDoctorName} numberOfLines={1}>
-                          {item.doctorName}
+                  {/* Doctor Info Section (Light Blue Background) */}
+                  <View style={styles.cardTopSection}>
+                    <Image
+                      source={{ uri: item.avatar }}
+                      style={styles.cardAvatar}
+                    />
+                    <View style={styles.cardDoctorCol}>
+                      <Text style={styles.cardDoctorName} numberOfLines={1}>
+                        {item.doctorName}
+                      </Text>
+                      {!!item.specialty && (
+                        <Text style={styles.cardSpecialty} numberOfLines={1}>
+                          {item.specialty}
                         </Text>
-                        {!!item.specialty && (
-                          <Text style={styles.cardSpecialty} numberOfLines={1}>
-                            {item.specialty}
-                          </Text>
-                        )}
-                      </View>
-                      {!!statusLabel && (
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            { backgroundColor: statusStyle.bg },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.statusBadgeText,
-                              { color: statusStyle.color },
-                            ]}
-                          >
-                            {statusLabel}
-                          </Text>
-                        </View>
                       )}
                     </View>
-
-                    {isUpcoming ? (
-                      <>
-                        {/* Date */}
-                        {!!dateDisplay && (
-                          <View style={styles.metaRow}>
-                            <Ionicons
-                              name="calendar-outline"
-                              size={15}
-                              color={styles.iconColor.color}
-                            />
-                            <Text style={styles.metaText}>{dateDisplay}</Text>
-                          </View>
-                        )}
-
-                        {/* Time */}
-                        {!!timeDisplay && (
-                          <View style={styles.metaRow}>
-                            <Ionicons
-                              name="time-outline"
-                              size={15}
-                              color={styles.iconColor.color}
-                            />
-                            <Text style={styles.metaText}>{timeDisplay}</Text>
-                          </View>
-                        )}
-
-                        {/* Location */}
-                        {!!(
-                          item.hospitalName ||
-                          item.hospitalArea ||
-                          orgId
-                        ) && (
-                          <View style={styles.metaRow}>
-                            <Ionicons
-                              name="location-outline"
-                              size={15}
-                              color={styles.iconColor.color}
-                            />
-                            <View>
-                              {!!item.hospitalName && (
-                                <Text style={styles.metaText}>
-                                  {item.hospitalName}
-                                </Text>
-                              )}
-                              {!!item.hospitalArea && (
-                                <Text style={styles.metaSubText}>
-                                  {item.hospitalArea}
-                                </Text>
-                              )}
-                              {!!orgId && (
-                                <Text style={styles.metaSubText}>{orgId}</Text>
-                              )}
-                            </View>
-                          </View>
-                        )}
-                      </>
-                    ) : (
-                      // History: date/time and location sit side-by-side in
-                      // two columns instead of stacked rows.
-                      <View style={styles.cardInfoRow}>
-                        <View style={styles.cardInfoCol}>
-                          {!!dateDisplay && (
-                            <View style={styles.metaRow}>
-                              <Ionicons
-                                name="calendar-outline"
-                                size={15}
-                                color={styles.iconColor.color}
-                              />
-                              <Text style={styles.metaText}>{dateDisplay}</Text>
-                            </View>
-                          )}
-                          {!!timeDisplay && (
-                            <Text style={styles.metaIndentedText}>
-                              {timeDisplay}
-                            </Text>
-                          )}
-                        </View>
-
-                        <View style={styles.cardInfoCol}>
-                          {!!(item.hospitalName || item.hospitalArea) && (
-                            <>
-                              <View style={styles.metaRow}>
-                                <Ionicons
-                                  name="location-outline"
-                                  size={15}
-                                  color={styles.iconColor.color}
-                                />
-                                <Text style={styles.metaText}>
-                                  {item.hospitalName}
-                                </Text>
-                              </View>
-                              {!!item.hospitalArea && (
-                                <Text style={styles.metaIndentedText}>
-                                  {item.hospitalArea}
-                                </Text>
-                              )}
-                            </>
-                          )}
-                        </View>
+                    {isUpcoming && !!statusLabel && (
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: statusStyle.bg },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.statusBadgeText,
+                            { color: statusStyle.color },
+                          ]}
+                        >
+                          {statusLabel}
+                        </Text>
                       </View>
                     )}
                   </View>
 
-                  {/* Reschedule / Cancel (Upcoming only) */}
+                  {/* Middle Info Section (Date & Location side-by-side) */}
+                  <View style={styles.cardInfoGrid}>
+                    {/* Left Column: Date & Time */}
+                    <View style={styles.cardInfoCol}>
+                      {!!dateDisplay && (
+                        <View style={styles.metaRow}>
+                          <Ionicons
+                            name="calendar-outline"
+                            size={16}
+                            color={Colors.secondary}
+                          />
+                          <Text style={styles.metaText}>{dateDisplay}</Text>
+                        </View>
+                      )}
+                      {!!timeDisplay && (
+                        <Text style={styles.metaIndentedText}>{timeDisplay}</Text>
+                      )}
+                    </View>
+
+                    {/* Right Column: Location */}
+                    <View style={styles.cardInfoCol}>
+                      {!!(item.hospitalName || item.hospitalArea || orgId) && (
+                        <View style={styles.metaRow}>
+                          <Ionicons
+                            name="location-outline"
+                            size={16}
+                            color={Colors.secondary}
+                          />
+                          <Text style={styles.metaText} numberOfLines={2}>
+                            {[item.hospitalName, item.hospitalArea, orgId]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Bottom Actions Section */}
                   {isUpcoming && (
                     <View style={styles.cardActionsRow}>
                       <TouchableOpacity
@@ -567,7 +501,8 @@ export default function AppointmentScreen() {
 
                   {/* Re-Book (History only) */}
                   {!isUpcoming && (
-                    <View style={styles.rebookRow}>
+                    <View style={styles.cardActionsRow}>
+                      <View style={{ flex: 1 }} />
                       <TouchableOpacity
                         style={styles.rebookButton}
                         activeOpacity={0.8}
@@ -677,22 +612,27 @@ const styles = StyleSheet.create({
     fontFamily: FontFamilies.bold,
   },
   card: {
-    backgroundColor: "#EAF3FF",
+    backgroundColor: Colors.background,
     borderRadius: 16,
-    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 12,
     marginHorizontal: 16,
     marginBottom: 16,
   },
-  cardTopRow: {
+  cardTopSection: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    backgroundColor: "#0177C81A", // Light blue inner section
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
   },
   cardAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: Colors.lightgray,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.background,
     marginRight: 12,
   },
   cardDoctorCol: {
@@ -701,91 +641,79 @@ const styles = StyleSheet.create({
   cardDoctorName: {
     fontSize: 15,
     fontFamily: FontFamilies.bold,
-    color: Colors.text,
+    color: Colors.text, // Dark gray/black
   },
   cardSpecialty: {
     fontSize: 13,
-    color: Colors.primary,
-    fontFamily: FontFamilies.semiBold,
+    color: Colors.secondary, // Blue text like image
+    fontFamily: FontFamilies.medium,
     marginTop: 2,
   },
-  metaRow: {
+  cardInfoGrid: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    marginTop: 6,
-    gap: 8,
-  },
-  metaText: {
-    fontSize: 13,
-    color: Colors.text,
-    fontFamily: FontFamilies.medium,
-  },
-  metaSubText: {
-    fontSize: 12,
-    color: Colors.label,
-    fontFamily: FontFamilies.medium,
-    marginTop: 1,
-  },
-  cardInfoRow: {
-    flexDirection: "row",
+    paddingHorizontal: 4,
+    marginBottom: 16,
   },
   cardInfoCol: {
     flex: 1,
   },
-  metaIndentedText: {
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 6,
+  },
+  metaText: {
     fontSize: 13,
     color: Colors.text,
+    fontFamily: FontFamilies.semiBold,
+  },
+  metaIndentedText: {
+    fontSize: 13,
+    color: Colors.label,
     fontFamily: FontFamilies.medium,
-    marginLeft: 23,
-    marginTop: 2,
+    marginLeft: 22, // Align with text after icon
   },
   cardActionsRow: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 16,
   },
   rescheduleButton: {
     flex: 1,
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.backgroundOverlayVeryLight,
     borderRadius: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: "center",
   },
   rescheduleButtonText: {
-    fontSize: 13,
-    color: Colors.text,
-    fontFamily: FontFamilies.semiBold,
+    fontSize: 14,
+    color: Colors.primary,
+    fontFamily: FontFamilies.medium,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: "#FDECEC",
+    backgroundColor: "#FEF2F2", // Light red like image
     borderRadius: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: "center",
   },
   cancelButtonText: {
-    fontSize: 13,
-    color: "#DC2626",
-    fontFamily: FontFamilies.semiBold,
+    fontSize: 14,
+    color: Colors.error,
+    fontFamily: FontFamilies.medium,
   },
-  rebookRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 16,
-  },
+
   rebookButton: {
-    backgroundColor: Colors.pressed,
+    flex: 1,
+    backgroundColor: Colors.backgroundOverlayVeryLight,
     borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
     alignItems: "center",
   },
   rebookButtonText: {
-    fontSize: 13,
-    color: Colors.secondary,
-    fontFamily: FontFamilies.semiBold,
+    fontSize: 14,
+    color: Colors.primary,
+    fontFamily: FontFamilies.medium,
   },
   fab: {
     position: "absolute",

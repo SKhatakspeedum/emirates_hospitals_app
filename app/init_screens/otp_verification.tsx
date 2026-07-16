@@ -32,6 +32,7 @@ import { SiteConfig } from "../config/site_config";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import Toast from "react-native-toast-message";
 import { useOrgLogo } from "../hooks/useOrgLogo";
+import { Messages } from "../config/messages";
 
 export default function OTPVerificationScreen() {
   const logoSource = useOrgLogo();
@@ -141,6 +142,16 @@ export default function OTPVerificationScreen() {
           p_otp: code,
           p_usr_otp_authentication_factor_type: "sms",
         },
+        "",
+        "",
+        "",
+        "",
+        undefined,
+        // This screen already shows a red inline error below the OTP
+        // boxes on failure — suppress callSuggestusAPI's own generic
+        // "check your internet connection" toast so the error isn't
+        // reported twice.
+        false,
       );
 
       if (res?.returnCode === true) {
@@ -152,6 +163,12 @@ export default function OTPVerificationScreen() {
             p_ai_code: SiteConfig.AI_CODE,
             p_login_type: "external",
           },
+          "",
+          "",
+          "",
+          "",
+          undefined,
+          false,
         );
 
         if (
@@ -170,6 +187,12 @@ export default function OTPVerificationScreen() {
               },
               p_process_flag: "validate_duplicate",
             },
+            "",
+            "",
+            "",
+            "",
+            undefined,
+            false,
           );
           const resolvedPatientId =
             patientRes?.returnData?.[0]?.p_patient_id ??
@@ -212,11 +235,11 @@ export default function OTPVerificationScreen() {
         }
       } else {
         setLoading(false);
-        setError("OTP verification failed. Please try again.");
+        setError(`Invalid OTP. ${Messages.error.tryAgain}`);
       }
     } catch (err) {
       setLoading(false);
-      setError("OTP verification failed. Please try again.");
+      setError(Messages.error.generic);
     }
   };
 

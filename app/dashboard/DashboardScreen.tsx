@@ -198,7 +198,7 @@ export default function DashboardScreen() {
         try {
           const defaultJson = defaultJsonStr ? JSON.parse(defaultJsonStr) : {};
           orgCodes = defaultJson?.spd_app_location_list ?? SiteConfig.AI_CODE;
-        } catch (_) { }
+        } catch (_) {}
 
         const response = await callSuggestusAPI(
           spd_processId_config.sgconf_get_mst_organization_location_patient_portal_list,
@@ -269,7 +269,7 @@ export default function DashboardScreen() {
             if (p.name) setUserProfileName(p.name);
             if (p.age || p.gender)
               setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-          } catch (_) { }
+          } catch (_) {}
         } else {
           const name = await AsyncStorage.getItem(SPD_USER_NAME);
           if (name) setUserProfileName(name);
@@ -580,9 +580,9 @@ export default function DashboardScreen() {
     },
     { title: "Heart rate", value: "--", color: "#3498DB", bgColor: "#EBF5FB" },
     { title: "BMI", value: "--", color: "#E91E63", bgColor: "#FCE4EC" },
-    { title: "Medications", value: "--", color: "#2ECC71", bgColor: "#EAF6F0" },
-    { title: "Allergies", value: "--", color: "#9B59B6", bgColor: "#F5EEF8" },
-    { title: "Last visit", value: "--", color: "#F39C12", bgColor: "#FEF5E7" },
+    // { title: "Medications", value: "--", color: "#2ECC71", bgColor: "#EAF6F0" },
+    // { title: "Allergies", value: "--", color: "#9B59B6", bgColor: "#F5EEF8" },
+    // { title: "Last visit", value: "--", color: "#F39C12", bgColor: "#FEF5E7" },
   ];
 
   const [healthSummary, setHealthSummary] = useState(FALLBACK_HEALTH_SUMMARY);
@@ -694,7 +694,7 @@ export default function DashboardScreen() {
                 const _j = JSON.parse(_d);
                 _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
               }
-            } catch (_) { }
+            } catch (_) {}
             const response = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
@@ -731,7 +731,7 @@ export default function DashboardScreen() {
               const parsed = JSON.parse(fullDataStr);
               phone = parsed.contact || "";
             }
-          } catch (e) { }
+          } catch (e) {}
 
           // router.push({
           //   pathname: "/patient/registered_patients",
@@ -760,14 +760,14 @@ export default function DashboardScreen() {
       IconFamily: Ionicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
-      onPress: () => { },
+      onPress: () => {},
     },
     rxRefill: {
       icon: "pill",
       IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
-      onPress: () => { },
+      onPress: () => {},
     },
   };
 
@@ -778,7 +778,7 @@ export default function DashboardScreen() {
     IconFamily: Ionicons,
     color: "#6B7280",
     bgColor: "#F3F4F6",
-    onPress: () => { },
+    onPress: () => {},
   };
 
   const [quickActionsData, setQuickActionsData] = useState<
@@ -939,7 +939,10 @@ export default function DashboardScreen() {
                     style={styles.appointmentAvatar}
                   />
                   <View style={styles.appointmentInfo}>
-                    <Text style={styles.appointmentDoctorName} numberOfLines={1}>
+                    <Text
+                      style={styles.appointmentDoctorName}
+                      numberOfLines={1}
+                    >
                       {appt.doctorName}
                     </Text>
                     <Text style={styles.appointmentSpecialty} numberOfLines={1}>
@@ -1344,7 +1347,7 @@ export default function DashboardScreen() {
           style={styles.locationSheetOverlay}
           onPress={() => setShowLocationPicker(false)}
         >
-          <Pressable style={styles.locationSheetCard} onPress={() => { }}>
+          <Pressable style={styles.locationSheetCard} onPress={() => {}}>
             <View style={styles.locationSheetHandle} />
             <Text style={styles.locationSheetTitle}>Switch location</Text>
             {locations.length === 0 ? (
@@ -1363,10 +1366,16 @@ export default function DashboardScreen() {
                       onPress={() => handleSelectLocation(item)}
                       activeOpacity={0.7}
                     >
-                      <View style={[
-                        styles.locationSheetIconWrap,
-                        { borderColor: isSelected ? Colors.primary : Colors.border }
-                      ]}>
+                      <View
+                        style={[
+                          styles.locationSheetIconWrap,
+                          {
+                            borderColor: isSelected
+                              ? Colors.primary
+                              : Colors.border,
+                          },
+                        ]}
+                      >
                         <Ionicons
                           name="location"
                           size={18}

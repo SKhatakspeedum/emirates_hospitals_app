@@ -455,51 +455,51 @@ export default function RegisteredPatientsScreen() {
           !isAlreadyPatient &&
           userData &&
           !(isFromDrawer && alreadyAssigned) && (
-          <View style={styles.userCard}>
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.avatarContainer}>
-                <Ionicons name="person" size={24} color="#FFF" />
+            <View style={styles.userCard}>
+              <View style={styles.cardHeaderRow}>
+                <View style={styles.avatarContainer}>
+                  <Ionicons name="person" size={24} color="#FFF" />
+                </View>
+                <View style={styles.userInfoCol}>
+                  <Text style={styles.userName}>{userData.name}</Text>
+                  <Text style={styles.userMeta}>
+                    {userData.age} Yrs / {userData.gender}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.userInfoCol}>
-                <Text style={styles.userName}>{userData.name}</Text>
-                <Text style={styles.userMeta}>
-                  {userData.age} Yrs / {userData.gender}
-                </Text>
-              </View>
-            </View>
 
-            {alreadyAssigned ? (
-              <View style={styles.alreadyAssignedBadge}>
-                <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
-                <Text style={styles.alreadyAssignedText}>
-                  Already assigned as a patient
-                </Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.registerInnerBtn}
-                onPress={handleRegisterAsPatient}
-                disabled={registeringAsSelf}
-                activeOpacity={0.8}
-              >
-                {registeringAsSelf ? (
-                  <ActivityIndicator color={Colors.secondary} size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.registerInnerBtnText}>
-                      Register as a patient
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color={Colors.secondary}
-                    />
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+              {alreadyAssigned ? (
+                <View style={styles.alreadyAssignedBadge}>
+                  <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
+                  <Text style={styles.alreadyAssignedText}>
+                    Already assigned as a patient
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.registerInnerBtn}
+                  onPress={handleRegisterAsPatient}
+                  disabled={registeringAsSelf}
+                  activeOpacity={0.8}
+                >
+                  {registeringAsSelf ? (
+                    <ActivityIndicator color={Colors.secondary} size="small" />
+                  ) : (
+                    <>
+                      <Text style={styles.registerInnerBtnText}>
+                        Register as a patient
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={Colors.secondary}
+                      />
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
         {/* Registered patients title — only shown when mapped patients exist */}
         {!loading && patients.length > 0 && (
@@ -550,7 +550,7 @@ export default function RegisteredPatientsScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.addNewPatientBtn}
           onPress={handleAddNewPatient}
           activeOpacity={0.8}
@@ -562,7 +562,7 @@ export default function RegisteredPatientsScreen() {
             style={styles.btnIcon}
           />
           <Text style={styles.addNewPatientBtnText}>Add new patient</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {hideSkip !== "true" && (
           <TouchableOpacity

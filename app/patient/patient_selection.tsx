@@ -590,7 +590,7 @@ export default function PatientSelectionScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.addNewPatientBtn}
           onPress={handleAddNewPatient}
           activeOpacity={0.8}
@@ -602,7 +602,7 @@ export default function PatientSelectionScreen() {
             style={styles.btnIcon}
           />
           <Text style={styles.addNewPatientBtnText}>Add new patient</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity
           style={styles.skipBtn}

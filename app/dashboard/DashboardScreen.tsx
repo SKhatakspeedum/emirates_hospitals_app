@@ -829,7 +829,8 @@ export default function DashboardScreen() {
   const noPatient = !patientId || patientId === "null";
 
   // Fetch dynamic sections from backend (with automatic fallback to defaults)
-  const { visibleSections, sections } = useDashboardSections(noPatient);
+  const { visibleSections, sections, visibleSectionConfigs } =
+    useDashboardSections(noPatient);
 
   // Debug log to verify sections are being loaded
 
@@ -845,14 +846,19 @@ export default function DashboardScreen() {
   // Renders each "body" section (everything below the greeting hero) by key.
   // Called in the order of `visibleSections`, so the backend's
   // menu_display_order drives the actual render order on screen.
-  const renderBodySection = (key: string) => {
-    switch (key) {
+  // `instanceId` is the unique React key (backend menu_id) for this row —
+  // distinct from `sectionKey`, which the backend can legitimately repeat
+  // (e.g. two "providers" rows at different display orders) to show the
+  // same widget more than once. Keying by `sectionKey` alone would collide
+  // across those repeats and corrupt React's reconciliation.
+  const renderBodySection = (sectionKey: string, instanceId: string) => {
+    switch (sectionKey) {
       case "promoBanner": {
         const promoBannerUrls =
           sections.find((s) => s.key === "promoBanner")?.bannerUrls ?? [];
 
         return (
-          <View key={key} style={{ marginBottom: 14 }}>
+          <View key={instanceId} style={{ marginBottom: 14 }}>
             <CarouselBanner urls={promoBannerUrls} itemWidth={width - 40} />
           </View>
         );
@@ -860,7 +866,7 @@ export default function DashboardScreen() {
 
       case "quickActions":
         return (
-          <View key={key} style={styles.quickActionsContainer}>
+          <View key={instanceId} style={styles.quickActionsContainer}>
             {quickActions.map((action) => {
               const Icon = action.IconFamily;
               return (
@@ -905,7 +911,7 @@ export default function DashboardScreen() {
             preloadedProviders: Providers,
           });
         return (
-          <View key={key}>
+          <View key={instanceId}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Upcoming appointments</Text>
               <Pressable
@@ -972,7 +978,7 @@ export default function DashboardScreen() {
 
       case "healthAwareness":
         return (
-          <View key={key} style={styles.sectionContainer}>
+          <View key={instanceId} style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
                 <Ionicons
@@ -1024,7 +1030,7 @@ export default function DashboardScreen() {
       case "healthSummary":
         if (noPatient) return null;
         return (
-          <View key={key} style={styles.sectionContainer}>
+          <View key={instanceId} style={styles.sectionContainer}>
             <View style={[styles.sectionHeaderTitleRow, { marginBottom: 16 }]}>
               <Ionicons
                 name="heart"
@@ -1057,7 +1063,7 @@ export default function DashboardScreen() {
 
       case "providers":
         return (
-          <View key={key} style={styles.sectionContainerNoShadow}>
+          <View key={instanceId} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
                 <Ionicons
@@ -1135,7 +1141,7 @@ export default function DashboardScreen() {
 
       case "specialties":
         return (
-          <View key={key} style={styles.sectionContainerNoShadow}>
+          <View key={instanceId} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
                 <Ionicons
@@ -1329,9 +1335,9 @@ export default function DashboardScreen() {
 
         {/* White Content Area — body sections render in backend sequence order */}
         <View style={[styles.bodyContent, { minHeight: height }]}>
-          {visibleSections
-            .filter((key) => key !== "greeting")
-            .map((key) => renderBodySection(key))}
+          {visibleSectionConfigs
+            .filter((section) => section.key !== "greeting")
+            .map((section) => renderBodySection(section.key, section.id))}
 
           <View style={styles.bottomSpacer} />
         </View>

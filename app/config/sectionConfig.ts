@@ -13,6 +13,11 @@ export type SectionKey =
   | "specialties";
 
 export interface SectionConfig {
+  // Unique per row/instance (backend menu_id, or the key itself for
+  // defaults) — use this for React `key` props, since `key` (SectionKey)
+  // is NOT unique when the backend repeats the same widget at multiple
+  // positions (e.g. two "providers" rows with different display orders).
+  id: string;
   key: SectionKey;
   label: string;
   visible: boolean;
@@ -37,6 +42,7 @@ const WIDGET_CODE_MAP: { [key: string]: SectionKey } = {
 
 export const DEFAULT_SECTIONS: SectionConfig[] = [
   {
+    id: "greeting",
     key: "greeting",
     label: "Greeting",
     visible: true,
@@ -44,6 +50,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
     description: "Welcome message and user greeting",
   },
   {
+    id: "promoBanner",
     key: "promoBanner",
     label: "Promo Banner",
     visible: true,
@@ -51,6 +58,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
     description: "Promotional offers and discounts",
   },
   {
+    id: "quickActions",
     key: "quickActions",
     label: "Quick Actions",
     visible: true,
@@ -58,6 +66,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
     description: "4 quick action buttons (Appointments, Health, Orders, Rx)",
   },
   {
+    id: "upcomingAppointments",
     key: "upcomingAppointments",
     label: "Upcoming Appointments",
     visible: true,
@@ -66,6 +75,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
     requiresPatient: true,
   },
   {
+    id: "healthAwareness",
     key: "healthAwareness",
     label: "Health Awareness",
     visible: true,
@@ -73,6 +83,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
     description: "Educational videos and health content",
   },
   {
+    id: "healthSummary",
     key: "healthSummary",
     label: "My Health Summary",
     visible: true,
@@ -81,6 +92,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
     requiresPatient: true,
   },
   {
+    id: "providers",
     key: "providers",
     label: "Providers",
     visible: true,
@@ -88,6 +100,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
     description: "Featured doctors and specialists",
   },
   {
+    id: "specialties",
     key: "specialties",
     label: "Specialties",
     visible: true,
@@ -105,7 +118,7 @@ export const parseSectionsFromBackend = (
   backendSections: BackendMenuWidget[],
 ): SectionConfig[] => {
   const parsed = backendSections
-    .map((item): SectionConfig | null => {
+    .map((item, index): SectionConfig | null => {
       const sectionKey = WIDGET_CODE_MAP[item.widget_code];
       if (!sectionKey) return null;
 
@@ -114,6 +127,14 @@ export const parseSectionsFromBackend = (
 
       return {
         ...defaultSection,
+        // The backend can legitimately repeat the same widget (e.g. two
+        // "providers" rows at different display orders) to show it more
+        // than once on the Home Screen. Each row needs its own unique id —
+        // NOT the shared SectionKey — so React can key each rendered
+        // instance independently; reusing `sectionKey` as the key across
+        // duplicate rows causes React to conflate/orphan instances during
+        // reconciliation (stale sections lingering on screen).
+        id: item.id != null ? String(item.id) : `${sectionKey}-${index}`,
         visible: item.is_active === "Y",
         order: item.sequence || defaultSection.order,
         bannerUrls:
@@ -199,14 +220,29 @@ export const getVisibleSections = (
   sections: SectionConfig[] = DEFAULT_SECTIONS,
   noPatient: boolean = false,
 ): SectionKey[] => {
+  return getVisibleSectionConfigs(sections, noPatient).map(
+    (section) => section.key,
+  );
+};
+
+/**
+ * Same filtering/sorting as getVisibleSections, but returns the full
+ * SectionConfig objects (with their unique `id`) instead of bare keys.
+ * Use this for rendering — it preserves intentionally repeated widgets
+ * (same key, multiple backend rows) as distinct, uniquely-keyable entries,
+ * which getVisibleSections' bare SectionKey[] output cannot do.
+ */
+export const getVisibleSectionConfigs = (
+  sections: SectionConfig[] = DEFAULT_SECTIONS,
+  noPatient: boolean = false,
+): SectionConfig[] => {
   return sections
     .filter((section) => {
       if (!section.visible) return false;
       if (section.requiresPatient && noPatient) return false;
       return true;
     })
-    .sort((a, b) => a.order - b.order)
-    .map((section) => section.key);
+    .sort((a, b) => a.order - b.order);
 };
 
 /**

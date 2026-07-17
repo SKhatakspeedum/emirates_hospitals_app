@@ -5,12 +5,18 @@ import {
   DEFAULT_SECTIONS,
   fetchSectionsFromBackend,
   getVisibleSections,
+  getVisibleSectionConfigs,
 } from "../config/sectionConfig";
 import suggestusClientConfig from "../config/suggestus_client_config";
 
 interface UseDashboardSectionsReturn {
   sections: SectionConfig[];
   visibleSections: SectionKey[];
+  // Same visible/ordered set as visibleSections, but as full SectionConfig
+  // objects (each with a unique `id`) — use this for rendering so widgets
+  // the backend intentionally repeats (same key, multiple rows) get a
+  // stable, unique React key instead of colliding on the shared SectionKey.
+  visibleSectionConfigs: SectionConfig[];
   isLoading: boolean;
   refetch: () => Promise<void>;
   error: Error | null;
@@ -74,10 +80,12 @@ export const useDashboardSections = (
   }, [p_ai_code, p_menu_type]);
 
   const visibleSections = getVisibleSections(sections, noPatient);
+  const visibleSectionConfigs = getVisibleSectionConfigs(sections, noPatient);
 
   return {
     sections,
     visibleSections,
+    visibleSectionConfigs,
     isLoading,
     refetch: fetchSections,
     error,

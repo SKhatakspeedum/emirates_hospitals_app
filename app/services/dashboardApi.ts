@@ -93,6 +93,7 @@ export interface BackendMenuResponse {
  * Normalized widget interface for internal use
  */
 export interface BackendMenuWidget {
+  id: string; // menu_id — unique per row, even when widget_code repeats
   widget_code: string;
   widget_name: string;
   is_active: string; // "Y" or "N" (defaults to "Y")
@@ -209,6 +210,7 @@ export const getMenuAppWidgets = async (
           }
 
           return {
+            id: String(item.menu_id),
             widget_code: item.menu_action_screen_identifier,
             widget_name: item.menu_name,
             is_active: "Y", // Default to active since backend doesn't provide this

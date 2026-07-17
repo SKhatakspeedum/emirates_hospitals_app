@@ -135,7 +135,7 @@ type FullAppointment = {
 export default function DashboardScreen() {
   const { width, height } = useWindowDimensions();
   const navigation = useNavigation<any>();
-  const [userProfileName, setUserProfileName] = useState<string>("John");
+  const [userProfileName, setUserProfileName] = useState<string>("");
   const [patientId, setPatientId] = useState<string | null>(null);
   const [patientMeta, setPatientMeta] = useState<{
     age: number;

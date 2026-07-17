@@ -146,13 +146,44 @@ export default function RegisteredPatientsScreen() {
           // this runs separately from the cached usr_patient_id check above
           // — that cached value can be stale/absent after switching org) —
           // skip this selection screen and log straight in as that patient.
-          const firstPatientId = String(
-            response.returnData[0]?.p_patient_id ??
-              response.returnData[0]?.patient_id ??
-              "",
-          );
-          if (firstPatientId) {
-            await setPatientId(firstPatientId);
+          const parsePatientRow = (p: any, idx: number) => {
+            const name =
+              p.p_patient_name ??
+              p.ptm_name ??
+              [
+                p.p_patient_first_name,
+                p.p_patient_middle_name,
+                p.p_patient_last_name,
+              ]
+                .filter(Boolean)
+                .join(" ") ??
+              "Unknown";
+            const age = parseInt(String(p.ptm_age ?? p.p_age ?? "0"), 10) || 0;
+            const gender =
+              p.ptm_gender ?? (p.p_gender === "2" ? "Female" : "Male");
+            return {
+              id: String(p.p_patient_id ?? p.patient_id ?? idx),
+              name,
+              age,
+              gender,
+            };
+          };
+
+          const firstPatient = parsePatientRow(response.returnData[0], 0);
+          if (firstPatient.id) {
+            await setPatientId(firstPatient.id);
+            // Keep the dashboard greeting/header in sync with whichever
+            // patient this redirect actually logs in as — without this,
+            // it keeps showing whatever patient was cached from a previous
+            // session/org instead of the one just resolved here.
+            await AsyncStorage.setItem(
+              SPD_SELECTED_PATIENT,
+              JSON.stringify({
+                name: firstPatient.name,
+                age: firstPatient.age,
+                gender: firstPatient.gender,
+              }),
+            );
             redirectedHome = true;
             router.replace("/(drawer)/tab_bar_home/HomeScreen");
             return;
@@ -162,23 +193,9 @@ export default function RegisteredPatientsScreen() {
           // showing the picker rather than silently doing nothing.
           const mapped: Patient[] = response.returnData.map(
             (p: any, idx: number) => {
-              const name =
-                p.p_patient_name ??
-                p.ptm_name ??
-                [
-                  p.p_patient_first_name,
-                  p.p_patient_middle_name,
-                  p.p_patient_last_name,
-                ]
-                  .filter(Boolean)
-                  .join(" ") ??
-                "Unknown";
-              const age =
-                parseInt(String(p.ptm_age ?? p.p_age ?? "0"), 10) || 0;
-              const gender =
-                p.ptm_gender ?? (p.p_gender === "2" ? "Female" : "Male");
+              const { name, age, gender, id } = parsePatientRow(p, idx);
               return {
-                id: String(p.p_patient_id ?? p.patient_id ?? idx),
+                id,
                 name,
                 age,
                 gender,

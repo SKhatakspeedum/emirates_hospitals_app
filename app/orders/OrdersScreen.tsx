@@ -17,7 +17,7 @@ import {
   Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { Fontisto, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { Fontisto, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -30,6 +30,15 @@ import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("window");
 
+type ButtonAction = "call" | "book" | "view_result" | "view_details";
+
+const VALID_BUTTON_ACTIONS: ButtonAction[] = [
+  "call",
+  "book",
+  "view_result",
+  "view_details",
+];
+
 // Custom Type Definitions for Orders
 interface OrderItem {
   id: string;
@@ -39,7 +48,11 @@ interface OrderItem {
   date: string;
   department: string;
   bucket: "active" | "history";
-  buttonType: "call" | "book" | "view_result" | "view_details" | "none";
+  // The backend can send more than one action for a single order as a
+  // "~"-delimited string (e.g. "call~book~view_result") — every valid
+  // action in it gets its own button. An empty/unrecognized value yields
+  // an empty array, i.e. no action buttons.
+  buttonType: ButtonAction[];
   // Result details
   findings?: string;
   recommendations?: string;
@@ -47,6 +60,16 @@ interface OrderItem {
   docUrl?: string;
   docName?: string;
 }
+
+const parseButtonTypes = (raw: string | undefined | null): ButtonAction[] => {
+  if (!raw) return [];
+  return raw
+    .split("~")
+    .map((s) => s.trim())
+    .filter((s): s is ButtonAction =>
+      VALID_BUTTON_ACTIONS.includes(s as ButtonAction),
+    );
+};
 
 // Order doc paths (doc_path/download_doc_path/spdFilePath) come back as
 // relative paths, e.g. "uploaded_files/documents/xyz.pdf" — resolve them
@@ -70,7 +93,7 @@ const derivePresentation = (
   badgeBg: string;
   badgeText: string;
   bucket: "active" | "history";
-  buttonType: OrderItem["buttonType"];
+  buttonType: ButtonAction | "none";
 } => {
   const status = (rawStatus || "").toLowerCase();
 
@@ -222,11 +245,10 @@ export default function OrdersScreen() {
               department:
                 r.ord_type ?? r.ord_group ?? r.ord_location_identifier ?? "",
               bucket: presentation.bucket,
-              // button type
-              // buttonType: presentation.buttonType,
-              buttonType: "call",
-              // buttonType: "book",
-              // buttonType: "view_result",
+              // Backend can send multiple actions as a "~"-delimited
+              // string (e.g. "call~book~view_result") — parseButtonTypes
+              // renders one button per valid action, none if blank/unknown.
+              buttonType: parseButtonTypes("call~book~view_result"),
               findings: r.findings ?? "",
               recommendations: r.recommendations ?? "",
               reason: r.ord_cancel_remarks ?? "",
@@ -309,88 +331,68 @@ export default function OrdersScreen() {
     );
   };
 
-  // Helper for Order Cards Actions
-  const renderCardAction = (order: OrderItem) => {
-    switch (order.buttonType) {
+  const ACTION_META: Record<
+    ButtonAction,
+    { label: string; icon: React.ComponentProps<typeof Ionicons>["name"] }
+  > = {
+    call: { label: "Call", icon: "call-outline" },
+    book: { label: "Book appointment", icon: "calendar-outline" },
+    view_result: { label: "View Result", icon: "document-text-outline" },
+    view_details: { label: "View Details", icon: "eye-outline" },
+  };
+
+  const handleActionPress = (order: OrderItem, action: ButtonAction) => {
+    switch (action) {
       case "call":
-        return (
-          <TouchableOpacity
-            style={styles.cardActionButton}
-            onPress={() => handleCallPress(order)}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name="call"
-              size={14}
-              color={Colors.secondary}
-              style={styles.actionIcon}
-            />
-            <Text style={styles.cardActionText}>
-              Call
-            </Text>
-          </TouchableOpacity>
-        );
+        return handleCallPress(order);
       case "book":
-        return (
-          <TouchableOpacity
-            style={styles.cardActionButton}
-            onPress={() => handleBook(order)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.cardActionText}>
-              Book appointment
-            </Text>
-            <Ionicons
-              name="arrow-forward"
-              size={14}
-              color={Colors.secondary}
-              style={styles.actionIconRight}
-            />
-          </TouchableOpacity>
-        );
+        return handleBook(order);
       case "view_result":
-        return (
-          <TouchableOpacity
-            style={styles.cardActionButton}
-            onPress={() => {
-              navigation.navigate("HomeTab", {
-                screen: "OrderResult",
-                params: { order },
-              });
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.cardActionText}>View Result</Text>
-            <Ionicons
-              name="arrow-forward"
-              size={14}
-              color={Colors.secondary}
-              style={styles.actionIconRight}
-            />
-          </TouchableOpacity>
-        );
+        return navigation.navigate("HomeTab", {
+          screen: "OrderResult",
+          params: { order },
+        });
       case "view_details":
-        return (
-          <TouchableOpacity
-            style={styles.cardActionButton}
-            onPress={() => {
-              setSelectedOrder(order);
-              setIsDetailsVisible(true);
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.cardActionText}>View Details</Text>
-            <Ionicons
-              name="arrow-forward"
-              size={14}
-              color={Colors.secondary}
-              style={styles.actionIconRight}
-            />
-          </TouchableOpacity>
-        );
-      case "none":
-        return null;
+        setSelectedOrder(order);
+        setIsDetailsVisible(true);
+        return;
     }
+  };
+
+  // Renders every action for this order as an evenly-spaced footer bar
+  // (rather than free-floating pills), so 1-4 actions always lay out
+  // predictably and never get clipped by the card's edge. Renders nothing
+  // if the order has no actions (see ButtonAction/parseButtonTypes).
+  const renderCardActions = (order: OrderItem) => {
+    if (!order.buttonType || order.buttonType.length === 0) return null;
+    return (
+      <View style={styles.footerActionsRow}>
+        {order.buttonType.map((action, index) => {
+          const meta = ACTION_META[action];
+          return (
+            <TouchableOpacity
+              key={action}
+              style={[
+                styles.footerActionButton,
+                index < order.buttonType.length - 1 &&
+                  styles.footerActionDivider,
+              ]}
+              onPress={() => handleActionPress(order, action)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={meta.icon} size={15} color={Colors.primary} />
+              <Text
+                style={styles.footerActionText}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {meta.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
   };
 
   return (
@@ -511,23 +513,23 @@ export default function OrdersScreen() {
                 </View>
               </View>
 
-              {/* Bottom Strip */}
-              <View style={styles.bottomStrip}>
-                <View style={styles.bottomLeftCol}>
+              {/* Bottom Footer: department row + evenly-spaced action bar */}
+              <View style={styles.cardFooter}>
+                <View style={styles.footerDeptRow}>
                   <MaterialCommunityIcons
                     name={
                       order.department.toLowerCase().includes("lab")
                         ? "microscope"
                         : "hospital-building"
                     }
-                    size={17}
+                    size={16}
                     color={Colors.primary}
                   />
-                  <Text style={styles.bottomLeftText}>{order.department}</Text>
+                  <Text style={styles.footerDeptText}>
+                    {order.department}
+                  </Text>
                 </View>
-                <View style={styles.bottomRightCol}>
-                  {renderCardAction(order)}
-                </View>
+                {renderCardActions(order)}
               </View>
             </View>
           ))
@@ -572,7 +574,7 @@ export default function OrdersScreen() {
                   style={[
                     styles.filterOptionText,
                     selectedDepartment === dept &&
-                    styles.filterOptionTextSelected,
+                      styles.filterOptionTextSelected,
                   ]}
                 >
                   {dept === "All" ? "All Departments" : dept}
@@ -737,7 +739,6 @@ export default function OrdersScreen() {
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }
@@ -848,48 +849,50 @@ const styles = StyleSheet.create({
     fontFamily: FontFamilies.medium,
     flexShrink: 1,
   },
-  bottomStrip: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  cardFooter: {
     backgroundColor: Colors.backgroundOverlayVeryLight,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
     marginHorizontal: 12,
     marginBottom: 12,
-    borderRadius: 8,
+    borderRadius: 10,
+    overflow: "hidden",
   },
-  bottomLeftCol: {
+  footerDeptRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
-  bottomLeftText: {
+  footerDeptText: {
     fontSize: 14,
     color: Colors.text,
     fontFamily: FontFamilies.semiBold,
   },
-  bottomRightCol: {
-    justifyContent: "center",
+  // Evenly-spaced action bar below the department row — each action gets
+  // an equal-width slot so 1-4 actions always lay out predictably instead
+  // of overflowing/clipping like free-floating pills would.
+  footerActionsRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
-  cardActionButton: {
+  footerActionButton: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    backgroundColor: Colors.background,
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 11,
+    paddingHorizontal: 4,
   },
-  cardActionText: {
+  footerActionDivider: {
+    borderRightWidth: 1,
+    borderRightColor: Colors.border,
+  },
+  footerActionText: {
     fontSize: 12,
     color: Colors.primary,
     fontFamily: FontFamilies.semiBold,
-  },
-  actionIcon: {
-    marginRight: 6,
-  },
-  actionIconRight: {
-    marginLeft: 6,
   },
   emptyContainer: {
     alignItems: "center",

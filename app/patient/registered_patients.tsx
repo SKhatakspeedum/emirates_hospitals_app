@@ -68,7 +68,6 @@ export default function RegisteredPatientsScreen() {
     age: number;
     gender: string;
   } | null>(null);
-  const [isAlreadyPatient, setIsAlreadyPatient] = useState(false);
   const [alreadyAssigned, setAlreadyAssigned] = useState(false);
   const [registeringAsSelf, setRegisteringAsSelf] = useState(false);
   const { height: screenHeight } = Dimensions.get("window");
@@ -76,6 +75,10 @@ export default function RegisteredPatientsScreen() {
 
   useEffect(() => {
     const init = async () => {
+      // Set when we redirect straight to Home below, so the finally block
+      // doesn't flip `loading` false and flash the list/register-card UI
+      // for a frame before the route change takes effect.
+      let redirectedHome = false;
       try {
         let userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
         let emiratesIdToCheck = "";
@@ -97,10 +100,6 @@ export default function RegisteredPatientsScreen() {
             parsed.usr_phone ?? parsed.usr_mobile ?? parsed.p_mobile_no ?? "";
           emiratesIdToCheck = attrs.p_emirates_id ?? "";
           passportToCheck = attrs.p_identification_num ?? "";
-
-          if (parsed.usr_patient_id) {
-            setIsAlreadyPatient(true);
-          }
 
           // Check by Emirates ID / Passport — catches patient registered via different mobile
           if (emiratesIdToCheck || passportToCheck) {
@@ -142,6 +141,25 @@ export default function RegisteredPatientsScreen() {
         );
 
         if (response?.returnCode === true && response.returnData?.length > 0) {
+          // A patient record already exists for this user (per this org's
+          // xcelpat_get_trn_patient_details_ehg_pntapp lookup, which is why
+          // this runs separately from the cached usr_patient_id check above
+          // — that cached value can be stale/absent after switching org) —
+          // skip this selection screen and log straight in as that patient.
+          const firstPatientId = String(
+            response.returnData[0]?.p_patient_id ??
+              response.returnData[0]?.patient_id ??
+              "",
+          );
+          if (firstPatientId) {
+            await setPatientId(firstPatientId);
+            redirectedHome = true;
+            router.replace("/(drawer)/tab_bar_home/HomeScreen");
+            return;
+          }
+
+          // Malformed row with no usable id on either field — fall back to
+          // showing the picker rather than silently doing nothing.
           const mapped: Patient[] = response.returnData.map(
             (p: any, idx: number) => {
               const name =
@@ -176,10 +194,12 @@ export default function RegisteredPatientsScreen() {
           );
           setPatients(mapped);
         }
+        // No patient data returned for this org — fall through to the
+        // existing "Register as a patient" self-registration card below.
       } catch (e) {
         console.error("Error loading registered patients screen:", e);
       } finally {
-        setLoading(false);
+        if (!redirectedHome) setLoading(false);
       }
     };
     init();
@@ -452,9 +472,11 @@ export default function RegisteredPatientsScreen() {
           />
         </View>
 
-        {/* Self-registration card — only if not already a patient */}
+        {/* Self-registration card — reaching this screen at all means no
+            patient was found for the current org (see init() above, which
+            redirects straight to Home instead of rendering when one is
+            found), so show it whenever we have user data to register with. */}
         {!loading &&
-          !isAlreadyPatient &&
           userData &&
           !(isFromDrawer && alreadyAssigned) && (
             <View style={styles.userCard}>

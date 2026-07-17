@@ -8,7 +8,8 @@ export const SiteConfig = {
     "https://dev-mysql.speedum.tech/onmood9server/server/index.php",
   on_mood9_ASSETS_URL: "https://dev-mysql.speedum.tech/onmood9server/server",
   ACTION_URL: "http://localhost:8081",
-  DEV_URL: "https://dev-mysql-sgi.speedum.tech",
+  // DEV_URL: "https://dev-mysql-sgi.speedum.tech",
   AI_CODE: "EHG_REHAB_EHG_REHAB_JUMEIRAH",
   // AI_CODE: "INPATIENT",
+  DEV_URL: "https://ibtxr-assets.speedum.tech",
 };

@@ -23,6 +23,7 @@ import CustomHeader from "../components/CustomHeader";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+import { SiteConfig } from "../config/site_config";
 
 const { width } = Dimensions.get("window");
 
@@ -35,12 +36,23 @@ interface OrderItem {
   date: string;
   department: string;
   bucket: "active" | "history";
-  buttonType: "call" | "book" | "view_result" | "view_details";
+  buttonType: "call" | "book" | "view_result" | "view_details" | "none";
   // Result details
   findings?: string;
   recommendations?: string;
   reason?: string;
+  docUrl?: string;
+  docName?: string;
 }
+
+// Order doc paths (doc_path/download_doc_path/spdFilePath) come back as
+// relative paths, e.g. "uploaded_files/documents/xyz.pdf" — resolve them
+// against the backend host, tolerating an already-absolute URL.
+const resolveDocUrl = (path: string): string => {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${SiteConfig.DEV_URL}/${path.replace(/^\//, "")}`;
+};
 
 // The backend doesn't send a separate "is active"/"button type" flag, so we
 // derive presentation (badge color, active-vs-history tab, and which action
@@ -67,6 +79,16 @@ const derivePresentation = (
       buttonType: "view_details",
     };
   }
+  if (status.includes("await") && status.includes("result")) {
+    // "Result Awaited" — test ordered but no result yet, so there's nothing
+    // to action on this card yet.
+    return {
+      badgeBg: "#E8F0FE",
+      badgeText: Colors.secondary,
+      bucket: "active",
+      buttonType: "none",
+    };
+  }
   if (status.includes("result")) {
     return {
       badgeBg: "#E2FAEC",
@@ -75,10 +97,22 @@ const derivePresentation = (
       buttonType: "view_result",
     };
   }
+  if (status.includes("sign")) {
+    // "Signed" (ordstat_name) — a signed lab/radiology order still belongs
+    // under Active orders (per user confirmation), even though its badge is
+    // success-styled ("badge-outline-success") and the result can already
+    // be viewed.
+    return {
+      badgeBg: "#E2FAEC",
+      badgeText: "#0F9F47",
+      bucket: "active",
+      buttonType: "view_result",
+    };
+  }
   if (status.includes("complete")) {
     return {
-      badgeBg: "#E8F4FD",
-      badgeText: Colors.secondary,
+      badgeBg: "#E2FAEC",
+      badgeText: "#0F9F47",
       bucket: "history",
       buttonType: "view_result",
     };
@@ -163,64 +197,35 @@ export default function OrdersScreen() {
 
         if (response?.returnCode === true && response.returnData?.length > 0) {
           const mapped: OrderItem[] = response.returnData.map((r: any) => {
-            // This endpoint currently returns appointment-shaped rows
-            // (appt_id/resource_name/dpt_description/appstat_name/etc. —
-            // the same field set as the Appointments feature) rather than
-            // a dedicated order/test-name field, so there's no clean
-            // "what was ordered" value to read. Best available proxy:
-            // department + visit subtype, falling back to whichever
-            // order-specific field names show up if the backend later
-            // adds them.
-            const rawStatus =
-              r.appstat_name ?? r.wkl_status ?? r.order_status ?? r.status ?? "";
+            const rawStatus = r.ordstat_name ?? r.ord_status ?? "";
             const presentation = derivePresentation(rawStatus);
-            const histType = (r.appointment_history_type ?? "").toLowerCase();
-            const bucket = r.appointment_history_type
-              ? histType.includes("hist")
-                ? "history"
-                : "active"
-              : presentation.bucket;
 
             return {
-              id: String(
-                r.p_appt_id ??
-                  r.appt_id ??
-                  r.wkl_id ??
-                  r.order_id ??
-                  r.trn_order_id ??
-                  r.id ??
-                  Math.random(),
-              ),
-              title:
-                r.wkl_title ??
-                r.order_title ??
-                r.order_name ??
-                r.test_name ??
-                r.procedure_name ??
-                (r.dpt_description && r.appsubtyp_name
-                  ? `${r.dpt_description} - ${r.appsubtyp_name}`
-                  : r.appsubtyp_name ?? r.dpt_description ?? ""),
+              id: String(r.ord_id ?? r.p_ord_id ?? Math.random()),
+              title: r.ord_description ?? r.ord_description_medication ?? "",
               status: rawStatus,
               doctor:
-                r.resource_name ??
-                r.doctor_name ??
-                r.ordering_doctor_name ??
-                r.wkl_doctor_name ??
+                r.visit_doctor_description ??
+                r.org_user_name ??
+                r.ord_sign_user_name ??
+                r.ord_create_user_name ??
                 "",
               date:
-                r.appt_date_dashboard ??
-                r.wkl_date ??
-                r.order_date ??
-                r.wkl_order_date ??
-                r.created_date ??
+                r.ord_start_timestamp_formatted ??
+                r.ord_order_timestamp_formatted ??
+                r.vst_date ??
                 "",
               department:
-                r.dpt_description ?? r.department ?? r.wkl_department ?? "",
-              bucket,
+                r.ord_type ?? r.ord_group ?? r.ord_location_identifier ?? "",
+              bucket: presentation.bucket,
               buttonType: presentation.buttonType,
-              findings: r.findings ?? r.wkl_findings ?? r.result_findings ?? "",
-              recommendations: r.recommendations ?? r.wkl_recommendations ?? "",
-              reason: r.cancellation_reason ?? r.reason ?? r.wkl_reason ?? "",
+              findings: r.findings ?? "",
+              recommendations: r.recommendations ?? "",
+              reason: r.ord_cancel_remarks ?? "",
+              docUrl: resolveDocUrl(
+                r.download_doc_path ?? r.doc_path ?? r.spdFilePath ?? "",
+              ),
+              docName: r.doc_uploaded_filename ?? r.doc_name ?? "Result",
             };
           });
           setOrders(mapped);
@@ -373,6 +378,8 @@ export default function OrdersScreen() {
             />
           </TouchableOpacity>
         );
+      case "none":
+        return null;
     }
   };
 
@@ -435,7 +442,7 @@ export default function OrdersScreen() {
             name="options-outline"
             size={20}
             color={
-              selectedDepartment !== "All" ? Colors.background : Colors.primary
+              selectedDepartment !== "All" ? Colors.background : Colors.secondary
             }
           />
         </TouchableOpacity>
@@ -483,7 +490,7 @@ export default function OrdersScreen() {
               {/* Card Upper Info Panel */}
               <View style={styles.cardHeaderRow}>
                 <Text style={styles.cardTitle}>{order.title}</Text>
-                {renderStatusBadge(order.status)}
+                {activeTab === "active" && renderStatusBadge(order.status)}
               </View>
 
               <View style={styles.cardDetailsRow}>
@@ -517,7 +524,7 @@ export default function OrdersScreen() {
                         : "business-outline"
                     }
                     size={16}
-                    color={Colors.primary}
+                    color={Colors.secondary}
                   />
                   <Text style={styles.bottomLeftText}>{order.department}</Text>
                 </View>
@@ -767,43 +774,38 @@ const styles = StyleSheet.create({
   tabSegmentContainer: {
     flex: 1,
     flexDirection: "row",
-    height: 42,
-    backgroundColor: "#EBEBEF",
-    borderRadius: 10,
-    padding: 3,
+    gap: 8,
   },
   tabSegmentButton: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
   },
   tabSegmentButtonActive: {
-    backgroundColor: Colors.background,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: "#E8F0FE",
+    borderColor: Colors.secondary,
   },
   tabSegmentText: {
-    fontSize: 15,
+    fontSize: 14,
     color: Colors.label,
     fontFamily: FontFamilies.semiBold,
   },
   tabSegmentTextActive: {
-    color: Colors.text,
+    color: Colors.secondary,
     fontFamily: FontFamilies.bold,
   },
   filterButton: {
     width: 42,
     height: 42,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
+    borderRadius: 21,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.background,
+    backgroundColor: "#E8F0FE",
   },
   filterButtonActive: {
     backgroundColor: Colors.primary,
@@ -876,7 +878,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: Colors.inactive,
+    backgroundColor: "#EEF3FC",
     padding: 5,
     margin: 7,
     borderRadius: 8,

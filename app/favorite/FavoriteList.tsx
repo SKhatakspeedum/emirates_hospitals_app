@@ -440,7 +440,6 @@ const styles = StyleSheet.create({
     color: "#333",
     fontFamily: "QuicksandMedium",
     paddingHorizontal: 8,
-    outline: "none",
     height: 44,
     ...(Platform.OS === "web" ? { outlineStyle: "none", outlineWidth: 0 } : {}),
   },

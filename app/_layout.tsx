@@ -183,33 +183,11 @@ export default function RootLayout() {
   //   };
   // }, []);
 
-  if (!loaded || !isReady) {
-    return (
-      <View style={styles.splashContainer}>
-        <Image
-          source={require("@/assets/images/splash_bg.png")}
-          style={styles.topBg}
-          resizeMode="contain"
-        />
-        <Image
-          source={require("@/assets/images/splash_bg.png")}
-          style={styles.bottomBg}
-          resizeMode="contain"
-        />
-        <View style={styles.centerContent}>
-          <Image
-            source={logoSource}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color="#0177C8" />
-          </View>
-        </View>
-      </View>
-    );
-  }
-
+  // The Stack below must mount on the very first render so Expo Router has a
+  // navigator ready before any router.replace() call (fired from the
+  // effects above) resolves — otherwise it throws "Attempted to navigate
+  // before mounting the Root Layout component". So we always render the
+  // Stack and overlay the splash UI on top instead of early-returning it.
   return (
     <AuthProvider>
       <ThemeProvider value={DefaultTheme}>
@@ -228,6 +206,30 @@ export default function RootLayout() {
         </Stack>
         <StatusBar style="auto" />
         <Toast />
+        {(!loaded || !isReady) && (
+          <View style={styles.splashContainer}>
+            <Image
+              source={require("@/assets/images/splash_bg.png")}
+              style={styles.topBg}
+              resizeMode="contain"
+            />
+            <Image
+              source={require("@/assets/images/splash_bg.png")}
+              style={styles.bottomBg}
+              resizeMode="contain"
+            />
+            <View style={styles.centerContent}>
+              <Image
+                source={logoSource}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <View style={styles.loaderContainer}>
+                <ActivityIndicator size="large" color="#0177C8" />
+              </View>
+            </View>
+          </View>
+        )}
       </ThemeProvider>
     </AuthProvider>
   );
@@ -238,10 +240,15 @@ const bgSize = screenWidth * 0.9;
 
 const styles = StyleSheet.create({
   splashContainer: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 10,
   },
   topBg: {
     position: "absolute",

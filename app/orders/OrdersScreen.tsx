@@ -14,16 +14,19 @@ import {
   Linking,
   Dimensions,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { Fontisto, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
+import CustomTabs from "../components/CustomTabs";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
 import { SiteConfig } from "../config/site_config";
+import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("window");
 
@@ -73,8 +76,8 @@ const derivePresentation = (
 
   if (status.includes("cancel")) {
     return {
-      badgeBg: "#FDE8E8",
-      badgeText: "#E02424",
+      badgeBg: Colors.errorBackground,
+      badgeText: Colors.errorText,
       bucket: "history",
       buttonType: "view_details",
     };
@@ -83,7 +86,7 @@ const derivePresentation = (
     // "Result Awaited" — test ordered but no result yet, so there's nothing
     // to action on this card yet.
     return {
-      badgeBg: "#E8F0FE",
+      badgeBg: Colors.backgroundCardLight,
       badgeText: Colors.secondary,
       bucket: "active",
       buttonType: "none",
@@ -91,8 +94,8 @@ const derivePresentation = (
   }
   if (status.includes("result")) {
     return {
-      badgeBg: "#E2FAEC",
-      badgeText: "#0F9F47",
+      badgeBg: Colors.successBackground,
+      badgeText: Colors.successText,
       bucket: "history",
       buttonType: "view_result",
     };
@@ -103,24 +106,24 @@ const derivePresentation = (
     // success-styled ("badge-outline-success") and the result can already
     // be viewed.
     return {
-      badgeBg: "#E2FAEC",
-      badgeText: "#0F9F47",
+      badgeBg: Colors.successBackground,
+      badgeText: Colors.successText,
       bucket: "active",
       buttonType: "view_result",
     };
   }
   if (status.includes("complete")) {
     return {
-      badgeBg: "#E2FAEC",
-      badgeText: "#0F9F47",
+      badgeBg: Colors.successBackground,
+      badgeText: Colors.successText,
       bucket: "history",
       buttonType: "view_result",
     };
   }
   if (status.includes("approv") && !status.includes("pending")) {
     return {
-      badgeBg: "#E2FAEC",
-      badgeText: "#0F9F47",
+      badgeBg: Colors.successBackground,
+      badgeText: Colors.successText,
       bucket: "active",
       buttonType: "book",
     };
@@ -131,8 +134,8 @@ const derivePresentation = (
     status.includes("insurance")
   ) {
     return {
-      badgeBg: "#FFF3D6",
-      badgeText: "#B78103",
+      badgeBg: Colors.warningBackground,
+      badgeText: Colors.warningText,
       bucket: "active",
       buttonType: "call",
     };
@@ -143,8 +146,8 @@ const derivePresentation = (
   // default to "view details" rather than guessing at "call" or "book"
   // since neither action is known to be correct for this status.
   return {
-    badgeBg: "#F2F4F7",
-    badgeText: "#667085",
+    badgeBg: Colors.inactive,
+    badgeText: Colors.textLabel,
     bucket: "active",
     buttonType: "view_details",
   };
@@ -159,8 +162,6 @@ export default function OrdersScreen() {
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  // Call confirmation modal
-  const [callModalOrder, setCallModalOrder] = useState<OrderItem | null>(null);
   const HOSPITAL_PHONE = "+971800444444";
 
   useEffect(() => {
@@ -203,7 +204,6 @@ export default function OrdersScreen() {
             const rawStatus = r.ordstat_name ?? r.ord_status ?? "";
             const presentation = derivePresentation(rawStatus);
 
-            console.log("presentation:>>", rawStatus, presentation);
             return {
               id: String(r.ord_id ?? r.p_ord_id ?? Math.random()),
               title: r.ord_description ?? r.ord_description_medication ?? "",
@@ -224,8 +224,8 @@ export default function OrdersScreen() {
               bucket: presentation.bucket,
               // button type
               // buttonType: presentation.buttonType,
-              // buttonType: "call",
-              buttonType: "book",
+              buttonType: "call",
+              // buttonType: "book",
               // buttonType: "view_result",
               findings: r.findings ?? "",
               recommendations: r.recommendations ?? "",
@@ -267,18 +267,23 @@ export default function OrdersScreen() {
     return order.department === selectedDepartment;
   });
 
-  // Opens the call-confirmation bottom modal instead of a plain Alert,
-  // giving the user a richer confirmation UI with the hospital number shown.
   const handleCallPress = (order: OrderItem) => {
-    setCallModalOrder(order);
-  };
+    if (Platform.OS === "web") {
+      Toast.show({
+        type: "info",
+        text1: "Call Action Not Supported",
+        text2: "Unable to initiate a call on this device.",
+      });
+      return;
+    }
 
-  // Initiates the actual phone call after the user confirms in the modal.
-  const confirmCall = () => {
     Linking.openURL(`tel:${HOSPITAL_PHONE}`).catch(() => {
-      Alert.alert("Call Failed", "Unable to initiate a call on this device.");
+      Toast.show({
+        type: "info",
+        text1: "Call Failed",
+        text2: "Unable to initiate a call on this device.",
+      });
     });
-    setCallModalOrder(null);
   };
 
   // Handle Book Appointment — routes into the full booking chain:
@@ -310,17 +315,17 @@ export default function OrdersScreen() {
       case "call":
         return (
           <TouchableOpacity
-            style={[styles.cardActionButton, styles.cardActionCall]}
+            style={styles.cardActionButton}
             onPress={() => handleCallPress(order)}
             activeOpacity={0.7}
           >
-            <Ionicons
+            <MaterialIcons
               name="call"
               size={14}
-              color={Colors.background}
+              color={Colors.secondary}
               style={styles.actionIcon}
             />
-            <Text style={[styles.cardActionText, styles.cardActionCallText]}>
+            <Text style={styles.cardActionText}>
               Call
             </Text>
           </TouchableOpacity>
@@ -328,11 +333,11 @@ export default function OrdersScreen() {
       case "book":
         return (
           <TouchableOpacity
-            style={[styles.cardActionButton, styles.cardActionBook]}
+            style={styles.cardActionButton}
             onPress={() => handleBook(order)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.cardActionText, styles.cardActionBookText]}>
+            <Text style={styles.cardActionText}>
               Book appointment
             </Text>
             <Ionicons
@@ -378,7 +383,7 @@ export default function OrdersScreen() {
             <Ionicons
               name="arrow-forward"
               size={14}
-              color={Colors.primary}
+              color={Colors.secondary}
               style={styles.actionIconRight}
             />
           </TouchableOpacity>
@@ -398,40 +403,13 @@ export default function OrdersScreen() {
       {/* Tab Selector + Filter Row */}
       <View style={styles.tabWrapper}>
         <View style={styles.tabSegmentContainer}>
-          <TouchableOpacity
-            style={[
-              styles.tabSegmentButton,
-              activeTab === "active" && styles.tabSegmentButtonActive,
-            ]}
-            onPress={() => setActiveTab("active")}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.tabSegmentText,
-                activeTab === "active" && styles.tabSegmentTextActive,
-              ]}
-            >
-              Active orders
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.tabSegmentButton,
-              activeTab === "history" && styles.tabSegmentButtonActive,
-            ]}
-            onPress={() => setActiveTab("history")}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.tabSegmentText,
-                activeTab === "history" && styles.tabSegmentTextActive,
-              ]}
-            >
-              History
-            </Text>
-          </TouchableOpacity>
+          <CustomTabs
+            tabs={["Active orders", "History"]}
+            activeTab={activeTab === "active" ? "Active orders" : "History"}
+            onTabChange={(tab) => {
+              setActiveTab(tab === "Active orders" ? "active" : "history");
+            }}
+          />
         </View>
 
         {/* Filter Button */}
@@ -444,7 +422,7 @@ export default function OrdersScreen() {
           activeOpacity={0.7}
         >
           <Ionicons
-            name="options-outline"
+            name="options"
             size={20}
             color={
               selectedDepartment !== "All"
@@ -503,35 +481,47 @@ export default function OrdersScreen() {
               <View style={styles.cardDetailsRow}>
                 {/* Doctor */}
                 <View style={styles.detailItem}>
-                  <Ionicons
-                    name="person-outline"
-                    size={16}
-                    color={Colors.secondary}
+                  {/* <Fontisto
+                    name="doctor"
+                    size={17}
+                    color={Colors.primary}
+                  /> */}
+                  <Image
+                    source={require("../../assets/images/doctor_person.png")}
+                    style={{ width: 17, height: 17, tintColor: Colors.primary }}
+                    resizeMode="contain"
                   />
                   <Text style={styles.detailText}>{order.doctor}</Text>
                 </View>
                 {/* Date */}
                 <View style={styles.detailItem}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={16}
-                    color={Colors.secondary}
+                  {/* <MaterialCommunityIcons
+                    name="calendar-month-outline"
+                    size={17}
+                    color={Colors.primary}
+                  /> */}
+                  <Image
+                    source={require("../../assets/images/calendar.png")}
+                    style={{ width: 17, height: 17, tintColor: Colors.primary }}
+                    resizeMode="contain"
                   />
-                  <Text style={styles.detailText}>{order.date}</Text>
+                  <Text style={styles.detailText}>
+                    {order.date ? order.date.slice(0, -6).trim() : ""}
+                  </Text>
                 </View>
               </View>
 
               {/* Bottom Strip */}
               <View style={styles.bottomStrip}>
                 <View style={styles.bottomLeftCol}>
-                  <Ionicons
+                  <MaterialCommunityIcons
                     name={
                       order.department.toLowerCase().includes("lab")
-                        ? "flask-outline"
-                        : "business-outline"
+                        ? "microscope"
+                        : "hospital-building"
                     }
-                    size={16}
-                    color={Colors.secondary}
+                    size={17}
+                    color={Colors.primary}
                   />
                   <Text style={styles.bottomLeftText}>{order.department}</Text>
                 </View>
@@ -558,12 +548,12 @@ export default function OrdersScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter by Department</Text>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setIsFilterVisible(false)}
               >
                 <Ionicons name="close-outline" size={24} color={Colors.text} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
 
             {departmentOptions.map((dept) => (
@@ -582,7 +572,7 @@ export default function OrdersScreen() {
                   style={[
                     styles.filterOptionText,
                     selectedDepartment === dept &&
-                      styles.filterOptionTextSelected,
+                    styles.filterOptionTextSelected,
                   ]}
                 >
                   {dept === "All" ? "All Departments" : dept}
@@ -619,7 +609,7 @@ export default function OrdersScreen() {
                   size={24}
                   color={
                     selectedOrder?.status.toLowerCase().includes("cancel")
-                      ? "#E02424"
+                      ? Colors.errorText
                       : Colors.primary
                   }
                   style={{ marginRight: 8 }}
@@ -748,84 +738,6 @@ export default function OrdersScreen() {
         </View>
       </Modal>
 
-      {/* Call Confirmation Bottom Modal */}
-      <Modal
-        visible={callModalOrder !== null}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setCallModalOrder(null)}
-      >
-        <Pressable
-          style={styles.callModalOverlay}
-          onPress={() => setCallModalOrder(null)}
-        >
-          <View style={styles.callModalSheet}>
-            {/* Handle bar */}
-            <View style={styles.callModalHandle} />
-
-            {/* Department icon */}
-            <View style={styles.callModalIconWrap}>
-              <Ionicons
-                name={
-                  callModalOrder?.department.toLowerCase().includes("lab")
-                    ? "flask"
-                    : "business"
-                }
-                size={28}
-                color={Colors.primary}
-              />
-            </View>
-
-            <Text style={styles.callModalTitle}>
-              Contact {callModalOrder?.department || "Department"}
-            </Text>
-            <Text style={styles.callModalSubtitle}>
-              This order requires approval before it can be scheduled.\nCall the
-              hospital to follow up on your order status.
-            </Text>
-
-            {/* Pending order info */}
-            <View style={styles.callModalOrderCard}>
-              <Text style={styles.callModalOrderLabel}>Order</Text>
-              <Text style={styles.callModalOrderName} numberOfLines={2}>
-                {callModalOrder?.title}
-              </Text>
-              <Text style={styles.callModalStatusBadge}>
-                {callModalOrder?.status}
-              </Text>
-            </View>
-
-            {/* Phone number strip */}
-            <View style={styles.callModalPhoneRow}>
-              <Ionicons name="call-outline" size={20} color={Colors.primary} />
-              <Text style={styles.callModalPhone}>{HOSPITAL_PHONE}</Text>
-            </View>
-
-            {/* Actions */}
-            <TouchableOpacity
-              style={styles.callModalPrimaryBtn}
-              onPress={confirmCall}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name="call"
-                size={18}
-                color={Colors.background}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.callModalPrimaryTxt}>Call Now</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.callModalSecondaryBtn}
-              onPress={() => setCallModalOrder(null)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.callModalSecondaryTxt}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -859,39 +771,14 @@ const styles = StyleSheet.create({
   },
   tabSegmentContainer: {
     flex: 1,
-    flexDirection: "row",
-    gap: 8,
-  },
-  tabSegmentButton: {
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.background,
-  },
-  tabSegmentButtonActive: {
-    backgroundColor: "#E8F0FE",
-    borderColor: Colors.secondary,
-  },
-  tabSegmentText: {
-    fontSize: 14,
-    color: Colors.label,
-    fontFamily: FontFamilies.semiBold,
-  },
-  tabSegmentTextActive: {
-    color: Colors.secondary,
-    fontFamily: FontFamilies.bold,
   },
   filterButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#E8F0FE",
+    backgroundColor: Colors.backgroundCardLight,
   },
   filterButtonActive: {
     backgroundColor: Colors.primary,
@@ -908,7 +795,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: 16,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
@@ -918,9 +805,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    paddingTop: 16,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   cardTitle: {
     fontSize: 14,
@@ -952,10 +841,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    flex: 1,
   },
   detailText: {
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.text,
     fontFamily: FontFamilies.medium,
     flexShrink: 1,
@@ -964,9 +852,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#EEF3FC",
-    padding: 5,
-    margin: 7,
+    backgroundColor: Colors.backgroundOverlayVeryLight,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 12,
+    marginBottom: 12,
     borderRadius: 8,
   },
   bottomLeftCol: {
@@ -989,22 +879,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 14,
     backgroundColor: Colors.background,
-  },
-  // "Call" pill — amber/warning tint matching the pending status badge
-  cardActionCall: {
-    backgroundColor: Colors.primary,
-  },
-  cardActionCallText: {
-    color: Colors.background,
-  },
-  // "Book appointment" pill — subtle secondary-tinted border
-  cardActionBook: {
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.secondary,
-  },
-  cardActionBookText: {
-    color: Colors.secondary,
   },
   cardActionText: {
     fontSize: 12,
@@ -1052,7 +926,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: Colors.backgroundOverlay,
     justifyContent: "flex-end",
   },
   modalContent: {
@@ -1100,7 +974,7 @@ const styles = StyleSheet.create({
   // Details Modal Styles
   detailsModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: Colors.backgroundOverlay,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -1112,7 +986,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     maxHeight: "80%",
     padding: 20,
-    shadowColor: "#000",
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -1212,129 +1086,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.background,
     fontFamily: FontFamilies.bold,
-  },
-  // ── Call Confirmation Modal ──────────────────────────────────────────────
-  callModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  callModalSheet: {
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingBottom: Platform.OS === "ios" ? 44 : 28,
-    paddingTop: 12,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 12,
-  },
-  callModalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.border,
-    marginBottom: 20,
-  },
-  callModalIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#E8F0FE",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  callModalTitle: {
-    fontSize: 18,
-    fontFamily: FontFamilies.bold,
-    color: Colors.primary,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  callModalSubtitle: {
-    fontSize: 13,
-    fontFamily: FontFamilies.regular,
-    color: Colors.label,
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 20,
-    paddingHorizontal: 8,
-  },
-  callModalOrderCard: {
-    width: "100%",
-    backgroundColor: "#F5F8FF",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  callModalOrderLabel: {
-    fontSize: 11,
-    fontFamily: FontFamilies.medium,
-    color: Colors.label,
-    marginBottom: 4,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  callModalOrderName: {
-    fontSize: 15,
-    fontFamily: FontFamilies.bold,
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  callModalStatusBadge: {
-    fontSize: 12,
-    fontFamily: FontFamilies.semiBold,
-    color: "#B78103",
-  },
-  callModalPhoneRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#EEF3FC",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    width: "100%",
-    justifyContent: "center",
-  },
-  callModalPhone: {
-    fontSize: 16,
-    fontFamily: FontFamilies.bold,
-    color: Colors.primary,
-    letterSpacing: 0.5,
-  },
-  callModalPrimaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.primary,
-    borderRadius: 14,
-    paddingVertical: 14,
-    width: "100%",
-    marginBottom: 12,
-  },
-  callModalPrimaryTxt: {
-    fontSize: 16,
-    fontFamily: FontFamilies.bold,
-    color: Colors.background,
-  },
-  callModalSecondaryBtn: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    width: "100%",
-  },
-  callModalSecondaryTxt: {
-    fontSize: 15,
-    fontFamily: FontFamilies.semiBold,
-    color: Colors.label,
   },
 });

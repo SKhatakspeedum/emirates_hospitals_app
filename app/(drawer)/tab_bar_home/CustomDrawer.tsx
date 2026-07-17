@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { useRouter } from "expo-router";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Fontisto, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   IS_LOGGED_IN,
@@ -59,60 +59,30 @@ const getInitials = (name: string): string => {
 
 const drawerItems = [
   {
-    label: "PHR",
-    icon: <Ionicons name="id-card-outline" size={22} color={Colors.primary} />,
-    screen: "phr",
-  },
-  {
-    label: "Patient",
-    icon: <Ionicons name="people-outline" size={22} color={Colors.primary} />,
-    // screen: "PatientSelection",
-    screen: "RegisteredPatients",
-  },
-  {
-    label: "Explore",
-    icon: (
-      <MaterialCommunityIcons
-        name="compass-outline"
-        size={22}
-        color={Colors.primary}
-      />
-    ),
-    screen: "explore",
+    label: "Providers",
+    icon: <Fontisto name="stethoscope" size={22} color={Colors.secondary} />,
+    screen: "NearbyProviders",
   },
   {
     label: "Orders",
-    icon: (
-      <Ionicons name="bag-handle-outline" size={22} color={Colors.primary} />
-    ),
+    icon: <MaterialCommunityIcons name="clipboard-text-clock-outline" size={20} color={Colors.secondary} />,
+    // screen: "PatientSelection",
     screen: "OrderScreen",
   },
   {
     label: "Medicines",
-    icon: (
-      <MaterialCommunityIcons
-        name="prescription"
-        size={22}
-        color={Colors.primary}
-      />
-    ),
+    icon: <MaterialCommunityIcons name="pill" size={20} color={Colors.secondary} />,
     screen: "MedicinesScreen",
   },
   {
     label: "Health Packages",
-    icon: (
-      <MaterialCommunityIcons
-        name="briefcase-plus-outline"
-        size={22}
-        color={Colors.primary}
-      />
-    ),
+    icon: <MaterialIcons name="medical-services" size={20} color={Colors.secondary} />,
     screen: "HealthPackages",
   },
   {
-    label: "Bills",
-    icon: <Ionicons name="receipt-outline" size={22} color={Colors.primary} />,
-    screen: "Bills",
+    label: "Settings",
+    icon: <Ionicons name="settings-outline" size={20} color={Colors.secondary} />,
+    screen: "Settings",
   },
 ];
 
@@ -222,20 +192,20 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
       return;
     }
 
-    if (screen === "PatientSelection") {
-      props.navigation.closeDrawer();
-      router.push("/patient/patient_selection");
-      return;
-    }
+    // if (screen === "PatientSelection") {
+    //   props.navigation.closeDrawer();
+    //   router.push("/patient/patient_selection");
+    //   return;
+    // }
 
-    if (screen === "RegisteredPatients") {
-      props.navigation.closeDrawer();
-      router.push({
-        pathname: "/patient/registered_patients",
-        params: { fromDrawer: "true" },
-      });
-      return;
-    }
+    // if (screen === "RegisteredPatients") {
+    //   props.navigation.closeDrawer();
+    //   router.push({
+    //     pathname: "/patient/registered_patients",
+    //     params: { fromDrawer: "true" },
+    //   });
+    //   return;
+    // }
 
     const validRoutes = [
       "profile/ProfileScreen",
@@ -244,6 +214,14 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     ];
     if (validRoutes.includes(screen)) {
       props.navigation.navigate(screen);
+      props.navigation.closeDrawer();
+    } else if (screen === "NearbyProviders") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", {
+        screen: "HomeTab",
+        params: {
+          screen: "NearbyProviders",
+        }
+      });
       props.navigation.closeDrawer();
     } else if (screen === "OrderScreen") {
       props.navigation.navigate("tab_bar_home/HomeScreen", {
@@ -255,7 +233,8 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         screen: "MedicinesScreen",
       });
       props.navigation.closeDrawer();
-    } else {
+    }
+    else {
       Toast.show({
         type: "info",
         text1: "Feature coming soon",
@@ -316,16 +295,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             )}
           </View>
 
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={Colors.primary}
-            style={styles.headerChevron}
-          />
         </TouchableOpacity>
-
-        {/* Separator */}
-        <View style={styles.headerSeparator} />
 
         {/* Menu Items */}
         <ScrollView
@@ -341,11 +311,11 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             >
               <View style={styles.linkIconWrapper}>{item.icon}</View>
               <Text style={styles.linkLabel}>{item.label}</Text>
-              <Ionicons
+              {/* <Ionicons
                 name="chevron-forward"
                 size={16}
                 color={Colors.inactive}
-              />
+              /> */}
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -362,15 +332,15 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
               <Ionicons
                 name="log-out-outline"
                 size={22}
-                color={Colors.primary}
+                color={Colors.secondary}
               />
             </View>
             <Text style={styles.logoutLabel}>Log out</Text>
-            <Ionicons
+            {/* <Ionicons
               name="chevron-forward"
               size={16}
               color={Colors.inactive}
-            />
+            /> */}
           </TouchableOpacity>
         </View>
       </View>
@@ -391,7 +361,6 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   drawerContainer: {
     flex: 1,
@@ -407,6 +376,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 8,
+    backgroundColor: Colors.backgroundCardLight,
+    borderRadius: 12
   },
   avatar: {
     width: 60,
@@ -435,7 +406,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    color: Colors.text,
+    color: Colors.primary,
     fontFamily: FontFamilies.bold,
     marginBottom: 2,
   },
@@ -459,12 +430,6 @@ const styles = StyleSheet.create({
   },
   headerChevron: {
     marginLeft: 8,
-  },
-  headerSeparator: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: 12,
-    marginHorizontal: 8,
   },
   linksScroll: {
     flex: 1,
@@ -510,7 +475,7 @@ const styles = StyleSheet.create({
   },
   loaderOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: Colors.lightgray,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -521,7 +486,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     alignItems: "center",
     minWidth: 160,
-    shadowColor: "#000",
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,

@@ -185,6 +185,9 @@ export default function OrdersScreen() {
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Order id currently resolving its provider for "Book appointment" —
+  // guards against double-tap and drives the button's loading state.
+  const [bookingOrderId, setBookingOrderId] = useState<string | null>(null);
   const HOSPITAL_PHONE = "+971800444444";
 
   useEffect(() => {
@@ -308,17 +311,88 @@ export default function OrdersScreen() {
     });
   };
 
-  // Handle Book Appointment — routes into the full booking chain:
-  // NearbyProviders (filtered by the order's department)
-  //   → PatientDetails → AppointmentReason → ScheduleBook → ConfirmScreen
-  // This lets the user pick a real doctor from the relevant department
-  // rather than relying on the free-text doctor field on the order card,
-  // which may not map to a bookable resource ID.
-  const handleBook = (order: OrderItem) => {
-    navigation.navigate("HomeTab", {
-      screen: "NearbyProviders",
-      params: { initialCategory: order.department },
-    });
+  // Loosely matches a provider row to the order's free-text doctor field —
+  // tolerant of a "Dr."/"Dr" prefix or extra whitespace differing between
+  // the two sources, since they come from different backend fields.
+  const findMatchingProvider = (rows: any[], rawDoctorName: string) => {
+    const normalize = (s: string) =>
+      (s || "")
+        .toLowerCase()
+        .trim()
+        .replace(/^dr\.?\s+/, "")
+        .replace(/\s+/g, " ");
+
+    const target = normalize(rawDoctorName);
+    if (!target) return undefined;
+
+    const nameOf = (r: any) => normalize(r.resource_name ?? r.name ?? "");
+    return (
+      rows.find((r) => nameOf(r) === target) ??
+      rows.find((r) => nameOf(r).includes(target) || target.includes(nameOf(r)))
+    );
+  };
+
+  // Handle Book Appointment — order cards always name a specific doctor, so
+  // rather than making the user re-pick them from the full provider list,
+  // look that doctor up and jump straight into the booking chain with them
+  // pre-selected: PatientDetails (which auto-advances to AppointmentReason
+  // once a patient + doctor are both known) → ScheduleBook → ConfirmScreen.
+  // If no matching provider is found (e.g. they're no longer bookable),
+  // tell the user instead of opening a booking flow with nothing behind it.
+  const handleBook = async (order: OrderItem) => {
+    if (bookingOrderId) return;
+    setBookingOrderId(order.id);
+    try {
+      const patientId = await fetchDataFromLocalStorage("sg_patientId");
+      const now = new Date();
+      const response = await callSuggestusAPI(
+        spd_processId_config.hospapp_get_resources,
+        {
+          p_patient_id: patientId ?? "",
+          p_resource_code: "",
+          p_month: now.getMonth() + 1,
+          p_year: now.getFullYear(),
+          p_process_type: "",
+          p_visit_id: null,
+          p_category_code: "CAT005",
+        },
+      );
+
+      const rows: any[] =
+        response?.returnCode === true && Array.isArray(response.returnData)
+          ? response.returnData
+          : [];
+      const matched = findMatchingProvider(rows, order.doctor);
+
+      if (!matched) {
+        Toast.show({
+          type: "info",
+          text1: "Provider Not Available",
+          text2: `${order.doctor || "This provider"} is not available for booking right now.`,
+        });
+        return;
+      }
+
+      navigation.navigate("HomeTab", {
+        screen: "PatientDetails",
+        params: {
+          doctorId: String(matched.resource_id ?? matched.id ?? ""),
+          doctorName: matched.resource_name ?? matched.name ?? order.doctor,
+          specialty: matched.dpt_description ?? matched.dept_name ?? "",
+          avatar: matched.resource_image_url ?? "",
+          hospital: matched.org_name ?? "",
+        },
+      });
+    } catch (e) {
+      console.error("Error booking appointment from order:", e);
+      Toast.show({
+        type: "error",
+        text1: "Something Went Wrong",
+        text2: "Unable to check provider availability. Please try again.",
+      });
+    } finally {
+      setBookingOrderId(null);
+    }
   };
 
   // Render Status Badge with colors derived from the status keyword
@@ -369,6 +443,8 @@ export default function OrdersScreen() {
       <View style={styles.footerActionsRow}>
         {order.buttonType.map((action, index) => {
           const meta = ACTION_META[action];
+          const isResolvingBooking =
+            action === "book" && bookingOrderId === order.id;
           return (
             <TouchableOpacity
               key={action}
@@ -379,8 +455,13 @@ export default function OrdersScreen() {
               ]}
               onPress={() => handleActionPress(order, action)}
               activeOpacity={0.7}
+              disabled={isResolvingBooking}
             >
-              <Ionicons name={meta.icon} size={15} color={Colors.primary} />
+              {isResolvingBooking ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
+                <Ionicons name={meta.icon} size={15} color={Colors.primary} />
+              )}
               <Text
                 style={styles.footerActionText}
                 numberOfLines={1}

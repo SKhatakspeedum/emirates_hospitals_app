@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -46,6 +46,7 @@ import {
   getDecryptedID,
 } from "../suggestus_plugin/util/util_functions";
 import { useDashboardSections } from "../hooks/useDashboardSections";
+import { SectionConfig } from "../config/sectionConfig";
 import CarouselBanner from "../components/BannerCarousel";
 import { fetchAndApplyOrgConfig } from "../services/orgConfig";
 import { SiteConfig } from "../config/site_config";
@@ -393,10 +394,12 @@ export default function DashboardScreen() {
     }, []),
   );
 
-  const handleSeeAllProviders = () => {
+  const handleSeeAllProviders = (providersList: typeof FALLBACK_PROVIDERS) => {
     // Pass the already-fetched list along so NearbyProvidersScreen doesn't
-    // have to re-hit hospapp_get_resources — it reuses this data directly.
-    navigation.navigate("NearbyProviders", { preloadedProviders: Providers });
+    // have to re-hit the same process — it reuses this data directly.
+    navigation.navigate("NearbyProviders", {
+      preloadedProviders: providersList,
+    });
   };
   const handleSeeAllSpecialties = () => {
     // Unlike Providers, the dashboard only ever fetched the curated
@@ -450,10 +453,30 @@ export default function DashboardScreen() {
   const [Providers, setProviders] = useState(FALLBACK_PROVIDERS);
   const [loadingProviders, setLoadingProviders] = useState(true);
 
+  // Shared response shape mapper — used by both the default fetch below and
+  // the per-widget-instance fetch further down, so a "providers" row driven
+  // by its own menu_additional_attributes.process_id still maps to the same
+  // card shape as the hardcoded default call.
+  const mapProviderRows = (rows: any[]): typeof FALLBACK_PROVIDERS =>
+    rows.map((r: any) => ({
+      id: String(r.resource_id ?? r.id ?? Math.random()),
+      name: r.resource_name ?? r.name ?? "",
+      specialty: r.dpt_description ?? r.dept_name ?? "",
+      qualification: r.doctor_education ?? r.doctor_short_description ?? "",
+      hospital: r.org_name ?? "",
+      distance: r.distance ?? "",
+      rating: String(r.rating ?? ""),
+      reviews: String(r.reviews ?? ""),
+      avatar: r.resource_image_url ?? "",
+      nextAvailable: r.next_available ?? r.next_slot ?? "",
+    }));
+
   // Same hospapp_get_resources call used by NearbyProvidersScreen — fetches
   // here too so the Home dashboard's "Providers" carousel shows real data,
   // and the full result is passed to NearbyProvidersScreen on "See all" so
-  // it doesn't need to re-fetch (see handleSeeAllProviders above).
+  // it doesn't need to re-fetch (see handleSeeAllProviders above). This is
+  // also the fallback data source for any "providers" widget instance that
+  // doesn't configure its own process_id.
   useEffect(() => {
     const fetchProviders = async () => {
       setLoadingProviders(true);
@@ -475,20 +498,7 @@ export default function DashboardScreen() {
           },
         );
         if (response?.returnCode === true && response.returnData?.length > 0) {
-          const fetched = response.returnData.map((r: any) => ({
-            id: String(r.resource_id ?? r.id ?? Math.random()),
-            name: r.resource_name ?? r.name ?? "",
-            specialty: r.dpt_description ?? r.dept_name ?? "",
-            qualification:
-              r.doctor_education ?? r.doctor_short_description ?? "",
-            hospital: r.org_name ?? "",
-            distance: r.distance ?? "",
-            rating: String(r.rating ?? ""),
-            reviews: String(r.reviews ?? ""),
-            avatar: r.resource_image_url ?? "",
-            nextAvailable: r.next_available ?? r.next_slot ?? "",
-          }));
-          setProviders(fetched);
+          setProviders(mapProviderRows(response.returnData));
         }
       } catch (e) {
         console.error("Error fetching providers:", e);
@@ -832,6 +842,81 @@ export default function DashboardScreen() {
   const { visibleSections, sections, visibleSectionConfigs } =
     useDashboardSections(noPatient);
 
+  // Per-widget-instance overrides: a "providers" row whose backend config
+  // (menu_additional_attributes) includes a process_id fetches its OWN data
+  // via that process + default_params_json, instead of showing the shared
+  // default list above. This is what lets two "providers" rows (same key,
+  // different menu_id/order) render different data when their backend
+  // config differs.
+  const providerSectionInstances = useMemo(
+    () => sections.filter((s) => s.key === "providers" && s.processId),
+    [sections],
+  );
+
+  const [providersOverrideById, setProvidersOverrideById] = useState<
+    Record<string, typeof FALLBACK_PROVIDERS>
+  >({});
+  const [loadingProvidersOverrideById, setLoadingProvidersOverrideById] =
+    useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (providerSectionInstances.length === 0) return;
+
+    const fetchOverrides = async () => {
+      const patientId = await fetchDataFromLocalStorage("sg_patientId");
+      const orgId = await fetchDataFromLocalStorage("sg_org_id");
+      const now = new Date();
+      // Same session-context defaults as the shared fetch above; a widget's
+      // own default_params_json is layered on top and wins on conflicts.
+      const baselineParams = {
+        p_patient_id: patientId ?? "",
+        p_resource_code: "",
+        p_month: now.getMonth() + 1,
+        p_year: now.getFullYear(),
+        p_process_type: "recent_appts",
+        p_visit_id: null,
+        p_category_code: "CAT005",
+        p_org_id: orgId,
+      };
+
+      await Promise.all(
+        providerSectionInstances.map(async (section) => {
+          setLoadingProvidersOverrideById((prev) => ({
+            ...prev,
+            [section.id]: true,
+          }));
+          try {
+            const response = await callSuggestusAPI(section.processId!, {
+              ...baselineParams,
+              ...(section.defaultParams ?? {}),
+            });
+            if (
+              response?.returnCode === true &&
+              response.returnData?.length > 0
+            ) {
+              setProvidersOverrideById((prev) => ({
+                ...prev,
+                [section.id]: mapProviderRows(response.returnData),
+              }));
+            }
+          } catch (e) {
+            console.error(
+              `Error fetching providers for widget ${section.id}:`,
+              e,
+            );
+          } finally {
+            setLoadingProvidersOverrideById((prev) => ({
+              ...prev,
+              [section.id]: false,
+            }));
+          }
+        }),
+      );
+    };
+
+    fetchOverrides();
+  }, [providerSectionInstances]);
+
   // Debug log to verify sections are being loaded
 
   // useEffect(() => {
@@ -843,15 +928,17 @@ export default function DashboardScreen() {
   //   );
   // }, [visibleSections, sections]);
 
-  // Renders each "body" section (everything below the greeting hero) by key.
-  // Called in the order of `visibleSections`, so the backend's
+  // Renders each "body" section (everything below the greeting hero).
+  // Called in the order of `visibleSectionConfigs`, so the backend's
   // menu_display_order drives the actual render order on screen.
-  // `instanceId` is the unique React key (backend menu_id) for this row —
-  // distinct from `sectionKey`, which the backend can legitimately repeat
-  // (e.g. two "providers" rows at different display orders) to show the
-  // same widget more than once. Keying by `sectionKey` alone would collide
-  // across those repeats and corrupt React's reconciliation.
-  const renderBodySection = (sectionKey: string, instanceId: string) => {
+  // Takes the full SectionConfig (not just its key) because the backend can
+  // legitimately repeat the same widget (e.g. two "providers" rows at
+  // different display orders, each with its own process_id/default_params)
+  // to show it more than once with independent data. `section.id` (the
+  // backend menu_id) is used as the React key — reusing `section.key` alone
+  // would collide across those repeats and corrupt React's reconciliation.
+  const renderBodySection = (section: SectionConfig) => {
+    const { key: sectionKey, id: instanceId } = section;
     switch (sectionKey) {
       case "promoBanner": {
         const promoBannerUrls =
@@ -1061,7 +1148,17 @@ export default function DashboardScreen() {
           </View>
         );
 
-      case "providers":
+      case "providers": {
+        // A widget instance with its own process_id (from
+        // menu_additional_attributes) shows its own fetched data; otherwise
+        // it falls back to the shared default Providers list/state.
+        const providerList = section.processId
+          ? providersOverrideById[instanceId] ?? []
+          : Providers;
+        const isProvidersLoading = section.processId
+          ? loadingProvidersOverrideById[instanceId] ?? true
+          : loadingProviders;
+
         return (
           <View key={instanceId} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
@@ -1077,7 +1174,7 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <Pressable
-                onPress={handleSeeAllProviders}
+                onPress={() => handleSeeAllProviders(providerList)}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
@@ -1091,7 +1188,7 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
 
-            {loadingProviders ? (
+            {isProvidersLoading ? (
               <ActivityIndicator
                 size="small"
                 color={Colors.secondary}
@@ -1103,7 +1200,7 @@ export default function DashboardScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.providersScrollList}
               >
-                {Providers.map((provider) => (
+                {providerList.map((provider) => (
                   <Pressable
                     key={provider.id}
                     style={({ pressed }) => [
@@ -1138,6 +1235,7 @@ export default function DashboardScreen() {
             )}
           </View>
         );
+      }
 
       case "specialties":
         return (
@@ -1337,7 +1435,7 @@ export default function DashboardScreen() {
         <View style={[styles.bodyContent, { minHeight: height }]}>
           {visibleSectionConfigs
             .filter((section) => section.key !== "greeting")
-            .map((section) => renderBodySection(section.key, section.id))}
+            .map((section) => renderBodySection(section))}
 
           <View style={styles.bottomSpacer} />
         </View>

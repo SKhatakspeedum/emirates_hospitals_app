@@ -25,6 +25,13 @@ export interface SectionConfig {
   description: string;
   requiresPatient?: boolean;
   bannerUrls?: string[]; // promoBanner only — backend-driven carousel images
+  // Backend-driven data source for this specific widget instance, from
+  // menu_additional_attributes: { process_id, default_params_json }.
+  // When present, the widget should fetch its own data via that process
+  // instead of a hardcoded call — this is what lets two rows sharing the
+  // same key (e.g. two "providers" widgets) show different data.
+  processId?: string;
+  defaultParams?: Record<string, any>;
 }
 
 // Mapping of backend widget codes to frontend SectionKeys
@@ -140,6 +147,12 @@ export const parseSectionsFromBackend = (
         bannerUrls:
           sectionKey === "promoBanner" && item.bannerUrls?.length
             ? item.bannerUrls
+            : undefined,
+        processId: item.additionalAttributes?.process_id || undefined,
+        defaultParams:
+          item.additionalAttributes?.default_params_json &&
+          typeof item.additionalAttributes.default_params_json === "object"
+            ? item.additionalAttributes.default_params_json
             : undefined,
       };
     })

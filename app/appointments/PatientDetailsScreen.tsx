@@ -71,7 +71,7 @@ export default function PatientDetailsScreen() {
             patientAge: String(selected.age ?? ""),
             patientGender: selected.gender ?? "Male",
             relationship: "Self",
-          });
+          }, true);
           return;
         } catch (_) {}
       }
@@ -91,8 +91,9 @@ export default function PatientDetailsScreen() {
     patientAge: string;
     patientGender: string;
     relationship: string;
-  }) => {
-    navigation.navigate("AppointmentReason", {
+  }, replace = false) => {
+    const action = replace ? navigation.replace : navigation.navigate;
+    action("AppointmentReason", {
       doctorId,
       doctorName,
       specialty,

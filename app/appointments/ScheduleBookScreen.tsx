@@ -310,8 +310,8 @@ export default function ScheduleBookScreen() {
             <View style={styles.emptyStateIconWrap}>
               <Ionicons
                 name="calendar-clear-outline"
-                size={40}
-                color={Colors.primary}
+                size={90}
+                color={Colors.backgroundOverlay}
               />
             </View>
             <Text style={styles.emptyStateTitle}>No Available Slots</Text>
@@ -321,38 +321,38 @@ export default function ScheduleBookScreen() {
             </Text>
           </View>
         </View>
-        ) : (
-          <ScrollView
-            style={styles.slotsScroll}
-            contentContainerStyle={styles.slotsGrid}
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled
-          >
-            {slots.map((slot) => {
-              const active = selectedSlot?.id === slot.id;
-              return (
-                <Pressable
-                  key={slot.id || slot.display}
-                  style={({ pressed }) => [
-                    styles.slotButton,
-                    active && styles.slotButtonActive,
-                    {
-                      transform: [{ scale: pressed ? 0.95 : 1 }],
-                      opacity: pressed ? 0.8 : 1,
-                    },
-                  ]}
-                  onPress={() => handleSlotSelect(slot)}
+      ) : (
+        <ScrollView
+          style={styles.slotsScroll}
+          contentContainerStyle={styles.slotsGrid}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+        >
+          {slots.map((slot) => {
+            const active = selectedSlot?.id === slot.id;
+            return (
+              <Pressable
+                key={slot.id || slot.display}
+                style={({ pressed }) => [
+                  styles.slotButton,
+                  active && styles.slotButtonActive,
+                  {
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}
+                onPress={() => handleSlotSelect(slot)}
+              >
+                <Text
+                  style={[styles.slotText, active && styles.slotTextActive]}
                 >
-                  <Text
-                    style={[styles.slotText, active && styles.slotTextActive]}
-                  >
-                    {slot.display}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
+                  {slot.display}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
 
       {/* Fade effect above footer */}
       <LinearGradient

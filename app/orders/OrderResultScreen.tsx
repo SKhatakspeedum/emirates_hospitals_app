@@ -52,36 +52,36 @@ export default function OrderResultScreen() {
 
       {docUrl && !webViewError ? (
         <View style={styles.viewerContainer}>
-          {Platform.OS === "web"
-            ? React.createElement("iframe", {
-                src: docUrl,
-                title: order.docName || "Result",
-                style: { flex: 1, border: "none", width: "100%", height: "100%" },
-                onError: () => setWebViewError(true),
-              })
-            : (
-              <WebView
-                source={{ uri: nativeViewerUrl }}
-                style={styles.webview}
-                startInLoadingState
-                renderLoading={() => (
-                  <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color={Colors.primary} />
-                    <Text style={styles.loadingText}>Loading document...</Text>
-                  </View>
-                )}
-                onError={() => setWebViewError(true)}
-                onHttpError={() => setWebViewError(true)}
-              />
-            )}
-          <TouchableOpacity
+          {Platform.OS === "web" ? (
+            React.createElement("iframe", {
+              src: docUrl,
+              title: order.docName || "Result",
+              style: { flex: 1, border: "none", width: "100%", height: "100%" },
+              onError: () => setWebViewError(true),
+            })
+          ) : (
+            <WebView
+              source={{ uri: nativeViewerUrl }}
+              style={styles.webview}
+              startInLoadingState
+              renderLoading={() => (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color={Colors.primary} />
+                  <Text style={styles.loadingText}>Loading document...</Text>
+                </View>
+              )}
+              onError={() => setWebViewError(true)}
+              onHttpError={() => setWebViewError(true)}
+            />
+          )}
+          {/* <TouchableOpacity
             style={styles.openExternalBtn}
             onPress={() => Linking.openURL(docUrl)}
             activeOpacity={0.8}
           >
             <Ionicons name="open-outline" size={16} color={Colors.background} />
             <Text style={styles.openExternalText}>Open in browser</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       ) : (
         <View style={styles.summaryContainer}>
@@ -97,14 +97,14 @@ export default function OrderResultScreen() {
               ? "Could not load the document"
               : "No document available yet"}
           </Text>
-          {webViewError && !!docUrl && (
+          {/* {webViewError && !!docUrl && (
             <TouchableOpacity
               style={styles.retryBtn}
               onPress={() => Linking.openURL(docUrl)}
             >
               <Text style={styles.retryBtnText}>Open in browser instead</Text>
             </TouchableOpacity>
-          )}
+          )} */}
 
           <View style={styles.summaryCard}>
             <Text style={styles.summaryRow}>

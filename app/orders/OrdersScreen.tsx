@@ -159,6 +159,9 @@ export default function OrdersScreen() {
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Call confirmation modal
+  const [callModalOrder, setCallModalOrder] = useState<OrderItem | null>(null);
+  const HOSPITAL_PHONE = "+971800444444";
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -200,6 +203,7 @@ export default function OrdersScreen() {
             const rawStatus = r.ordstat_name ?? r.ord_status ?? "";
             const presentation = derivePresentation(rawStatus);
 
+            console.log("presentation:>>", rawStatus, presentation);
             return {
               id: String(r.ord_id ?? r.p_ord_id ?? Math.random()),
               title: r.ord_description ?? r.ord_description_medication ?? "",
@@ -218,7 +222,11 @@ export default function OrdersScreen() {
               department:
                 r.ord_type ?? r.ord_group ?? r.ord_location_identifier ?? "",
               bucket: presentation.bucket,
-              buttonType: presentation.buttonType,
+              // button type
+              // buttonType: presentation.buttonType,
+              // buttonType: "call",
+              buttonType: "book",
+              // buttonType: "view_result",
               findings: r.findings ?? "",
               recommendations: r.recommendations ?? "",
               reason: r.ord_cancel_remarks ?? "",
@@ -259,37 +267,30 @@ export default function OrdersScreen() {
     return order.department === selectedDepartment;
   });
 
-  // Handle Call simulation
-  const handleCall = (department: string) => {
-    const phoneNumber = "+971800444";
-    Alert.alert(
-      "Contact Department",
-      `Would you like to call the ${department} department?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Call",
-          onPress: () => {
-            Linking.openURL(`tel:${phoneNumber}`).catch(() => {
-              Alert.alert("Error", "Unable to initiate call on this device.");
-            });
-          },
-        },
-      ],
-    );
+  // Opens the call-confirmation bottom modal instead of a plain Alert,
+  // giving the user a richer confirmation UI with the hospital number shown.
+  const handleCallPress = (order: OrderItem) => {
+    setCallModalOrder(order);
   };
 
-  // Handle Book Appointment Navigation
+  // Initiates the actual phone call after the user confirms in the modal.
+  const confirmCall = () => {
+    Linking.openURL(`tel:${HOSPITAL_PHONE}`).catch(() => {
+      Alert.alert("Call Failed", "Unable to initiate a call on this device.");
+    });
+    setCallModalOrder(null);
+  };
+
+  // Handle Book Appointment — routes into the full booking chain:
+  // NearbyProviders (filtered by the order's department)
+  //   → PatientDetails → AppointmentReason → ScheduleBook → ConfirmScreen
+  // This lets the user pick a real doctor from the relevant department
+  // rather than relying on the free-text doctor field on the order card,
+  // which may not map to a bookable resource ID.
   const handleBook = (order: OrderItem) => {
     navigation.navigate("HomeTab", {
-      screen: "AppointmentType",
-      params: {
-        doctorId: "10",
-        doctorName: order.doctor,
-        specialty: `${order.department} Specialist`,
-        avatar: "https://randomuser.me/api/portraits/men/4.jpg",
-        patientName: "John Doe",
-      },
+      screen: "NearbyProviders",
+      params: { initialCategory: order.department },
     });
   };
 
@@ -309,27 +310,31 @@ export default function OrdersScreen() {
       case "call":
         return (
           <TouchableOpacity
-            style={styles.cardActionButton}
-            onPress={() => handleCall(order.department)}
+            style={[styles.cardActionButton, styles.cardActionCall]}
+            onPress={() => handleCallPress(order)}
             activeOpacity={0.7}
           >
             <Ionicons
               name="call"
               size={14}
-              color={Colors.secondary}
+              color={Colors.background}
               style={styles.actionIcon}
             />
-            <Text style={styles.cardActionText}>Call</Text>
+            <Text style={[styles.cardActionText, styles.cardActionCallText]}>
+              Call
+            </Text>
           </TouchableOpacity>
         );
       case "book":
         return (
           <TouchableOpacity
-            style={styles.cardActionButton}
+            style={[styles.cardActionButton, styles.cardActionBook]}
             onPress={() => handleBook(order)}
             activeOpacity={0.7}
           >
-            <Text style={styles.cardActionText}>Book appointment</Text>
+            <Text style={[styles.cardActionText, styles.cardActionBookText]}>
+              Book appointment
+            </Text>
             <Ionicons
               name="arrow-forward"
               size={14}
@@ -442,7 +447,9 @@ export default function OrdersScreen() {
             name="options-outline"
             size={20}
             color={
-              selectedDepartment !== "All" ? Colors.background : Colors.secondary
+              selectedDepartment !== "All"
+                ? Colors.background
+                : Colors.secondary
             }
           />
         </TouchableOpacity>
@@ -740,6 +747,85 @@ export default function OrdersScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Call Confirmation Bottom Modal */}
+      <Modal
+        visible={callModalOrder !== null}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setCallModalOrder(null)}
+      >
+        <Pressable
+          style={styles.callModalOverlay}
+          onPress={() => setCallModalOrder(null)}
+        >
+          <View style={styles.callModalSheet}>
+            {/* Handle bar */}
+            <View style={styles.callModalHandle} />
+
+            {/* Department icon */}
+            <View style={styles.callModalIconWrap}>
+              <Ionicons
+                name={
+                  callModalOrder?.department.toLowerCase().includes("lab")
+                    ? "flask"
+                    : "business"
+                }
+                size={28}
+                color={Colors.primary}
+              />
+            </View>
+
+            <Text style={styles.callModalTitle}>
+              Contact {callModalOrder?.department || "Department"}
+            </Text>
+            <Text style={styles.callModalSubtitle}>
+              This order requires approval before it can be scheduled.\nCall the
+              hospital to follow up on your order status.
+            </Text>
+
+            {/* Pending order info */}
+            <View style={styles.callModalOrderCard}>
+              <Text style={styles.callModalOrderLabel}>Order</Text>
+              <Text style={styles.callModalOrderName} numberOfLines={2}>
+                {callModalOrder?.title}
+              </Text>
+              <Text style={styles.callModalStatusBadge}>
+                {callModalOrder?.status}
+              </Text>
+            </View>
+
+            {/* Phone number strip */}
+            <View style={styles.callModalPhoneRow}>
+              <Ionicons name="call-outline" size={20} color={Colors.primary} />
+              <Text style={styles.callModalPhone}>{HOSPITAL_PHONE}</Text>
+            </View>
+
+            {/* Actions */}
+            <TouchableOpacity
+              style={styles.callModalPrimaryBtn}
+              onPress={confirmCall}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="call"
+                size={18}
+                color={Colors.background}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.callModalPrimaryTxt}>Call Now</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.callModalSecondaryBtn}
+              onPress={() => setCallModalOrder(null)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.callModalSecondaryTxt}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -903,6 +989,22 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 14,
     backgroundColor: Colors.background,
+  },
+  // "Call" pill — amber/warning tint matching the pending status badge
+  cardActionCall: {
+    backgroundColor: Colors.primary,
+  },
+  cardActionCallText: {
+    color: Colors.background,
+  },
+  // "Book appointment" pill — subtle secondary-tinted border
+  cardActionBook: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+  },
+  cardActionBookText: {
+    color: Colors.secondary,
   },
   cardActionText: {
     fontSize: 12,
@@ -1110,5 +1212,129 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.background,
     fontFamily: FontFamilies.bold,
+  },
+  // ── Call Confirmation Modal ──────────────────────────────────────────────
+  callModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
+  },
+  callModalSheet: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === "ios" ? 44 : 28,
+    paddingTop: 12,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  callModalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    marginBottom: 20,
+  },
+  callModalIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#E8F0FE",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  callModalTitle: {
+    fontSize: 18,
+    fontFamily: FontFamilies.bold,
+    color: Colors.primary,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  callModalSubtitle: {
+    fontSize: 13,
+    fontFamily: FontFamilies.regular,
+    color: Colors.label,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  callModalOrderCard: {
+    width: "100%",
+    backgroundColor: "#F5F8FF",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  callModalOrderLabel: {
+    fontSize: 11,
+    fontFamily: FontFamilies.medium,
+    color: Colors.label,
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  callModalOrderName: {
+    fontSize: 15,
+    fontFamily: FontFamilies.bold,
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  callModalStatusBadge: {
+    fontSize: 12,
+    fontFamily: FontFamilies.semiBold,
+    color: "#B78103",
+  },
+  callModalPhoneRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#EEF3FC",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    width: "100%",
+    justifyContent: "center",
+  },
+  callModalPhone: {
+    fontSize: 16,
+    fontFamily: FontFamilies.bold,
+    color: Colors.primary,
+    letterSpacing: 0.5,
+  },
+  callModalPrimaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    paddingVertical: 14,
+    width: "100%",
+    marginBottom: 12,
+  },
+  callModalPrimaryTxt: {
+    fontSize: 16,
+    fontFamily: FontFamilies.bold,
+    color: Colors.background,
+  },
+  callModalSecondaryBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    width: "100%",
+  },
+  callModalSecondaryTxt: {
+    fontSize: 15,
+    fontFamily: FontFamilies.semiBold,
+    color: Colors.label,
   },
 });

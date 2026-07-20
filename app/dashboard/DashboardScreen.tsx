@@ -44,6 +44,7 @@ import { spd_processId_config } from "../config/process_id";
 import { getMenuWidgetsByType } from "../services/dashboardApi";
 import { getSpecialtyIconMeta } from "../config/specialtyIcons";
 import { getMenuIcon } from "../utils/menuIcon";
+import { DashboardSkeleton } from "../components/DashboardSkeleton";
 import {
   fetchDataFromLocalStorage,
   getDecryptedID,
@@ -823,7 +824,11 @@ export default function DashboardScreen() {
   const noPatient = !patientId || patientId === "null";
 
   // Fetch dynamic sections from backend (with automatic fallback to defaults)
-  const { visibleSections, refetch } = useDashboardSections(noPatient);
+  const {
+    visibleSections,
+    isLoading: isLayoutLoading,
+    refetch,
+  } = useDashboardSections(noPatient);
 
   // Providers/specialties/health-summary/upcoming-appointment data is fetched
   // once per matching widget instance (not once globally) — each instance uses
@@ -1450,11 +1455,25 @@ export default function DashboardScreen() {
           </View>
         );
       }
-
       default:
         return null;
     }
   };
+
+  const providerKeys = providerInstances.map((inst) => String(inst.instanceId));
+  const isProvidersLoading =
+    providerInstances.length > 0 &&
+    providerKeys.some((key) => loadingProvidersByInstance[key] !== false);
+
+  const specialtyKeys = specialtyInstances.map((inst) =>
+    String(inst.instanceId),
+  );
+  const isSpecialtiesLoading =
+    specialtyInstances.length > 0 &&
+    specialtyKeys.some((key) => loadingSpecialtiesByInstance[key] !== false);
+
+  const isDashboardLoading =
+    isLayoutLoading || isProvidersLoading || isSpecialtiesLoading;
 
   return (
     <View style={styles.container}>
@@ -1541,44 +1560,52 @@ export default function DashboardScreen() {
         </SafeAreaView>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.stickyHeaderSpacer} />
+      {isDashboardLoading ? (
+        <>
+          <View style={styles.stickyHeaderSpacer} />
+          <DashboardSkeleton />
+        </>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.stickyHeaderSpacer} />
 
-        {/* Greeting Section */}
-        {visibleSections.some((s) => s.key === "greeting") && (
-          <View style={styles.headerGreetingSection}>
-            <View style={styles.bgCircleLarge} />
-            <FontAwesome name="plus" size={40} style={styles.bgPlus} />
+          {/* Greeting Section */}
+          {visibleSections.some((s) => s.key === "greeting") && (
+            <View style={styles.headerGreetingSection}>
+              <View style={styles.bgCircleLarge} />
+              <FontAwesome name="plus" size={40} style={styles.bgPlus} />
 
-            <View style={styles.greetingContainer}>
-              <Text style={styles.greetingText}>
-                {noPatient
-                  ? `Welcome, ${userProfileName}!`
-                  : `${getGreetingTime()}, ${userProfileName}!`}
-              </Text>
+              <View style={styles.greetingContainer}>
+                <Text style={styles.greetingText}>
+                  {noPatient
+                    ? `Welcome, ${userProfileName}!`
+                    : `${getGreetingTime()}, ${userProfileName}!`}
+                </Text>
 
-              <Text style={styles.subGreetingText}>
-                {noPatient
-                  ? "Start exploring healthcare services\n& specialist - all in one place."
-                  : "Welcome back. How can we support\nyour health today?"}
-              </Text>
+                <Text style={styles.subGreetingText}>
+                  {noPatient
+                    ? "Start exploring healthcare services\n& specialist - all in one place."
+                    : "Welcome back. How can we support\nyour health today?"}
+                </Text>
+              </View>
             </View>
+          )}
+
+          {/* White Content Area — body sections render in backend sequence order */}
+          <View style={[styles.bodyContent, { minHeight: height }]}>
+            {visibleSections
+              .filter((section) => section.key !== "greeting")
+              .map((section) => renderBodySection(section))}
+
+            <View style={styles.bottomSpacer} />
           </View>
-        )}
+        </ScrollView>
+      )}
 
-        {/* White Content Area — body sections render in backend sequence order */}
-        <View style={[styles.bodyContent, { minHeight: height }]}>
-          {visibleSections
-            .filter((section) => section.key !== "greeting")
-            .map((section) => renderBodySection(section))}
-
-          <View style={styles.bottomSpacer} />
-        </View>
-      </ScrollView>
-
+      {/* Location Picker Sheet */}
       <Modal
         visible={showLocationPicker}
         animationType="slide"

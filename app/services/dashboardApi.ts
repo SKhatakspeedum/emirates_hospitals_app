@@ -100,6 +100,9 @@ export interface BackendMenuWidget {
   sequence: number;
   additionalAttributes?: Record<string, any>;
   bannerUrls?: string[]; // Parsed from additionalAttributes.banner_urls
+  menu_image?: string; // Icon data for rendering
+  menu_image_type?: string; // Icon type: "icon", "img", "svg", "other"
+  menu_default_params?: Record<string, any>; // Default params to pass to route
   [key: string]: any;
 }
 
@@ -155,7 +158,7 @@ export const getMenuAppWidgets = async (
       {
         p_ai_code: params.p_ai_code,
         // sgOrgId: orgId,
-        p_menu_type: "",
+        p_menu_type: params.p_menu_type,
         p_process_flag: params.p_process_flag || "Y",
       },
     );
@@ -164,7 +167,9 @@ export const getMenuAppWidgets = async (
 
     // Parse the actual response format
     if (response?.returnCode === true && Array.isArray(response.returnData)) {
-      const menuResponse = response.returnData[0] as BackendMenuResponse;
+      const menuResponse = response.returnData.find(
+        (item) => item.menu_type === params.p_menu_type,
+      ) as BackendMenuResponse | undefined;
 
       if (!menuResponse?.details) {
         console.warn("[getMenuAppWidgets] No details in response");
@@ -209,6 +214,13 @@ export const getMenuAppWidgets = async (
             });
           }
 
+          // Parse menu_default_params if present (JSON string or object)
+          const menuDefaultParams = item.menu_default_params
+            ? typeof item.menu_default_params === "string"
+              ? JSON.parse(item.menu_default_params)
+              : item.menu_default_params
+            : undefined;
+
           return {
             id: String(item.menu_id),
             widget_code: item.menu_action_screen_identifier,
@@ -217,6 +229,11 @@ export const getMenuAppWidgets = async (
             sequence: item.menu_display_order,
             additionalAttributes,
             bannerUrls,
+            // Preserve image/icon fields for menu rendering
+            menu_image: item.menu_image,
+            menu_image_type: item.menu_image_type,
+            // Preserve default params for navigation
+            menu_default_params: menuDefaultParams,
           };
         });
 
@@ -254,7 +271,7 @@ export const getHomeScreenWidgets = async (): Promise<
     p_ai_code:
       (await fetchDataFromLocalStorage("sg_AICODE")) ||
       suggestusClientConfig?.SUGGESTUS_AI_CODE,
-    p_menu_type: "",
+    p_menu_type: "HomeScreen",
   });
 };
 

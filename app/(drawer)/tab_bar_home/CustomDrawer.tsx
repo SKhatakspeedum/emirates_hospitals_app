@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -26,6 +26,8 @@ import { Colors } from "@/app/config/colors";
 import { FontFamilies } from "@/app/config/fonts";
 import { getDecryptedID } from "@/app/suggestus_plugin/util/util_functions";
 import { ORG_CONFIG_STORAGE_KEYS } from "@/app/services/orgConfig";
+import { useLeftMenuItems } from "@/app/hooks/useLeftMenuItems";
+import { getMenuIcon } from "@/app/utils/menuIcon";
 
 interface UserProfile {
   name: string;
@@ -57,7 +59,7 @@ const getInitials = (name: string): string => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
-const drawerItems = [
+const DEFAULT_DRAWER_ITEMS = [
   {
     label: "Providers",
     icon: <Fontisto name="stethoscope" size={22} color={Colors.secondary} />,
@@ -66,7 +68,6 @@ const drawerItems = [
   {
     label: "Orders",
     icon: <MaterialCommunityIcons name="clipboard-text-clock-outline" size={20} color={Colors.secondary} />,
-    // screen: "PatientSelection",
     screen: "OrderScreen",
   },
   {
@@ -86,12 +87,46 @@ const drawerItems = [
   },
 ];
 
+const ICON_MAP: Record<string, React.ReactNode> = {
+  "providers": <Fontisto name="stethoscope" size={22} color={Colors.secondary} />,
+  "orders": <MaterialCommunityIcons name="clipboard-text-clock-outline" size={20} color={Colors.secondary} />,
+  "medicines": <MaterialCommunityIcons name="pill" size={20} color={Colors.secondary} />,
+  "healthPackages": <MaterialIcons name="medical-services" size={20} color={Colors.secondary} />,
+  "settings": <Ionicons name="settings-outline" size={20} color={Colors.secondary} />,
+};
+
+const DEFAULT_ICON = <Ionicons name="help-circle-outline" size={20} color={Colors.secondary} />;
+
+// Resolves the drawer-specific default icon for a widget, then defers to the
+// shared getMenuIcon() (app/utils/menuIcon.tsx) for the actual rendering logic.
+const getDrawerMenuIcon = (
+  imageType?: string,
+  imageData?: string,
+  widgetCode?: string,
+): React.ReactNode => {
+  const fallback = ICON_MAP[widgetCode || ""] || DEFAULT_ICON;
+  return getMenuIcon(imageType, imageData, fallback);
+};
+
 export default function CustomDrawer(props: DrawerContentComponentProps) {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [avatarError, setAvatarError] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const { items: backendMenuItems, isLoading: menuLoading } = useLeftMenuItems();
+
+  const drawerItems = useMemo(() => {
+    if (backendMenuItems.length > 0) {
+      return backendMenuItems.map((item) => ({
+        label: item.widget_name,
+        icon: getDrawerMenuIcon(item.menu_image_type, item.menu_image, item.widget_code),
+        screen: item.screen,
+      }));
+    }
+    return DEFAULT_DRAWER_ITEMS;
+  }, [backendMenuItems]);
 
   const loadProfile = useCallback(async () => {
     setLoadingProfile(true);
@@ -155,7 +190,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     return unsubscribe;
   }, [props.navigation, loadProfile]);
 
-  const handleNav = async (screen: string) => {
+  const handleNav = async (screen: string, routeParams?: Record<string, any>) => {
     if (screen === "SignOut") {
       setIsSigningOut(true);
       try {
@@ -213,24 +248,27 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
       "orders/OrdersScreen",
     ];
     if (validRoutes.includes(screen)) {
-      props.navigation.navigate(screen);
+      props.navigation.navigate(screen, routeParams);
       props.navigation.closeDrawer();
     } else if (screen === "NearbyProviders") {
       props.navigation.navigate("tab_bar_home/HomeScreen", {
         screen: "HomeTab",
         params: {
           screen: "NearbyProviders",
+          ...(routeParams || {}),
         }
       });
       props.navigation.closeDrawer();
     } else if (screen === "OrderScreen") {
       props.navigation.navigate("tab_bar_home/HomeScreen", {
         screen: "OrderScreen",
+        params: routeParams,
       });
       props.navigation.closeDrawer();
     } else if (screen === "MedicinesScreen") {
       props.navigation.navigate("tab_bar_home/HomeScreen", {
         screen: "MedicinesScreen",
+        params: routeParams,
       });
       props.navigation.closeDrawer();
     }
@@ -306,7 +344,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             <TouchableOpacity
               key={item.label}
               style={styles.linkRow}
-              onPress={() => handleNav(item.screen)}
+              onPress={() => handleNav(item.screen, item.routeParams)}
               activeOpacity={0.7}
             >
               <View style={styles.linkIconWrapper}>{item.icon}</View>

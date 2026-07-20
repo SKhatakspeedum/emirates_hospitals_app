@@ -45,7 +45,7 @@ interface UseDashboardSectionsReturn {
 export const useDashboardSections = (
   noPatient: boolean = false,
   p_ai_code?: string,
-  p_menu_type: string = "",
+  p_menu_type: string = "HomeScreen",
 ): UseDashboardSectionsReturn => {
   const [sections, setSections] = useState<SectionConfig[]>(DEFAULT_SECTIONS);
   const [isLoading, setIsLoading] = useState(true);

@@ -41,6 +41,7 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { getMenuWidgetsByType } from "../services/dashboardApi";
 import { getSpecialtyIconMeta } from "../config/specialtyIcons";
+import { getMenuIcon } from "../utils/menuIcon";
 import {
   fetchDataFromLocalStorage,
   getDecryptedID,
@@ -809,7 +810,9 @@ export default function DashboardScreen() {
     const fetchQuickActions = async () => {
       try {
         const widgets = await getMenuWidgetsByType("quickActions");
-        const quickActionsWidget = widgets?.find(
+        if (!widgets || widgets.length === 0) return;
+
+        const quickActionsWidget = widgets.find(
           (w) => w.widget_code === "quickActions",
         );
         const rawItems = quickActionsWidget?.additionalAttributes;
@@ -1000,7 +1003,19 @@ export default function DashboardScreen() {
         return (
           <View key={instanceId}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Upcoming appointments</Text>
+              <View style={styles.sectionHeaderTitleRow}>
+                <View style={styles.sectionHeaderIcon}>
+                  {getMenuIcon(
+                    section.menuImageType,
+                    section.menuImage,
+                    <Ionicons name="calendar" size={13} color={Colors.secondary} />,
+                    13,
+                  )}
+                </View>
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
+                  {section.menuName?.trim() || "Upcoming appointments"}
+                </Text>
+              </View>
               <Pressable
                 onPress={goToAppointments}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
@@ -1068,14 +1083,16 @@ export default function DashboardScreen() {
           <View key={instanceId} style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons
-                  name="play"
-                  size={13}
-                  color={Colors.secondary}
-                  style={styles.sectionHeaderIcon}
-                />
+                <View style={styles.sectionHeaderIcon}>
+                  {getMenuIcon(
+                    section.menuImageType,
+                    section.menuImage,
+                    <Ionicons name="play" size={13} color={Colors.secondary} />,
+                    13,
+                  )}
+                </View>
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
-                  Health awareness
+                  {section.menuName?.trim() || "Health awareness"}
                 </Text>
               </View>
               <Pressable
@@ -1116,16 +1133,23 @@ export default function DashboardScreen() {
 
       case "healthSummary":
         if (noPatient) return null;
+        // Hide if all vital values are still the placeholder "--"
+        if (healthSummary.every((item) => item.value === "--")) return null;
+
         return (
           <View key={instanceId} style={styles.sectionContainer}>
             <View style={[styles.sectionHeaderTitleRow, { marginBottom: 16 }]}>
-              <Ionicons
-                name="heart"
-                size={13}
-                color={Colors.secondary}
-                style={styles.sectionHeaderIcon}
-              />
-              <Text style={styles.sectionTitle}>My health summary</Text>
+              <View style={styles.sectionHeaderIcon}>
+                {getMenuIcon(
+                  section.menuImageType,
+                  section.menuImage,
+                  <Ionicons name="heart" size={13} color={Colors.secondary} />,
+                  13,
+                )}
+              </View>
+              <Text style={styles.sectionTitle}>
+                {section.menuName?.trim() || "My health summary"}
+              </Text>
             </View>
             <View style={styles.healthSummaryGrid}>
               {healthSummary.map((item, index) => (
@@ -1159,18 +1183,22 @@ export default function DashboardScreen() {
           ? loadingProvidersOverrideById[instanceId] ?? true
           : loadingProviders;
 
+        if (!isProvidersLoading && providerList.length === 0) return null;
+
         return (
           <View key={instanceId} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons
-                  name="person"
-                  size={13}
-                  color={Colors.secondary}
-                  style={styles.sectionHeaderIcon}
-                />
+                <View style={styles.sectionHeaderIcon}>
+                  {getMenuIcon(
+                    section.menuImageType,
+                    section.menuImage,
+                    <Ionicons name="person" size={13} color={Colors.secondary} />,
+                    13,
+                  )}
+                </View>
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
-                  Providers
+                  {section.menuName?.trim() || "Providers"}
                 </Text>
               </View>
               <Pressable
@@ -1238,18 +1266,22 @@ export default function DashboardScreen() {
       }
 
       case "specialties":
+        if (!loadingSpecialties && specialties.length === 0) return null;
+
         return (
           <View key={instanceId} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons
-                  name="medkit"
-                  size={13}
-                  color={Colors.secondary}
-                  style={styles.sectionHeaderIcon}
-                />
+                <View style={styles.sectionHeaderIcon}>
+                  {getMenuIcon(
+                    section.menuImageType,
+                    section.menuImage,
+                    <Ionicons name="medkit" size={13} color={Colors.secondary} />,
+                    13,
+                  )}
+                </View>
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
-                  Specialties
+                  {section.menuName?.trim() || "Specialties"}
                 </Text>
               </View>
               <Pressable

@@ -32,6 +32,16 @@ export interface SectionConfig {
   // same key (e.g. two "providers" widgets) show different data.
   processId?: string;
   defaultParams?: Record<string, any>;
+  // Backend-driven icon override for this widget's section header, from
+  // menu_image / menu_image_type. Falls back to the section's hardcoded
+  // default icon when absent — see getMenuIcon() in app/utils/menuIcon.tsx.
+  menuImage?: string;
+  menuImageType?: string;
+  // Raw backend menu_name for this widget row — use as the section header
+  // label when present, falling back to the hardcoded default title
+  // otherwise. Kept separate from `label` so existing uses of `label` are
+  // unaffected.
+  menuName?: string;
 }
 
 // Mapping of backend widget codes to frontend SectionKeys
@@ -154,6 +164,9 @@ export const parseSectionsFromBackend = (
           typeof item.additionalAttributes.default_params_json === "object"
             ? item.additionalAttributes.default_params_json
             : undefined,
+        menuImage: item.menu_image || undefined,
+        menuImageType: item.menu_image_type || undefined,
+        menuName: item.widget_name || undefined,
       };
     })
     .filter((s): s is SectionConfig => s !== null);
@@ -181,7 +194,7 @@ export const parseSectionsFromBackend = (
  */
 export const fetchSectionsFromBackend = async (
   p_ai_code?: string,
-  p_menu_type: string = "",
+  p_menu_type: string = "HomeScreen",
 ): Promise<SectionConfig[]> => {
   try {
     const resolvedAiCode =

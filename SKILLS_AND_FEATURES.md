@@ -341,6 +341,44 @@ if (healthSummary.every((item) => item.value === "--")) return null;
 
 ---
 
+## 🐞 Known Issues & Fixes
+
+### Smart/Curly Quote Corruption in Source Files
+
+**Symptom:**
+```
+SyntaxError: D:\react\emirates_hospitals_app\app\utils\menuIcon.tsx: Unexpected character '“'. (130:14)
+```
+or a bundler error showing mojibake like `â€œ` in the error message.
+
+**Root Cause:**
+Typographic/smart quotes (`"` `"` `'` `'` - Unicode U+201C, U+201D, U+2018, U+2019) got inserted into actual code as string/regex delimiters instead of plain straight quotes (`"` `'`). JavaScript/TypeScript only accepts straight quotes as string delimiters, so any curly quote used as a quote character (not just inside a string's content) is a hard syntax error. This is easy to reintroduce accidentally when editing comments or string literals that contain example code snippets like `"fa-solid fa-user-doctor"`.
+
+**Fix:**
+1. Search the file for the actual Unicode characters (grep alone can be unreliable due to terminal encoding) - use a Node one-liner to scan char-by-char:
+   ```js
+   node -e "
+   const fs = require('fs');
+   const content = fs.readFileSync('<file>', 'utf8');
+   const badChars = ['“', '”', '‘', '’'];
+   for (let i = 0; i < content.length; i++) {
+     if (badChars.includes(content[i])) {
+       console.log('Line ' + (content.slice(0,i).split('\n').length) + ': ' + JSON.stringify(content[i]));
+     }
+   }
+   "
+   ```
+2. If matches are found scattered throughout, prefer rewriting the whole file (Write tool) with careful plain ASCII quotes rather than doing many individual Edit replacements - repeated targeted edits can silently reintroduce the same curly characters if the edit tool's own input contains them.
+3. Re-run the same Node scan after rewriting to confirm zero matches, and sanity-check brace/paren balance as a quick syntax smoke test.
+
+**Prevention:**
+- Avoid typing quotes inside markdown/comments that describe code examples using an editor/keyboard with autocorrect ("smart punctuation") enabled - it silently swaps `"`/`'` for curly equivalents.
+- When a fix to a syntax error doesn't stick after an Edit, don't retry the same edit - re-read the file fresh and diff the actual bytes; the reported "success" from Edit doesn't guarantee the intended plain characters landed.
+
+**Where this hit:** `app/utils/menuIcon.tsx` (Font Awesome icon extraction regex and helper comments) - see [[universal-font-awesome-icons]].
+
+---
+
 ## ✅ Completed Skills Summary
 
 | Skill | LeftMenu | HomeScreen | Status |

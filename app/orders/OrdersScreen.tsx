@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Fontisto, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -190,90 +190,97 @@ export default function OrdersScreen() {
   const [bookingOrderId, setBookingOrderId] = useState<string | null>(null);
   const HOSPITAL_PHONE = "+971800444444";
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setIsLoading(true);
-      try {
-        const [userId, orgId, roleId, patientId, visitId] = await Promise.all([
-          fetchDataFromLocalStorage("sg_userId"),
-          fetchDataFromLocalStorage("sg_org_id"),
-          fetchDataFromLocalStorage("sg_roleId"),
-          fetchDataFromLocalStorage("sg_patientId"),
-          fetchDataFromLocalStorage("sg_visitId"),
-        ]);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchOrders = async () => {
+        setIsLoading(true);
+        try {
+          const [userId, orgId, roleId, patientId, visitId] = await Promise.all(
+            [
+              fetchDataFromLocalStorage("sg_userId"),
+              fetchDataFromLocalStorage("sg_org_id"),
+              fetchDataFromLocalStorage("sg_roleId"),
+              fetchDataFromLocalStorage("sg_patientId"),
+              fetchDataFromLocalStorage("sg_visitId"),
+            ],
+          );
 
-        const response = await callSuggestusAPI(
-          spd_processId_config.hosapp_get_trn_order_all_ehg_pntapp,
-          {
-            p_user_id: userId ?? "",
-            p_org_id: orgId ?? "",
-            p_role_id: roleId ?? "",
-            p_patient_id: patientId ?? "",
-            p_visit_id: visitId ?? "",
-            p_wkl_date_range_startDate: "",
-            p_wkl_date_range_endDate: "",
-            p_wkl_status: "",
-            p_wkl_priority: "",
-            p_wkl_search_text: "",
-            p_from_location_type: "",
-            p_from_location: "",
-            p_location: "",
-            p_additional_attributes: "",
-            p_process_type: "",
-            p_internal_flag: "",
-            p_type: "LAB",
-          },
-        );
+          const response = await callSuggestusAPI(
+            spd_processId_config.hosapp_get_trn_order_all_ehg_pntapp,
+            {
+              p_user_id: userId ?? "",
+              p_org_id: orgId ?? "",
+              p_role_id: roleId ?? "",
+              p_patient_id: patientId ?? "",
+              p_visit_id: visitId ?? "",
+              p_wkl_date_range_startDate: "",
+              p_wkl_date_range_endDate: "",
+              p_wkl_status: "",
+              p_wkl_priority: "",
+              p_wkl_search_text: "",
+              p_from_location_type: "",
+              p_from_location: "",
+              p_location: "",
+              p_additional_attributes: "",
+              p_process_type: "",
+              p_internal_flag: "",
+              p_type: "LAB",
+            },
+          );
 
-        if (response?.returnCode === true && response.returnData?.length > 0) {
-          const mapped: OrderItem[] = response.returnData.map((r: any) => {
-            const rawStatus = r.ordstat_name ?? r.ord_status ?? "";
-            const presentation = derivePresentation(rawStatus);
+          if (
+            response?.returnCode === true &&
+            response.returnData?.length > 0
+          ) {
+            const mapped: OrderItem[] = response.returnData.map((r: any) => {
+              const rawStatus = r.ordstat_name ?? r.ord_status ?? "";
+              const presentation = derivePresentation(rawStatus);
 
-            return {
-              id: String(r.ord_id ?? r.p_ord_id ?? Math.random()),
-              title: r.ord_description ?? r.ord_description_medication ?? "",
-              status: rawStatus,
-              doctor:
-                r.visit_doctor_description ??
-                r.org_user_name ??
-                r.ord_sign_user_name ??
-                r.ord_create_user_name ??
-                "",
-              date:
-                r.ord_start_timestamp_formatted ??
-                r.ord_order_timestamp_formatted ??
-                r.vst_date ??
-                "",
-              department:
-                r.ord_type ?? r.ord_group ?? r.ord_location_identifier ?? "",
-              bucket: presentation.bucket,
-              // Backend can send multiple actions as a "~"-delimited
-              // string (e.g. "call~book~view_result") — parseButtonTypes
-              // renders one button per valid action, none if blank/unknown.
-              buttonType: parseButtonTypes("call~book~view_result"),
-              findings: r.findings ?? "",
-              recommendations: r.recommendations ?? "",
-              reason: r.ord_cancel_remarks ?? "",
-              docUrl: resolveDocUrl(
-                r.download_doc_path ?? r.doc_path ?? r.spdFilePath ?? "",
-              ),
-              docName: r.doc_uploaded_filename ?? r.doc_name ?? "Result",
-            };
-          });
-          setOrders(mapped);
-        } else {
+              return {
+                id: String(r.ord_id ?? r.p_ord_id ?? Math.random()),
+                title: r.ord_description ?? r.ord_description_medication ?? "",
+                status: rawStatus,
+                doctor:
+                  r.visit_doctor_description ??
+                  r.org_user_name ??
+                  r.ord_sign_user_name ??
+                  r.ord_create_user_name ??
+                  "",
+                date:
+                  r.ord_start_timestamp_formatted ??
+                  r.ord_order_timestamp_formatted ??
+                  r.vst_date ??
+                  "",
+                department:
+                  r.ord_type ?? r.ord_group ?? r.ord_location_identifier ?? "",
+                bucket: presentation.bucket,
+                // Backend can send multiple actions as a "~"-delimited
+                // string (e.g. "call~book~view_result") — parseButtonTypes
+                // renders one button per valid action, none if blank/unknown.
+                buttonType: parseButtonTypes("call~book~view_result"),
+                findings: r.findings ?? "",
+                recommendations: r.recommendations ?? "",
+                reason: r.ord_cancel_remarks ?? "",
+                docUrl: resolveDocUrl(
+                  r.download_doc_path ?? r.doc_path ?? r.spdFilePath ?? "",
+                ),
+                docName: r.doc_uploaded_filename ?? r.doc_name ?? "Result",
+              };
+            });
+            setOrders(mapped);
+          } else {
+            setOrders([]);
+          }
+        } catch (e) {
+          console.error("Error fetching orders:", e);
           setOrders([]);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (e) {
-        console.error("Error fetching orders:", e);
-        setOrders([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchOrders();
-  }, []);
+      };
+      fetchOrders();
+    }, []),
+  );
 
   const departmentOptions = useMemo(
     () => [
@@ -606,9 +613,7 @@ export default function OrdersScreen() {
                     size={16}
                     color={Colors.primary}
                   />
-                  <Text style={styles.footerDeptText}>
-                    {order.department}
-                  </Text>
+                  <Text style={styles.footerDeptText}>{order.department}</Text>
                 </View>
                 {renderCardActions(order)}
               </View>

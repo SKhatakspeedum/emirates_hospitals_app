@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   SectionConfig,
-  SectionKey,
   DEFAULT_SECTIONS,
   fetchSectionsFromBackend,
   getVisibleSections,
@@ -10,7 +9,7 @@ import suggestusClientConfig from "../config/suggestus_client_config";
 
 interface UseDashboardSectionsReturn {
   sections: SectionConfig[];
-  visibleSections: SectionKey[];
+  visibleSections: SectionConfig[];
   isLoading: boolean;
   refetch: () => Promise<void>;
   error: Error | null;

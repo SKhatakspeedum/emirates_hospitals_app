@@ -8,7 +8,8 @@ import suggestusClientConfig from "../config/suggestus_client_config";
  */
 export interface BackendMenuItem {
   menu_id: number;
-  menu_name: string;
+  menu_name: string; // The per-instance section title — maps to widget_title
+  menu_title?: string; // Generic fallback title, only used if menu_name is blank
   menu_action_screen_identifier: string; // Maps to widget_code
   menu_display_order: number; // Maps to sequence
   menu_action_screen_identifier_detail?: string;
@@ -95,10 +96,19 @@ export interface BackendMenuResponse {
 export interface BackendMenuWidget {
   widget_code: string;
   widget_name: string;
+  widget_title: string; // menu_title — displayed as the section header on screen
   is_active: string; // "Y" or "N" (defaults to "Y")
   sequence: number;
   additionalAttributes?: Record<string, any>;
   bannerUrls?: string[]; // Parsed from additionalAttributes.banner_urls
+  // Parsed from additionalAttributes.process_id / default_params_json — lets the
+  // backend override which API a widget calls and its static request params,
+  // per widget occurrence.
+  processId?: string;
+  defaultParams?: Record<string, any>;
+  // Unique per backend array entry (not per widget_code) so the same widget_code
+  // can appear more than once and still render/fetch as independent instances.
+  instanceId: string;
   [key: string]: any;
 }
 
@@ -188,35 +198,54 @@ export const getMenuAppWidgets = async (
         // Sorting happens downstream (parseSectionsFromBackend / getVisibleSections)
         // using this value, so changing menu_display_order in the backend
         // directly reorders the Home Screen sections.
-        const normalized: BackendMenuWidget[] = detailsArray.map((item) => {
-          // Tolerate a couple of likely field-name variants from the backend.
-          const rawAttributes =
-            item.menu_additional_attributes ??
-            item.menu_additional_attribute ??
-            item.additional_attributes;
-          const additionalAttributes = parseAdditionalAttributes(rawAttributes);
-          const bannerUrls = parseBannerUrls(
-            additionalAttributes?.banner_urls ??
-              additionalAttributes?.bannerUrls,
-          );
+        const normalized: BackendMenuWidget[] = detailsArray.map(
+          (item, index) => {
+            // Tolerate a couple of likely field-name variants from the backend.
+            const rawAttributes =
+              item.menu_additional_attributes ??
+              item.menu_additional_attribute ??
+              item.additional_attributes;
+            const additionalAttributes = parseAdditionalAttributes(rawAttributes);
+            const bannerUrls = parseBannerUrls(
+              additionalAttributes?.banner_urls ??
+                additionalAttributes?.bannerUrls,
+            );
+            const processId =
+              additionalAttributes?.process_id ?? additionalAttributes?.processId;
+            const rawDefaultParams =
+              additionalAttributes?.default_params_json ??
+              additionalAttributes?.defaultParams;
+            const defaultParams =
+              rawDefaultParams && typeof rawDefaultParams === "object"
+                ? rawDefaultParams
+                : undefined;
 
-          if (item.menu_action_screen_identifier === "promoBanner") {
-            console.log("[getMenuAppWidgets] promoBanner raw attributes:", {
-              rawAttributes,
+            if (item.menu_action_screen_identifier === "promoBanner") {
+              console.log("[getMenuAppWidgets] promoBanner raw attributes:", {
+                rawAttributes,
+                additionalAttributes,
+                bannerUrls,
+              });
+            }
+
+            return {
+              widget_code: item.menu_action_screen_identifier,
+              widget_name: item.menu_name,
+              // menu_name is the field actually edited per-instance to give a
+              // widget its on-screen title; menu_title is a generic backend
+              // default that's the same across repeated occurrences of a
+              // widget_code, so it must not take priority over menu_name.
+              widget_title: item.menu_name || item.menu_title || "",
+              is_active: "Y", // Default to active since backend doesn't provide this
+              sequence: item.menu_display_order,
               additionalAttributes,
               bannerUrls,
-            });
-          }
-
-          return {
-            widget_code: item.menu_action_screen_identifier,
-            widget_name: item.menu_name,
-            is_active: "Y", // Default to active since backend doesn't provide this
-            sequence: item.menu_display_order,
-            additionalAttributes,
-            bannerUrls,
-          };
-        });
+              processId,
+              defaultParams,
+              instanceId: `${item.menu_action_screen_identifier}__${item.menu_id ?? index}`,
+            };
+          },
+        );
 
         console.log("[getMenuAppWidgets] Normalized widgets:", normalized);
         return normalized;

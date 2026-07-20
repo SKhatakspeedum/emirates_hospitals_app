@@ -20,6 +20,13 @@ export interface SectionConfig {
   description: string;
   requiresPatient?: boolean;
   bannerUrls?: string[]; // promoBanner only — backend-driven carousel images
+  // Unique per backend array entry — lets the same widget_code repeat and render
+  // as independent instances, each with their own fetched data.
+  instanceId?: string;
+  // Backend override for which API this widget instance's data comes from, and
+  // its static request params (merged under runtime-computed dynamic params).
+  processId?: string;
+  defaultParams?: Record<string, any>;
 }
 
 // Mapping of backend widget codes to frontend SectionKeys
@@ -116,24 +123,22 @@ export const parseSectionsFromBackend = (
         ...defaultSection,
         visible: item.is_active === "Y",
         order: item.sequence || defaultSection.order,
+        label: item.widget_title || defaultSection.label,
         bannerUrls:
           sectionKey === "promoBanner" && item.bannerUrls?.length
             ? item.bannerUrls
             : undefined,
+        instanceId: item.instanceId,
+        processId: item.processId,
+        defaultParams: item.defaultParams,
       };
     })
     .filter((s): s is SectionConfig => s !== null);
 
-  // Frontend Override: Ensure 'upcomingAppointments' always appears before 'healthAwareness'
-  const upcoming = parsed.find((s) => s.key === "upcomingAppointments");
-  const health = parsed.find((s) => s.key === "healthAwareness");
-
-  if (upcoming && health && upcoming.order > health.order) {
-    const temp = upcoming.order;
-    upcoming.order = health.order;
-    health.order = temp;
-  }
-
+  // Sequence is fully backend-driven via menu_display_order — no frontend
+  // reordering overrides. This also matters now that a widget_code can repeat
+  // (see instanceId): any override keyed by widget_code would only ever touch
+  // the first occurrence and scramble the rest.
   return parsed.sort((a, b) => a.order - b.order);
 };
 
@@ -191,22 +196,25 @@ export const fetchSectionsFromBackend = async (
  * Get visible sections sorted by order
  * Filters based on visibility and patient requirement
  *
+ * Returns the full section instances (not just keys) — the same widget_code can
+ * appear more than once in the backend response, and each occurrence must render
+ * as its own instance with its own instanceId/processId/defaultParams.
+ *
  * @param sections - Section configurations
  * @param noPatient - Whether patient is selected
- * @returns Array of visible section keys
+ * @returns Array of visible section instances, in render order
  */
 export const getVisibleSections = (
   sections: SectionConfig[] = DEFAULT_SECTIONS,
   noPatient: boolean = false,
-): SectionKey[] => {
+): SectionConfig[] => {
   return sections
     .filter((section) => {
       if (!section.visible) return false;
       if (section.requiresPatient && noPatient) return false;
       return true;
     })
-    .sort((a, b) => a.order - b.order)
-    .map((section) => section.key);
+    .sort((a, b) => a.order - b.order);
 };
 
 /**

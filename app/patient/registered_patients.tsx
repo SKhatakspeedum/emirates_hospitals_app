@@ -18,6 +18,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { USER_FULL_DATA, SPD_SELECTED_PATIENT } from "../config/config";
+import { SiteConfig } from "../config/site_config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import {
@@ -367,6 +368,24 @@ export default function RegisteredPatientsScreen() {
             p_process_flag: "Y",
             p_additional_attribites: {},
             p_internal_flag: "N",
+          },
+        );
+
+        let orgCodes = SiteConfig.AI_CODE;
+        try {
+          const defaultJsonStr = await getDecryptedID("DEFAULT_JSON_DATA");
+          const defaultJson = defaultJsonStr ? JSON.parse(defaultJsonStr) : {};
+          orgCodes = defaultJson?.spd_app_location_list ?? SiteConfig.AI_CODE;
+        } catch (parseError) {
+          console.error("Error parsing DEFAULT_JSON_DATA:", parseError);
+        }
+
+        await callSuggestusAPI(
+          spd_processId_config.hosapp_save_update_trn_patient_master_org_mapping_pnt_app,
+          {
+            p_patient_id: patientId,
+            p_org_codes: orgCodes,
+            p_process_flag: "map_multiple_user",
           },
         );
       }

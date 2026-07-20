@@ -41,6 +41,7 @@ import { spd_processId_config } from "../config/process_id";
 import { getMenuWidgetsByType } from "../services/dashboardApi";
 import { getSpecialtyIconMeta } from "../config/specialtyIcons";
 import { getMenuIcon } from "../utils/menuIcon";
+import { DashboardSkeleton } from "../components/DashboardSkeleton";
 import {
   fetchDataFromLocalStorage,
   getDecryptedID,
@@ -569,7 +570,7 @@ export default function DashboardScreen() {
   const noPatient = !patientId || patientId === "null";
 
   // Fetch dynamic sections from backend (with automatic fallback to defaults)
-  const { visibleSections } = useDashboardSections(noPatient);
+  const { visibleSections, isLoading: isLayoutLoading } = useDashboardSections(noPatient);
 
   // Providers/specialties/health-summary/upcoming-appointment data is fetched
   // once per matching widget instance (not once globally) — each instance uses
@@ -1179,11 +1180,18 @@ export default function DashboardScreen() {
           </View>
         );
       }
-
       default:
         return null;
     }
   };
+
+  const providerKeys = providerInstances.map((inst) => String(inst.instanceId));
+  const isProvidersLoading = providerInstances.length > 0 && providerKeys.some((key) => loadingProvidersByInstance[key] !== false);
+    
+  const specialtyKeys = specialtyInstances.map((inst) => String(inst.instanceId));
+  const isSpecialtiesLoading = specialtyInstances.length > 0 && specialtyKeys.some((key) => loadingSpecialtiesByInstance[key] !== false);
+
+  const isDashboardLoading = isLayoutLoading || isProvidersLoading || isSpecialtiesLoading;
 
   return (
     <View style={styles.container}>
@@ -1270,6 +1278,12 @@ export default function DashboardScreen() {
         </SafeAreaView>
       </View>
 
+      {isDashboardLoading ? (
+        <>
+          <View style={styles.stickyHeaderSpacer} />
+          <DashboardSkeleton />
+        </>
+      ) : (
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -1307,7 +1321,9 @@ export default function DashboardScreen() {
           <View style={styles.bottomSpacer} />
         </View>
       </ScrollView>
+      )}
 
+      {/* Location Picker Sheet */}
       <Modal
         visible={showLocationPicker}
         animationType="slide"

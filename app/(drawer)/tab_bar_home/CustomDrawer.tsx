@@ -285,35 +285,15 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     //   return;
     // }
 
-    const validRoutes = [
-      "profile/ProfileScreen",
-      "explore_tab/ExploreScreen",
-      "orders/OrdersScreen",
-    ];
-    if (validRoutes.includes(screen)) {
-      props.navigation.navigate(screen, routeParams);
-      props.navigation.closeDrawer();
+    const tabScreens = ["OrderScreen", "MedicinesScreen", "ProfileScreen"];
+
+    if (tabScreens.includes(screen)) {
+      props.navigation.navigate("tab_bar_home/HomeScreen", { screen });
     } else if (screen === "NearbyProviders") {
       props.navigation.navigate("tab_bar_home/HomeScreen", {
         screen: "HomeTab",
-        params: {
-          screen: "NearbyProviders",
-          ...(routeParams || {}),
-        },
+        params: { screen: "NearbyProviders" },
       });
-      props.navigation.closeDrawer();
-    } else if (screen === "OrderScreen") {
-      props.navigation.navigate("tab_bar_home/HomeScreen", {
-        screen: "OrderScreen",
-        params: routeParams,
-      });
-      props.navigation.closeDrawer();
-    } else if (screen === "MedicinesScreen") {
-      props.navigation.navigate("tab_bar_home/HomeScreen", {
-        screen: "MedicinesScreen",
-        params: routeParams,
-      });
-      props.navigation.closeDrawer();
     } else {
       Toast.show({
         type: "info",

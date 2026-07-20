@@ -10,7 +10,7 @@ import {
 // import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
-import { OrderIcon, PinIcon, ChatIcon, RxIcon } from "./TabIcons";
+import { HomeIcon, OrderIcon, RxIcon, PersonIcon } from "./TabIcons";
 import { Colors } from "@/app/config/colors";
 
 const { width } = Dimensions.get("window");
@@ -40,15 +40,7 @@ export default function Footer({
         style={state.index === 0 ? styles.tabItemActive : styles.tabItem}
         onPress={() => navigation.navigate("HomeTab", { screen: "Dashboard" })}
       >
-        <Image
-          source={require("@/assets/images/home.png")}
-          style={{
-            width: 24,
-            height: 24,
-            tintColor: state.index === 0 ? Colors.primary : Colors.inactive,
-          }}
-          resizeMode="contain"
-        />
+        <HomeIcon color={state.index === 0 ? Colors.primary : Colors.grayDark} />
         <Text
           style={state.index === 0 ? styles.tabLabelActive : styles.tabLabel}
         >
@@ -61,7 +53,7 @@ export default function Footer({
         style={state.index === 1 ? styles.tabItemActive : styles.tabItem}
         onPress={() => navigation.navigate("OrderScreen")}
       >
-        <OrderIcon color={state.index === 1 ? Colors.primary : Colors.inactive} />
+        <OrderIcon color={state.index === 1 ? Colors.primary : Colors.grayDark} />
         <Text
           style={state.index === 1 ? styles.tabLabelActive : styles.tabLabel}
         >
@@ -87,31 +79,33 @@ export default function Footer({
         </TouchableOpacity>
       </View>
 
-      {/* Explore Tab */}
+      {/* Rx Tab */}
       <TouchableOpacity
         style={state.index === 3 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("ChatScreen")}
+        onPress={() => navigation.navigate("MedicinesScreen")}
       >
-        <ChatIcon color={state.index === 3 ? Colors.primary : Colors.inactive} />
+        <RxIcon color={state.index === 3 ? Colors.primary : Colors.grayDark} />
         <Text
           style={state.index === 3 ? styles.tabLabelActive : styles.tabLabel}
         >
-          Chat
+          Rx
         </Text>
       </TouchableOpacity>
 
       {/* Profile Tab */}
       <TouchableOpacity
         style={state.index === 4 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("MedicinesScreen")}
+        onPress={() => navigation.navigate("ProfileScreen")}
       >
-        <RxIcon color={state.index === 4 ? Colors.primary : Colors.inactive} />
+        <PersonIcon color={state.index === 4 ? Colors.primary : Colors.grayDark} />
         <Text
           style={state.index === 4 ? styles.tabLabelActive : styles.tabLabel}
         >
-          Rx
+          Profile
         </Text>
       </TouchableOpacity>
+
+
     </View>
   );
 }
@@ -125,8 +119,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     zIndex: 10,
     borderTopWidth: 0.5,
-    borderTopColor: "rgba(0,0,0,0.1)",
-    shadowColor: "#000",
+    borderTopColor: Colors.border,
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -143,7 +137,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 12,
-    color: Colors.inactive,
+    color: Colors.label,
     marginTop: 2,
   },
   tabLabelActive: {
@@ -162,12 +156,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: Colors.border,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 2,

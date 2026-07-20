@@ -30,7 +30,7 @@ import DashboardScreen from "@/app/dashboard/DashboardScreen";
 // import AppHeaderWeb from "./AppHeaderWeb";
 import OrdersScreen from "@/app/orders/OrdersScreen";
 import MedicinesStackScreen from "@/app/medicines/MedicinesStackScreen";
-import ChatScreen from "@/app/chats/ChatScreen";
+import ProfileScreen from "@/app/profile/ProfileScreen";
 import HomeStackScreen from "./HomeStackScreen";
 
 const { width, height } = Dimensions.get("window");
@@ -190,8 +190,8 @@ export default function HomeScreen() {
                   tabBarButton: () => null,
                 }}
               />
-              <Tab.Screen name="ExploreTab" component={ExploreScreen} />
               <Tab.Screen name="MedicinesScreen" component={MedicinesStackScreen} />
+              <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
             </Tab.Navigator>
 
             {/* Custom Bottom Sheet */}
@@ -256,8 +256,8 @@ export default function HomeScreen() {
                 tabBarButton: () => null,
               }}
             />
-            <Tab.Screen name="ChatScreen" component={ChatScreen} />
             <Tab.Screen name="MedicinesScreen" component={MedicinesStackScreen} />
+            <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
           </Tab.Navigator>
 
           {/* Custom Bottom Sheet */}
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   greeting: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 20,
     fontFamily: FontFamilies.medium,
     marginBottom: 4,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   sleepQualityScore: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 20,
     fontFamily: FontFamilies.semiBold,
   },
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sleepQualityLabel: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 18,
     fontFamily: FontFamilies.semiBold,
     marginBottom: 2,
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   checkText: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 14,
     fontFamily: FontFamilies.medium,
     display: "flex",
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginRight: 14,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 5,
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   sleepCardTitle: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 16,
     fontFamily: FontFamilies.semiBold,
     marginTop: 10,
@@ -540,13 +540,13 @@ const styles = StyleSheet.create({
   },
   moodPrompt: {
     flexDirection: "row",
-    backgroundColor: "#CDF0FB",
+    backgroundColor: Colors.backgroundCardLight,
     borderRadius: 10,
     padding: 16,
     paddingVertical: 8,
     alignItems: "center",
     marginVertical: 18,
-    shadowColor: "#000",
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1 / 1.2,
     borderRadius: 10,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   featuredCardTitle: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 16,
     fontFamily: FontFamilies.bold,
     textShadowColor: "rgba(0,0,0,0.6)",
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   featuredCardSession: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 14,
     fontFamily: FontFamilies.medium,
     textShadowColor: "rgba(0,0,0,0.6)",
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   carouselTitle: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 8,
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   carouselButtonText: {
-    color: "#fff",
+    color: Colors.background,
     fontWeight: "700",
     fontSize: 14,
   },
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   musicCardTitle: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 14,
     fontWeight: "600",
     marginTop: 10,
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sleepPlansCardTitle: {
-    color: "#fff",
+    color: Colors.background,
     fontSize: 16,
     fontFamily: FontFamilies.semiBold,
     padding: 12,

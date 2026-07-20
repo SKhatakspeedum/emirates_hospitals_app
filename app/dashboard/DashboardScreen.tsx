@@ -145,7 +145,7 @@ type FullAppointment = {
 export default function DashboardScreen() {
   const { width, height } = useWindowDimensions();
   const navigation = useNavigation<any>();
-  const [userProfileName, setUserProfileName] = useState<string>("John");
+  const [userProfileName, setUserProfileName] = useState<string>("");
   const [patientId, setPatientId] = useState<string | null>(null);
   const [patientMeta, setPatientMeta] = useState<{
     age: number;
@@ -512,18 +512,21 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     const load = async () => {
+      let resolvedName = "";
       const patStr = await AsyncStorage.getItem(SPD_SELECTED_PATIENT);
       if (patStr) {
         try {
           const p = JSON.parse(patStr);
-          if (p.name) setUserProfileName(p.name);
+          if (p.name) resolvedName = p.name;
           if (p.age || p.gender)
             setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
         } catch (_) {}
-      } else {
-        const name = await AsyncStorage.getItem(SPD_USER_NAME);
-        if (name) setUserProfileName(name);
       }
+
+      if (!resolvedName) {
+        resolvedName = (await AsyncStorage.getItem(SPD_USER_NAME)) || "";
+      }
+      setUserProfileName(resolvedName);
       const pid = await AsyncStorage.getItem("sg_patientId");
       setPatientId(pid);
 
@@ -1560,8 +1563,12 @@ export default function DashboardScreen() {
             <View style={styles.greetingContainer}>
               <Text style={styles.greetingText}>
                 {noPatient
-                  ? `Welcome, ${userProfileName}!`
-                  : `${getGreetingTime()}, ${userProfileName}!`}
+                  ? userProfileName
+                    ? `Welcome, ${userProfileName}!`
+                    : "Welcome!"
+                  : userProfileName
+                    ? `${getGreetingTime()}, ${userProfileName}!`
+                    : `${getGreetingTime()}!`}
               </Text>
 
               <Text style={styles.subGreetingText}>

@@ -7,7 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -22,13 +22,19 @@ interface Specialty extends SpecialtyIconMeta {
 
 export default function AllSpecialtiesScreen() {
   const navigation = useNavigation<any>();
-  const [specialties, setSpecialties] = useState<Specialty[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const route = useRoute<any>();
+  const preloadedSpecialties: Specialty[] | undefined =
+    route.params?.preloadedSpecialties;
+  const [specialties, setSpecialties] = useState<Specialty[]>(
+    preloadedSpecialties ?? [],
+  );
+  const [isLoading, setIsLoading] = useState(!preloadedSpecialties?.length);
 
-  // The dashboard's "Specialties" carousel only fetches a curated recent
-  // subset (p_process_type: "home_screen_recent") — this screen fetches
-  // the full department list instead.
   useEffect(() => {
+    // Dashboard already fetched this via the same hosapp_get_ct_department_pntapp
+    // call and passed it along — skip the redundant re-fetch.
+    if (preloadedSpecialties?.length) return;
+
     const fetchAllSpecialties = async () => {
       setIsLoading(true);
       try {

@@ -36,7 +36,10 @@ import {
 } from "@/app/config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
-import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import {
+  callSuggestusAPI,
+  setPatientId as setStoredPatientId,
+} from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { getMenuWidgetsByType } from "../services/dashboardApi";
 import { getSpecialtyIconMeta } from "../config/specialtyIcons";
@@ -44,6 +47,7 @@ import { getMenuIcon } from "../utils/menuIcon";
 import {
   fetchDataFromLocalStorage,
   getDecryptedID,
+  saveDataFromLocalStorage,
 } from "../suggestus_plugin/util/util_functions";
 import { useDashboardSections } from "../hooks/useDashboardSections";
 import { useSectionInstanceData } from "../hooks/useSectionInstanceData";
@@ -51,6 +55,9 @@ import { SectionConfig } from "../config/sectionConfig";
 import CarouselBanner from "../components/BannerCarousel";
 import { fetchAndApplyOrgConfig } from "../services/orgConfig";
 import { SiteConfig } from "../config/site_config";
+import dayjs from "dayjs";
+import { getStoredAiCode } from "../services/aiCode";
+import { getUserEntityReferenceCode } from "../services/entityReferenceCode";
 
 const getGreetingTime = () => {
   const currentHour = new Date().getHours();
@@ -169,6 +176,11 @@ export default function DashboardScreen() {
   const [selectedLocationCode, setSelectedLocationCode] = useState<string>("");
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [switchingLocation, setSwitchingLocation] = useState(false);
+  // Bumped after a successful org switch so every org-scoped
+  // useSectionInstanceData call below (providers/specialties/healthSummary/
+  // upcomingAppointments) is forced to refetch — their own effect deps
+  // (instanceId, patient id, focus tick) don't change on an org switch alone.
+  const [orgRefreshTick, setOrgRefreshTick] = useState(0);
 
   // Splits a description like "Emirates Hospital - Jumeirah" into a name
   // + area subtitle for the two-line row in the "Switch location" sheet.
@@ -244,6 +256,234 @@ export default function DashboardScreen() {
     loadLocations();
   }, []);
 
+  // The same user_id can map to a different patient_id per org — the backend
+  // already resolves this correctly (xcelpat_get_trn_patient_details_ehg_pntapp
+  // scopes "user_patients" by the org context auto-injected into userdata), but
+  // sg_patientId is a flat client-side cache of that lookup's result, so it
+  // keeps pointing at the previous org's patient until explicitly re-resolved.
+  // Mirrors the same lookup/field-mapping patient_selection.tsx's handleSkip
+  // already performs at login, just re-run here on every org switch.
+  const resolvePatientForActiveOrg = async () => {
+    try {
+      const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+      const response = await callSuggestusAPI(
+        spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+        {
+          p_user_id: userId,
+          p_search_text: "",
+          p_search_additional_attributes: "",
+          p_process_flag: "user_patients",
+        },
+      );
+
+      const firstPatient =
+        response?.returnCode === true ? response.returnData?.[0] : null;
+      const newPatientId = firstPatient
+        ? String(firstPatient.p_patient_id ?? firstPatient.patient_id ?? "")
+        : "";
+
+      if (newPatientId) {
+        // Patient already exists for this org — just update local cache.
+        const name =
+          firstPatient.p_patient_name ??
+          firstPatient.ptm_name ??
+          [
+            firstPatient.p_patient_first_name,
+            firstPatient.p_patient_middle_name,
+            firstPatient.p_patient_last_name,
+          ]
+            .filter(Boolean)
+            .join(" ") ??
+          "Unknown";
+        const age =
+          parseInt(
+            String(firstPatient.ptm_age ?? firstPatient.p_age ?? "0"),
+            10,
+          ) || 0;
+        const gender =
+          firstPatient.ptm_gender ??
+          (firstPatient.p_gender === "2" ? "Female" : "Male");
+
+        await setStoredPatientId(newPatientId);
+        await AsyncStorage.setItem(
+          SPD_SELECTED_PATIENT,
+          JSON.stringify({ name, age, gender }),
+        );
+        setPatientId(newPatientId);
+        return;
+      }
+
+      // ── No patient for this org yet — auto-register silently ──────────────
+      // Mirrors registered_patients.tsx handleRegisterAsPatient.
+      try {
+        const fullDataStr = await getDecryptedID(USER_FULL_DATA);
+        if (!fullDataStr) {
+          await AsyncStorage.removeItem("sg_patientId");
+          setPatientId(null);
+          return;
+        }
+
+        const parsed = JSON.parse(fullDataStr);
+        const parseAttrs = (raw: any): Record<string, string> => {
+          if (!raw) return {};
+          try {
+            return typeof raw === "string" ? JSON.parse(raw) : raw;
+          } catch (_) {
+            return {};
+          }
+        };
+        const attrs = parseAttrs(parsed.additional_attributes);
+        const ptName: string = parsed.usr_name ?? "";
+        const ptDob = attrs.user_dob ?? parsed.usr_dob ?? "";
+        const ptAge = ptDob ? dayjs().diff(ptDob, "year") : 0;
+        const ptGender: string =
+          attrs.user_gender ?? parsed.usr_gender ?? "Male";
+        const ptParts = ptName.trim().split(" ");
+        const ptFirst = ptParts[0] ?? "";
+        const ptLast = ptParts.slice(1).join(" ");
+        const ptGenderCode = ptGender === "Female" ? "2" : "1";
+        const ptFormattedDob = ptDob ? dayjs(ptDob).format("YYYY-MM-DD") : "";
+        const emiratesIdToCheck = attrs.p_emirates_id ?? "";
+        const passportToCheck = attrs.p_identification_num ?? "";
+
+        // Step 1: Duplicate check by Emirates ID / Passport
+        let existingPid = "";
+        if (emiratesIdToCheck || passportToCheck) {
+          const checkRes = await callSuggestusAPI(
+            spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+            {
+              p_user_id: userId,
+              p_additional_attribute: {
+                p_emirates_id: emiratesIdToCheck,
+                p_passport_no: passportToCheck,
+              },
+            },
+          );
+          if (
+            checkRes?.returnCode === true &&
+            checkRes.returnData?.length > 0
+          ) {
+            existingPid = String(checkRes.returnData[0]?.p_patient_id ?? "");
+          }
+        }
+
+        let finalPid = existingPid;
+
+        if (!existingPid) {
+          // Step 2: Create patient record
+          const saveRes = await callSuggestusAPI(
+            spd_processId_config.xcelpat_save_trn_patient_master,
+            {
+              p_patient_id: null,
+              p_patient_title: ptGenderCode,
+              p_name: ptFirst,
+              p_middle_name: "",
+              p_last_name: ptLast,
+              p_gender: ptGenderCode,
+              p_dob: ptFormattedDob,
+              p_age: String(ptAge),
+              p_marital_status: "",
+              p_mobile_no: "",
+              "p_mobile_no~CTN": "",
+              p_email: "",
+              ptd_home_phone: "",
+              "ptd_home_phone~CTN": "",
+              p_additional_attribute: {
+                p_father_name: "",
+                p_emirates_id: "",
+                p_identification_type: "",
+                p_identification_num: "",
+              },
+              p_additional_attributes: {},
+            },
+          );
+          finalPid = String(saveRes?.returnData?.[0]?.p_patient_id ?? "");
+        }
+
+        if (finalPid) {
+          await setStoredPatientId(finalPid);
+          await AsyncStorage.setItem(
+            SPD_SELECTED_PATIENT,
+            JSON.stringify({ name: ptName, age: ptAge, gender: ptGender }),
+          );
+
+          // Step 3: Update USER_FULL_DATA
+          try {
+            const stored = JSON.parse(
+              (await getDecryptedID(USER_FULL_DATA)) ?? "{}",
+            );
+            stored.usr_patient_id = finalPid;
+            await saveDataFromLocalStorage(
+              USER_FULL_DATA,
+              JSON.stringify(stored),
+            );
+          } catch (_) {}
+
+          if (!existingPid) {
+            // Step 4: Link patient → user
+            await callSuggestusAPI(
+              spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
+              {
+                p_patient_id: finalPid,
+                p_user_id: userId,
+                p_additional_attribites: {},
+              },
+            );
+
+            // Step 5: Entity mapping
+            await callSuggestusAPI(
+              spd_processId_config.xcelpat_save_mst_user_entity_mapping_common,
+              {
+                p_patient_id: finalPid,
+                p_user_id: userId,
+                p_entity_code: await getStoredAiCode(),
+                p_entity_reference_id: finalPid,
+                p_entity_reference_code: await getUserEntityReferenceCode(),
+                p_active_status: "Y",
+                p_process_flag: "Y",
+                p_additional_attribites: {},
+                p_internal_flag: "N",
+              },
+            );
+          }
+
+          // Step 6: Org mapping for the newly active org
+          const defaultJsonStr = await getDecryptedID(
+            "DEFAULT_JSON_DATA",
+          ).catch(() => null);
+          const orgCodes = defaultJsonStr
+            ? (JSON.parse(defaultJsonStr)?.spd_app_location_list ??
+              SiteConfig.AI_CODE)
+            : SiteConfig.AI_CODE;
+          await callSuggestusAPI(
+            spd_processId_config.hosapp_save_update_trn_patient_master_org_mapping_pnt_app,
+            {
+              p_patient_id: finalPid,
+              p_org_codes: orgCodes,
+              p_process_flag: "map_multiple_user",
+            },
+          );
+
+          setPatientId(finalPid);
+        } else {
+          // Could not create patient — clear stale id
+          await AsyncStorage.removeItem("sg_patientId");
+          setPatientId(null);
+        }
+      } catch (autoRegErr) {
+        console.error(
+          "[Dashboard] auto patient registration on org switch failed:",
+          autoRegErr,
+        );
+        await AsyncStorage.removeItem("sg_patientId");
+        setPatientId(null);
+      }
+      // ─────────────────────────────────────────────────────────────────────
+    } catch (e) {
+      console.error("Error resolving patient for active org:", e);
+    }
+  };
+
   const handleSelectLocation = async (location: LocationOption) => {
     if (location.orgAiCode === selectedLocationCode) {
       setShowLocationPicker(false);
@@ -254,6 +494,13 @@ export default function DashboardScreen() {
       await fetchAndApplyOrgConfig(location.orgAiCode);
       setSelectedLocationCode(location.orgAiCode);
       setOrgLocationName(location.name);
+      // Resolve this org's patient_id for the shared user_id BEFORE refetching
+      // widgets, so their fresh fetches read the correct sg_patientId/state.
+      await resolvePatientForActiveOrg();
+      // Re-pull section config (promo banner, quick actions, etc.) for the
+      // new org, and force every per-instance widget fetch to re-run too.
+      await refetch();
+      setOrgRefreshTick((t) => t + 1);
     } catch (e) {
       console.error("Error switching location:", e);
     } finally {
@@ -353,16 +600,23 @@ export default function DashboardScreen() {
     }, []),
   );
 
-  const handleSeeAllProviders = () => {
+  // Takes the specific instance's own list — with more than one "providers"
+  // widget on screen (each with its own process_id/default_params), "See
+  // all" must show that card's data, not always the first instance's.
+  const handleSeeAllProviders = (providersList: any[]) => {
     // Pass the already-fetched list along so NearbyProvidersScreen doesn't
     // have to re-hit hospapp_get_resources — it reuses this data directly.
-    navigation.navigate("NearbyProviders", { preloadedProviders: Providers });
+    navigation.navigate("NearbyProviders", {
+      preloadedProviders: providersList,
+    });
   };
-  const handleSeeAllSpecialties = () => {
-    // Unlike Providers, the dashboard only ever fetched the curated
-    // "home_screen_recent" subset — AllSpecialtiesScreen fetches the full
-    // department list itself rather than reusing this partial data.
-    navigation.navigate("AllSpecialties");
+  // Takes the specific instance's own list, same as handleSeeAllProviders —
+  // and lets AllSpecialtiesScreen reuse it instead of re-hitting
+  // hosapp_get_ct_department_pntapp for data we already have.
+  const handleSeeAllSpecialties = (specialtiesList: any[]) => {
+    navigation.navigate("AllSpecialties", {
+      preloadedSpecialties: specialtiesList,
+    });
   };
 
   // Providers/specialties/health-summary data is fetched further down (see the
@@ -569,7 +823,7 @@ export default function DashboardScreen() {
   const noPatient = !patientId || patientId === "null";
 
   // Fetch dynamic sections from backend (with automatic fallback to defaults)
-  const { visibleSections } = useDashboardSections(noPatient);
+  const { visibleSections, refetch } = useDashboardSections(noPatient);
 
   // Providers/specialties/health-summary/upcoming-appointment data is fetched
   // once per matching widget instance (not once globally) — each instance uses
@@ -610,6 +864,7 @@ export default function DashboardScreen() {
         nextAvailable: r.next_available ?? r.next_slot ?? "",
       })),
     [],
+    String(orgRefreshTick),
   );
   // "See all" / quick-action pass-through need a single Providers list — use the
   // first occurrence's data (there's normally only one providers instance).
@@ -634,6 +889,7 @@ export default function DashboardScreen() {
         return { label, ...getSpecialtyIconMeta(label) };
       }),
     [],
+    String(orgRefreshTick),
   );
 
   const healthSummaryInstances = visibleSections.filter(
@@ -681,6 +937,7 @@ export default function DashboardScreen() {
       });
     },
     [],
+    String(orgRefreshTick),
   );
 
   const upcomingInstances = visibleSections.filter(
@@ -715,7 +972,7 @@ export default function DashboardScreen() {
       ];
     },
     [],
-    `${patientId ?? ""}_${focusTick}`,
+    `${patientId ?? ""}_${focusTick}_${orgRefreshTick}`,
   );
 
   // Renders each "body" section (everything below the greeting hero) by
@@ -1013,7 +1270,7 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <Pressable
-                onPress={handleSeeAllProviders}
+                onPress={() => handleSeeAllProviders(providersForInstance)}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
@@ -1055,6 +1312,15 @@ export default function DashboardScreen() {
                         transform: [{ scale: pressed ? 0.97 : 1 }],
                       },
                     ]}
+                    onPress={() =>
+                      navigation.navigate("PatientDetails", {
+                        doctorId: provider.id,
+                        doctorName: provider.name,
+                        specialty: provider.specialty,
+                        avatar: provider.avatar,
+                        hospital: provider.hospital,
+                      })
+                    }
                   >
                     <View style={styles.providerAvatarBg}>
                       <Image
@@ -1119,7 +1385,7 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <Pressable
-                onPress={handleSeeAllSpecialties}
+                onPress={() => handleSeeAllSpecialties(specialtiesForInstance)}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
@@ -1157,6 +1423,11 @@ export default function DashboardScreen() {
                           transform: [{ scale: pressed ? 0.95 : 1 }],
                         },
                       ]}
+                      onPress={() =>
+                        navigation.navigate("NearbyProviders", {
+                          initialCategory: item.label,
+                        })
+                      }
                     >
                       <View
                         style={[

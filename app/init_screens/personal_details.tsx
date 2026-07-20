@@ -1350,14 +1350,166 @@ export default function PersonalDetailsScreen() {
           },
         });
       } else {
+        // ── Inline "Register as a patient" ──────────────────────────────────
+        // Same logic as patient_selection.tsx handleRegisterAsPatient.
+        // The submit button's loader is already active (setLoading(true) above)
+        // so the user sees a spinner until ALL of these calls finish.
+        try {
+          const fNamePat = firstName.trim().split(" ")[0] ?? "";
+          const lNamePat =
+            firstName.trim().split(" ").slice(1).join(" ") !== ""
+              ? firstName.trim().split(" ").slice(1).join(" ")
+              : lastName.trim();
+          const genderCodePat = gender === "Female" ? "2" : "1";
+          const agePat = dob ? dayjs().diff(dob, "year") : 0;
+          const formattedDobPat = dob ? dayjs(dob).format("YYYY-MM-DD") : "";
+          const emiratesIdCleanPat = isResident
+            ? emiratesId.replace(/-/g, "")
+            : "";
+          const passportCleanPat = !isResident ? passportNo.trim() : "";
+
+          // Step 1: Check if a patient already exists — avoid duplicate
+          let existingPatientId = "";
+          if (emiratesIdCleanPat || passportCleanPat) {
+            const dupCheckRes = await callSuggestusAPI(
+              spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+              {
+                p_user_id: newUserId,
+                p_additional_attribute: {
+                  p_emirates_id: emiratesIdCleanPat,
+                  p_passport_no: passportCleanPat,
+                },
+                p_process_flag: "user_patients",
+              },
+            );
+            if (
+              dupCheckRes?.returnCode === true &&
+              dupCheckRes.returnData?.length > 0
+            ) {
+              existingPatientId = String(
+                dupCheckRes.returnData[0]?.p_patient_id ?? "",
+              );
+            }
+          }
+
+          let finalPatientId = existingPatientId;
+
+          if (!existingPatientId) {
+            // Step 2: Create the patient record
+            const savePatRes = await callSuggestusAPI(
+              spd_processId_config.xcelpat_save_trn_patient_master,
+              {
+                p_patient_id: null,
+                p_patient_title: genderCodePat,
+                p_name: fNamePat,
+                p_middle_name: "",
+                p_last_name: lNamePat,
+                p_gender: genderCodePat,
+                p_dob: formattedDobPat,
+                p_age: String(agePat),
+                p_marital_status: "",
+                p_mobile_no: "",
+                "p_mobile_no~CTN": "",
+                p_email: "",
+                ptd_home_phone: "",
+                "ptd_home_phone~CTN": "",
+                p_additional_attribute: {
+                  p_father_name: "",
+                  p_emirates_id: emiratesIdCleanPat,
+                  p_identification_type: isResident
+                    ? "emirates_id"
+                    : "passport",
+                  p_identification_num: passportCleanPat,
+                },
+                p_additional_attributes: {},
+              },
+            );
+            finalPatientId = String(
+              savePatRes?.returnData?.[0]?.p_patient_id ?? "",
+            );
+          }
+
+          if (finalPatientId) {
+            await setPatientId(finalPatientId);
+
+            // Step 3: Update USER_FULL_DATA with patient id
+            try {
+              const storedStr = await getDecryptedID(USER_FULL_DATA);
+              const stored = storedStr ? JSON.parse(storedStr) : {};
+              stored.usr_patient_id = finalPatientId;
+              await saveDataFromLocalStorage(
+                USER_FULL_DATA,
+                JSON.stringify(stored),
+              );
+            } catch (_) {}
+
+            if (newUserId && !existingPatientId) {
+              // Step 4: Link patient → user
+              await callSuggestusAPI(
+                spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
+                {
+                  p_patient_id: finalPatientId,
+                  p_user_id: newUserId,
+                  p_additional_attribites: {},
+                },
+              );
+
+              // Step 5: Entity mapping
+              await callSuggestusAPI(
+                spd_processId_config.xcelpat_save_mst_user_entity_mapping_common,
+                {
+                  p_patient_id: finalPatientId,
+                  p_user_id: newUserId,
+                  p_entity_code: await getStoredAiCode(),
+                  p_entity_reference_id: finalPatientId,
+                  p_entity_reference_code: await getUserEntityReferenceCode(),
+                  p_active_status: "Y",
+                  p_process_flag: "Y",
+                  p_additional_attribites: {},
+                  p_internal_flag: "N",
+                },
+              );
+            }
+
+            // Step 6: Map patient to all org locations
+            const defaultJsonStrPat = await getDecryptedID("DEFAULT_JSON_DATA");
+            const orgCodesPat = defaultJsonStrPat
+              ? (JSON.parse(defaultJsonStrPat)?.spd_app_location_list ??
+                currentOrgAiCode)
+              : currentOrgAiCode;
+
+            await callSuggestusAPI(
+              spd_processId_config.hosapp_save_update_trn_patient_master_org_mapping_pnt_app,
+              {
+                p_patient_id: finalPatientId,
+                p_map_user_id: newUserId,
+                p_org_codes: orgCodesPat,
+                p_process_flag: "map_multiple_user",
+                p_additional_attribute: "",
+                p_patmas_mrn: "",
+              },
+            );
+          }
+        } catch (patientRegErr) {
+          // Non-fatal — user still proceeds to HomeScreen
+          console.error(
+            "[PersonalDetails] inline patient registration failed:",
+            patientRegErr,
+          );
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         Toast.show({
           type: "success",
-          text1: "Profile Updated Successfully",
+          text1: "Registration Complete",
           text2: "Welcome to Emirates Hospitals Group",
         });
         router.replace({
           pathname: "/init_screens/terms_and_privacy",
-          params: { user_id: newUserId, next: "/patient/patient_selection" },
+          params: {
+            user_id: newUserId,
+            next: "/(drawer)/tab_bar_home/HomeScreen",
+          },
         });
       }
     } catch (error) {

@@ -13,11 +13,18 @@ import {
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import dayjs from "dayjs";
 import {
   getDecryptedID,
   saveDataFromLocalStorage,
+  fetchDataFromLocalStorage,
 } from "../suggestus_plugin/util/util_functions";
-import { SPD_USER_EMAIL, USER_FULL_DATA } from "../config/config";
+import {
+  SPD_USER_EMAIL,
+  USER_FULL_DATA,
+  SPD_SELECTED_PATIENT,
+} from "../config/config";
 import {
   setUserId,
   setRoleId,
@@ -33,6 +40,8 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import Toast from "react-native-toast-message";
 import { useOrgLogo } from "../hooks/useOrgLogo";
 import { Messages } from "../config/messages";
+import { getStoredAiCode } from "../services/aiCode";
+import { getUserEntityReferenceCode } from "../services/entityReferenceCode";
 
 export default function OTPVerificationScreen() {
   const logoSource = useOrgLogo();
@@ -212,13 +221,216 @@ export default function OTPVerificationScreen() {
               ? setPatientId(String(resolvedPatientId))
               : Promise.resolve(),
           ]);
+
+          // Secondary check by user_id — session is now set so callSuggestusAPI
+          // will inject the correct sg_userId. This catches patients that are
+          // already linked to this user but weren't found by the mobile-number
+          // lookup above (e.g. registered via personal_details or a different
+          // phone). Without this, the registration block below would fire on
+          // every login and create a new patient record each time.
+          let effectivePatientId = resolvedPatientId;
+          if (!effectivePatientId) {
+            try {
+              const userPatsRes = await callSuggestusAPI(
+                spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+                {
+                  p_user_id: String(u.usr_id ?? ""),
+                  p_process_flag: "user_patients",
+                },
+                "",
+                "",
+                "",
+                "",
+                undefined,
+                false,
+              );
+              if (
+                userPatsRes?.returnCode === true &&
+                userPatsRes.returnData?.length > 0
+              ) {
+                effectivePatientId = String(
+                  userPatsRes.returnData[0]?.p_patient_id ??
+                    userPatsRes.returnData[0]?.patient_id ??
+                    "",
+                );
+                if (effectivePatientId) {
+                  await setPatientId(effectivePatientId);
+                }
+              }
+            } catch (_) {}
+          }
+
+          // Only auto-register as patient if truly no patient exists for this user.
+          if (!effectivePatientId) {
+            try {
+              // Parse user fields from the validated profile
+              const parseAttrs = (raw: any): Record<string, string> => {
+                if (!raw) return {};
+                try {
+                  return typeof raw === "string" ? JSON.parse(raw) : raw;
+                } catch (_) {
+                  return {};
+                }
+              };
+              const attrs = parseAttrs(u.additional_attributes);
+              const ptName: string = u.usr_name ?? "";
+              const ptDob = attrs.user_dob ?? u.usr_dob ?? "";
+              const ptAge = ptDob ? dayjs().diff(ptDob, "year") : 0;
+              const ptGender: string =
+                attrs.user_gender ?? u.usr_gender ?? "Male";
+              const ptParts = ptName.trim().split(" ");
+              const ptFirst = ptParts[0] ?? "";
+              const ptLast = ptParts.slice(1).join(" ");
+              const ptGenderCode = ptGender === "Female" ? "2" : "1";
+              const ptFormattedDob = ptDob
+                ? dayjs(ptDob).format("YYYY-MM-DD")
+                : "";
+              const ptEmiratesId = attrs.p_emirates_id ?? "";
+              const ptPassport = attrs.p_identification_num ?? "";
+              const ptUserId = String(u.usr_id ?? "");
+
+              // Step 1: Check for existing patient by Emirates ID / Passport
+              let existingPid = "";
+              if (ptEmiratesId || ptPassport) {
+                const checkRes = await callSuggestusAPI(
+                  spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+                  {
+                    p_user_id: ptUserId,
+                    p_additional_attribute: {
+                      p_emirates_id: ptEmiratesId,
+                      p_passport_no: ptPassport,
+                    },
+                  },
+                );
+                if (
+                  checkRes?.returnCode === true &&
+                  checkRes.returnData?.length > 0
+                ) {
+                  existingPid = String(
+                    checkRes.returnData[0]?.p_patient_id ?? "",
+                  );
+                }
+              }
+
+              let finalPid = existingPid;
+
+              if (!existingPid) {
+                // Step 2: Create the patient record
+                const saveRes = await callSuggestusAPI(
+                  spd_processId_config.xcelpat_save_trn_patient_master,
+                  {
+                    p_patient_id: null,
+                    p_patient_title: ptGenderCode,
+                    p_name: ptFirst,
+                    p_middle_name: "",
+                    p_last_name: ptLast,
+                    p_gender: ptGenderCode,
+                    p_dob: ptFormattedDob,
+                    p_age: String(ptAge),
+                    p_marital_status: "",
+                    p_mobile_no: "",
+                    "p_mobile_no~CTN": "",
+                    p_email: "",
+                    ptd_home_phone: "",
+                    "ptd_home_phone~CTN": "",
+                    p_additional_attribute: {
+                      p_father_name: "",
+                      p_emirates_id: "",
+                      p_identification_type: "",
+                      p_identification_num: "",
+                    },
+                    p_additional_attributes: {},
+                  },
+                );
+                finalPid = String(saveRes?.returnData?.[0]?.p_patient_id ?? "");
+              }
+
+              if (finalPid) {
+                await setPatientId(finalPid);
+                await AsyncStorage.setItem(
+                  SPD_SELECTED_PATIENT,
+                  JSON.stringify({
+                    name: ptName,
+                    age: ptAge,
+                    gender: ptGender,
+                  }),
+                );
+
+                // Step 3: Update USER_FULL_DATA with patient id
+                try {
+                  const stored = JSON.parse(
+                    (await getDecryptedID(USER_FULL_DATA)) ?? "{}",
+                  );
+                  stored.usr_patient_id = finalPid;
+                  await saveDataFromLocalStorage(
+                    USER_FULL_DATA,
+                    JSON.stringify(stored),
+                  );
+                } catch (_) {}
+
+                if (!existingPid) {
+                  // Step 4: Link patient → user
+                  await callSuggestusAPI(
+                    spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
+                    {
+                      p_patient_id: finalPid,
+                      p_user_id: ptUserId,
+                      p_additional_attribites: {},
+                    },
+                  );
+
+                  // Step 5: Entity mapping
+                  await callSuggestusAPI(
+                    spd_processId_config.xcelpat_save_mst_user_entity_mapping_common,
+                    {
+                      p_patient_id: finalPid,
+                      p_user_id: ptUserId,
+                      p_entity_code: await getStoredAiCode(),
+                      p_entity_reference_id: finalPid,
+                      p_entity_reference_code:
+                        await getUserEntityReferenceCode(),
+                      p_active_status: "Y",
+                      p_process_flag: "Y",
+                      p_additional_attribites: {},
+                      p_internal_flag: "N",
+                    },
+                  );
+                }
+
+                // Step 6: Org mapping
+                const djs = await getDecryptedID("DEFAULT_JSON_DATA").catch(
+                  () => null,
+                );
+                const orgCodes = djs
+                  ? (JSON.parse(djs)?.spd_app_location_list ??
+                    SiteConfig.AI_CODE)
+                  : SiteConfig.AI_CODE;
+                await callSuggestusAPI(
+                  spd_processId_config.hosapp_save_update_trn_patient_master_org_mapping_pnt_app,
+                  {
+                    p_patient_id: finalPid,
+                    p_org_codes: orgCodes,
+                    p_process_flag: "map_multiple_user",
+                  },
+                );
+              }
+            } catch (autoRegErr) {
+              // Non-fatal — user still lands on HomeScreen
+              console.error(
+                "[OtpVerification] auto patient registration failed:",
+                autoRegErr,
+              );
+            }
+          }
+
           Toast.show({
             type: "success",
             text1: "Phone verified successfully.",
             visibilityTime: 3000,
           });
-          router.replace("/patient/registered_patients");
-          // router.replace("/(drawer)/tab_bar_home/HomeScreen");
+          router.replace("/(drawer)/tab_bar_home/HomeScreen");
+          // router.replace("/patient/registered_patients");
+
           // router.replace({
           //   pathname: "/init_screens/personal_details",
           // });

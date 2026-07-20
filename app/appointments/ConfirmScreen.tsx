@@ -13,9 +13,13 @@ import {
   Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
+import {
+  fetchDataFromLocalStorage,
+  getDecryptedID,
+} from "../suggestus_plugin/util/util_functions";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
+import { SPD_AI_CODE } from "../config/config";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -98,6 +102,27 @@ export default function ConfirmScreen() {
       const pid =
         patientId || (await fetchDataFromLocalStorage("sg_patientId")) || "";
       const pSlotsList = buildSlotsList(slotId ?? "");
+
+      // Ensure the patient is mapped to the org they're booking with before
+      // saving the appointment — same call/payload shape already used for
+      // this purpose in registered_patients.tsx / patient_selection.tsx.
+      const mapUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+      const activeOrgCode = (await getDecryptedID(SPD_AI_CODE)) ?? "";
+      try {
+        await callSuggestusAPI(
+          spd_processId_config.hosapp_save_update_trn_patient_master_org_mapping_pnt_app,
+          {
+            p_patient_id: pid,
+            p_map_user_id: mapUserId,
+            p_org_codes: activeOrgCode,
+            p_process_flag: "map_multiple_user",
+            p_additional_attribute: "",
+            p_patmas_mrn: "",
+          },
+        );
+      } catch (mapError) {
+        console.error("Error mapping patient to org:", mapError);
+      }
 
       const res = await callSuggestusAPI(
         spd_processId_config.hospapp_save_patient_appointment_hv,

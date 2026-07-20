@@ -88,6 +88,7 @@ export default function NearbyProvidersScreen() {
   const categoriesScrollRef = useRef<ScrollView>(null);
   const categoriesScrollOffsetRef = useRef(0);
   const categoriesScrollMaxRef = useRef(0);
+  const categoryPositionsRef = useRef<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [providers, setProviders] = useState<Provider[]>(
     preloadedProviders ?? [],
@@ -161,6 +162,22 @@ export default function NearbyProvidersScreen() {
     fetchProviders();
   }, []);
 
+  // Auto-scroll the horizontal category filter so the selected category is visible
+  useEffect(() => {
+    if (categories.length > 0 && categoriesScrollRef.current) {
+      // Give small timeout to assure onLayout has populated ref values
+      setTimeout(() => {
+        const pos = categoryPositionsRef.current[selectedCategory];
+        if (pos !== undefined) {
+          categoriesScrollRef.current?.scrollTo({
+            x: Math.max(0, pos - 50), // 50px buffer so it's not glued to the exact left edge
+            animated: true,
+          });
+        }
+      }, 100);
+    }
+  }, [selectedCategory, categories]);
+
   const filteredProviders = providers.filter((provider) => {
     const matchesCategory =
       selectedCategory === "All" || provider.specialty === selectedCategory;
@@ -216,6 +233,9 @@ export default function NearbyProvidersScreen() {
                 selectedCategory === category && styles.categoryChipActive,
               ]}
               onPress={() => setSelectedCategory(category)}
+              onLayout={(e) => {
+                categoryPositionsRef.current[category] = e.nativeEvent.layout.x;
+              }}
             >
               <Text
                 style={[

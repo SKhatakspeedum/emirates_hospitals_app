@@ -9,7 +9,11 @@ import {
 } from "react-native";
 // import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { DrawerActions, useNavigation } from "@react-navigation/native";
+import {
+  DrawerActions,
+  StackActions,
+  useNavigation,
+} from "@react-navigation/native";
 import { HomeIcon, OrderIcon, RxIcon, PersonIcon } from "./TabIcons";
 import { Colors } from "@/app/config/colors";
 
@@ -38,9 +42,17 @@ export default function Footer({
       {/* Home Tab */}
       <TouchableOpacity
         style={state.index === 0 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("HomeTab", { screen: "Dashboard" })}
+        onPress={() => {
+          if (state.index === 0) {
+            navigation.dispatch(StackActions.popToTop());
+          } else {
+            navigation.navigate("HomeTab");
+          }
+        }}
       >
-        <HomeIcon color={state.index === 0 ? Colors.primary : Colors.grayDark} />
+        <HomeIcon
+          color={state.index === 0 ? Colors.primary : Colors.grayDark}
+        />
         <Text
           style={state.index === 0 ? styles.tabLabelActive : styles.tabLabel}
         >
@@ -53,7 +65,9 @@ export default function Footer({
         style={state.index === 1 ? styles.tabItemActive : styles.tabItem}
         onPress={() => navigation.navigate("OrderScreen")}
       >
-        <OrderIcon color={state.index === 1 ? Colors.primary : Colors.grayDark} />
+        <OrderIcon
+          color={state.index === 1 ? Colors.primary : Colors.grayDark}
+        />
         <Text
           style={state.index === 1 ? styles.tabLabelActive : styles.tabLabel}
         >
@@ -63,10 +77,7 @@ export default function Footer({
 
       {/* Center Logo Button - Opens Bottom Sheet */}
       <View style={styles.centerLogoContainer}>
-        <TouchableOpacity
-          style={styles.centerLogoButton}
-          onPress={toggleSheet}
-        >
+        <TouchableOpacity style={styles.centerLogoButton} onPress={toggleSheet}>
           {/* <PinIcon /> */}
           <Image
             source={require("@/assets/images/menu_logo.png")}
@@ -97,15 +108,15 @@ export default function Footer({
         style={state.index === 4 ? styles.tabItemActive : styles.tabItem}
         onPress={() => navigation.navigate("ProfileScreen")}
       >
-        <PersonIcon color={state.index === 4 ? Colors.primary : Colors.grayDark} />
+        <PersonIcon
+          color={state.index === 4 ? Colors.primary : Colors.grayDark}
+        />
         <Text
           style={state.index === 4 ? styles.tabLabelActive : styles.tabLabel}
         >
           Profile
         </Text>
       </TouchableOpacity>
-
-
     </View>
   );
 }

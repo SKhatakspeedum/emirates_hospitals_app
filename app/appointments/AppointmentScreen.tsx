@@ -12,7 +12,11 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  StackActions,
+} from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -48,9 +52,11 @@ const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 
 // Returns color/bg from badge class: badge-outline-success, badge-outline-danger, etc.
 const getStatusStyle = (htmlStr: string) => {
-  if (htmlStr.includes("success")) return { color: Colors.success, bg: "#dcfce7" };
+  if (htmlStr.includes("success"))
+    return { color: Colors.success, bg: "#dcfce7" };
   if (htmlStr.includes("danger")) return { color: Colors.error, bg: "#fee2e2" };
-  if (htmlStr.includes("warning")) return { color: Colors.warning, bg: "#fef3c7" };
+  if (htmlStr.includes("warning"))
+    return { color: Colors.warning, bg: "#fef3c7" };
   return { color: Colors.primary, bg: Colors.pressed };
 };
 
@@ -138,7 +144,10 @@ export default function AppointmentScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [orgId, setOrgId] = useState<string>("");
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
-  const [appointmentToCancel, setAppointmentToCancel] = useState<{ id: string; name: string } | null>(null);
+  const [appointmentToCancel, setAppointmentToCancel] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const appointments = activeTab === "upcoming" ? upcomingList : historyList;
 
   useEffect(() => {
@@ -237,8 +246,10 @@ export default function AppointmentScreen() {
   useEffect(() => {
     if (fromBooking) {
       const unsubscribe = navigation.addListener("beforeRemove", (e: any) => {
-        e.preventDefault();
-        goToNearbyProviders();
+        if (e.data.action.type === "GO_BACK") {
+          e.preventDefault();
+          navigation.dispatch(StackActions.popToTop());
+        }
       });
       return unsubscribe;
     }
@@ -274,7 +285,7 @@ export default function AppointmentScreen() {
       if (res?.returnCode !== true) {
         showError(
           res?.returnMessage ??
-          "Failed to cancel appointment. Please try again.",
+            "Failed to cancel appointment. Please try again.",
         );
         return;
       }
@@ -437,7 +448,9 @@ export default function AppointmentScreen() {
                         </View>
                       )}
                       {!!timeDisplay && (
-                        <Text style={styles.metaIndentedText}>{timeDisplay}</Text>
+                        <Text style={styles.metaIndentedText}>
+                          {timeDisplay}
+                        </Text>
                       )}
                     </View>
 

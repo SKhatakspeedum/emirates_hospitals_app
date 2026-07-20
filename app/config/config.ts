@@ -7,7 +7,7 @@ export const SPD_USER_EMAIL_ID = "sg_user_email_id";
 export const USER_FULL_DATA = "sg_user_full_data";
 export const IS_LOGGED_IN = "isLoggedIn";
 export const SPD_AI_CODE = "sg_AICODE";
-export const SPD_USER_NAME = "sg_userName";
+export const SPD_USER_NAME = "sg_user_name";
 export const SPD_USER_EMAIL = "sg_userEmail";
 export const SPD_USER_SUBSCRIPTION = "sg_userSubscription";
 

@@ -11,6 +11,7 @@ import {
   Alert,
   Platform,
   Pressable,
+  DeviceEventEmitter,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import {
@@ -144,6 +145,7 @@ export default function ConfirmScreen() {
       );
 
       if (res?.returnCode === true) {
+        DeviceEventEmitter.emit("appointmentBooked");
         Toast.show({
           type: "success",
           text1: "Success",

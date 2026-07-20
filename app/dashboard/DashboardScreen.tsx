@@ -36,7 +36,10 @@ import {
 } from "@/app/config/config";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
-import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
+import {
+  callSuggestusAPI,
+  setPatientId as setStoredPatientId,
+} from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { getMenuWidgetsByType } from "../services/dashboardApi";
 import { getSpecialtyIconMeta } from "../config/specialtyIcons";
@@ -168,6 +171,11 @@ export default function DashboardScreen() {
   const [selectedLocationCode, setSelectedLocationCode] = useState<string>("");
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [switchingLocation, setSwitchingLocation] = useState(false);
+  // Bumped after a successful org switch so every org-scoped
+  // useSectionInstanceData call below (providers/specialties/healthSummary/
+  // upcomingAppointments) is forced to refetch — their own effect deps
+  // (instanceId, patient id, focus tick) don't change on an org switch alone.
+  const [orgRefreshTick, setOrgRefreshTick] = useState(0);
 
   // Splits a description like "Emirates Hospital - Jumeirah" into a name
   // + area subtitle for the two-line row in the "Switch location" sheet.
@@ -243,6 +251,67 @@ export default function DashboardScreen() {
     loadLocations();
   }, []);
 
+  // The same user_id can map to a different patient_id per org — the backend
+  // already resolves this correctly (xcelpat_get_trn_patient_details_ehg_pntapp
+  // scopes "user_patients" by the org context auto-injected into userdata), but
+  // sg_patientId is a flat client-side cache of that lookup's result, so it
+  // keeps pointing at the previous org's patient until explicitly re-resolved.
+  // Mirrors the same lookup/field-mapping patient_selection.tsx's handleSkip
+  // already performs at login, just re-run here on every org switch.
+  const resolvePatientForActiveOrg = async () => {
+    try {
+      const userId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
+      const response = await callSuggestusAPI(
+        spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
+        {
+          p_user_id: userId,
+          p_search_text: "",
+          p_search_additional_attributes: "",
+          p_process_flag: "user_patients",
+        },
+      );
+
+      const firstPatient =
+        response?.returnCode === true ? response.returnData?.[0] : null;
+      const newPatientId = firstPatient
+        ? String(firstPatient.p_patient_id ?? firstPatient.patient_id ?? "")
+        : "";
+
+      if (!newPatientId) {
+        await AsyncStorage.removeItem("sg_patientId");
+        setPatientId(null);
+        return;
+      }
+
+      const name =
+        firstPatient.p_patient_name ??
+        firstPatient.ptm_name ??
+        [
+          firstPatient.p_patient_first_name,
+          firstPatient.p_patient_middle_name,
+          firstPatient.p_patient_last_name,
+        ]
+          .filter(Boolean)
+          .join(" ") ??
+        "Unknown";
+      const age =
+        parseInt(String(firstPatient.ptm_age ?? firstPatient.p_age ?? "0"), 10) ||
+        0;
+      const gender =
+        firstPatient.ptm_gender ??
+        (firstPatient.p_gender === "2" ? "Female" : "Male");
+
+      await setStoredPatientId(newPatientId);
+      await AsyncStorage.setItem(
+        SPD_SELECTED_PATIENT,
+        JSON.stringify({ name, age, gender }),
+      );
+      setPatientId(newPatientId);
+    } catch (e) {
+      console.error("Error resolving patient for active org:", e);
+    }
+  };
+
   const handleSelectLocation = async (location: LocationOption) => {
     if (location.orgAiCode === selectedLocationCode) {
       setShowLocationPicker(false);
@@ -253,6 +322,13 @@ export default function DashboardScreen() {
       await fetchAndApplyOrgConfig(location.orgAiCode);
       setSelectedLocationCode(location.orgAiCode);
       setOrgLocationName(location.name);
+      // Resolve this org's patient_id for the shared user_id BEFORE refetching
+      // widgets, so their fresh fetches read the correct sg_patientId/state.
+      await resolvePatientForActiveOrg();
+      // Re-pull section config (promo banner, quick actions, etc.) for the
+      // new org, and force every per-instance widget fetch to re-run too.
+      await refetch();
+      setOrgRefreshTick((t) => t + 1);
     } catch (e) {
       console.error("Error switching location:", e);
     } finally {
@@ -352,16 +428,23 @@ export default function DashboardScreen() {
     }, []),
   );
 
-  const handleSeeAllProviders = () => {
+  // Takes the specific instance's own list — with more than one "providers"
+  // widget on screen (each with its own process_id/default_params), "See
+  // all" must show that card's data, not always the first instance's.
+  const handleSeeAllProviders = (providersList: any[]) => {
     // Pass the already-fetched list along so NearbyProvidersScreen doesn't
     // have to re-hit hospapp_get_resources — it reuses this data directly.
-    navigation.navigate("NearbyProviders", { preloadedProviders: Providers });
+    navigation.navigate("NearbyProviders", {
+      preloadedProviders: providersList,
+    });
   };
-  const handleSeeAllSpecialties = () => {
-    // Unlike Providers, the dashboard only ever fetched the curated
-    // "home_screen_recent" subset — AllSpecialtiesScreen fetches the full
-    // department list itself rather than reusing this partial data.
-    navigation.navigate("AllSpecialties");
+  // Takes the specific instance's own list, same as handleSeeAllProviders —
+  // and lets AllSpecialtiesScreen reuse it instead of re-hitting
+  // hosapp_get_ct_department_pntapp for data we already have.
+  const handleSeeAllSpecialties = (specialtiesList: any[]) => {
+    navigation.navigate("AllSpecialties", {
+      preloadedSpecialties: specialtiesList,
+    });
   };
 
   // Providers/specialties/health-summary data is fetched further down (see the
@@ -566,7 +649,7 @@ export default function DashboardScreen() {
   const noPatient = !patientId || patientId === "null";
 
   // Fetch dynamic sections from backend (with automatic fallback to defaults)
-  const { visibleSections } = useDashboardSections(noPatient);
+  const { visibleSections, refetch } = useDashboardSections(noPatient);
 
   // Providers/specialties/health-summary/upcoming-appointment data is fetched
   // once per matching widget instance (not once globally) — each instance uses
@@ -605,6 +688,7 @@ export default function DashboardScreen() {
         nextAvailable: r.next_available ?? r.next_slot ?? "",
       })),
     [],
+    String(orgRefreshTick),
   );
   // "See all" / quick-action pass-through need a single Providers list — use the
   // first occurrence's data (there's normally only one providers instance).
@@ -629,6 +713,7 @@ export default function DashboardScreen() {
         return { label, ...getSpecialtyIconMeta(label) };
       }),
     [],
+    String(orgRefreshTick),
   );
 
   const healthSummaryInstances = visibleSections.filter(
@@ -675,6 +760,7 @@ export default function DashboardScreen() {
       });
     },
     [],
+    String(orgRefreshTick),
   );
 
   const upcomingInstances = visibleSections.filter(
@@ -709,7 +795,7 @@ export default function DashboardScreen() {
       ];
     },
     [],
-    `${patientId ?? ""}_${focusTick}`,
+    `${patientId ?? ""}_${focusTick}_${orgRefreshTick}`,
   );
 
   // Renders each "body" section (everything below the greeting hero) by
@@ -966,7 +1052,7 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <Pressable
-                onPress={handleSeeAllProviders}
+                onPress={() => handleSeeAllProviders(providersForInstance)}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
@@ -1008,6 +1094,15 @@ export default function DashboardScreen() {
                         transform: [{ scale: pressed ? 0.97 : 1 }],
                       },
                     ]}
+                    onPress={() =>
+                      navigation.navigate("PatientDetails", {
+                        doctorId: provider.id,
+                        doctorName: provider.name,
+                        specialty: provider.specialty,
+                        avatar: provider.avatar,
+                        hospital: provider.hospital,
+                      })
+                    }
                   >
                     <View style={styles.providerAvatarBg}>
                       <Image
@@ -1050,7 +1145,7 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <Pressable
-                onPress={handleSeeAllSpecialties}
+                onPress={() => handleSeeAllSpecialties(specialtiesForInstance)}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
@@ -1088,6 +1183,11 @@ export default function DashboardScreen() {
                           transform: [{ scale: pressed ? 0.95 : 1 }],
                         },
                       ]}
+                      onPress={() =>
+                        navigation.navigate("NearbyProviders", {
+                          initialCategory: item.label,
+                        })
+                      }
                     >
                       <View
                         style={[

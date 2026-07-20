@@ -20,9 +20,9 @@ export interface ConfirmationModalProps {
   title: string;
   description: string;
   confirmText: string;
-  cancelText: string;
+  cancelText?: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
   confirmButtonColor?: string;
   confirmTextColor?: string;
   iconName?: keyof typeof Ionicons.glyphMap;
@@ -76,13 +76,15 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={onCancel}
-                  activeOpacity={0.6}
-                >
-                  <Text style={styles.cancelButtonText}>{cancelText}</Text>
-                </TouchableOpacity>
+                {cancelText && (
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={onCancel}
+                    activeOpacity={0.6}
+                  >
+                    <Text style={styles.cancelButtonText}>{cancelText}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           </TouchableWithoutFeedback>

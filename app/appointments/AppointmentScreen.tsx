@@ -8,7 +8,6 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
-  Alert,
   Platform,
   Pressable,
   ActivityIndicator,

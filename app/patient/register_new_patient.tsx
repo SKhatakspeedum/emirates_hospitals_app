@@ -13,7 +13,7 @@ import {
   Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
@@ -68,6 +68,7 @@ const formatPassport = (text: string) =>
 export default function RegisterNewPatient() {
   const router = useRouter();
   const route = useRoute<any>();
+  const isFocused = useIsFocused();
   const isSelf =
     (route.params as any)?.isSelf === true ||
     (route.params as any)?.isSelf === "true";
@@ -115,7 +116,13 @@ export default function RegisterNewPatient() {
     !hasExistsError &&
     !isChecking;
 
-  const handleClose = () => router.back();
+  const handleClose = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(drawer)/tab_bar_home/HomeScreen");
+    }
+  };
 
   const checkPatientExistence = useCallback(
     async (field: "emirates" | "passport", value: string) => {
@@ -389,7 +396,7 @@ export default function RegisterNewPatient() {
 
   return (
     <Modal
-      visible={true}
+      visible={isFocused}
       transparent={true}
       animationType="slide"
       onRequestClose={handleClose}

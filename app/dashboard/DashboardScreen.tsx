@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -23,7 +23,6 @@ import {
 } from "@react-navigation/native";
 import {
   Ionicons,
-  FontAwesome5,
   MaterialCommunityIcons,
   FontAwesome,
 } from "@expo/vector-icons";
@@ -46,6 +45,7 @@ import {
   getDecryptedID,
 } from "../suggestus_plugin/util/util_functions";
 import { useDashboardSections } from "../hooks/useDashboardSections";
+import { useSectionInstanceData } from "../hooks/useSectionInstanceData";
 import { SectionConfig } from "../config/sectionConfig";
 import CarouselBanner from "../components/BannerCarousel";
 import { fetchAndApplyOrgConfig } from "../services/orgConfig";
@@ -136,15 +136,16 @@ type FullAppointment = {
 export default function DashboardScreen() {
   const { width, height } = useWindowDimensions();
   const navigation = useNavigation<any>();
-  const [userProfileName, setUserProfileName] = useState<string>("");
+  const [userProfileName, setUserProfileName] = useState<string>("John");
   const [patientId, setPatientId] = useState<string | null>(null);
   const [patientMeta, setPatientMeta] = useState<{
     age: number;
     gender: string;
   } | null>(null);
-  const [upcomingAppointments, setUpcomingAppointments] = useState<
-    UpcomingAppointment[]
-  >([]);
+  // Bumped on every screen focus so the "recent" upcoming-appointment card
+  // (fetched via useSectionInstanceData below) refetches on refocus, matching
+  // the previous useFocusEffect-driven behavior.
+  const [focusTick, setFocusTick] = useState(0);
   // Full-shape upcoming/history lists — kept so "See all" can pass them
   // straight to AppointmentScreen via navigation params, avoiding a
   // duplicate xcelsch_get_patient_future_appointments... fetch there.
@@ -337,69 +338,24 @@ export default function DashboardScreen() {
             setUpcomingAppointmentsFull([]);
             setHistoryAppointmentsFull([]);
           }
-
-          // Separate, isolated call just for the dashboard card: asks the
-          // same process for only the single most recent upcoming
-          // appointment (p_process_flag: "recent_single"), so this card
-          // no longer depends on the full-list fetch above.
-          try {
-            const singleResponse = await callSuggestusAPI(
-              spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
-              {
-                p_patient_id: pid,
-                p_visit_id: null,
-                menu_name: "Wellness",
-                menu_tab_type: "always_patient_specific",
-                maximization_redirection_label: "Make appointment",
-                p_max_offset: 1,
-                p_process_type: "fetch_all_appointments",
-                p_offset: 0,
-                p_process_flag: "recent_single",
-              },
-            );
-            if (
-              singleResponse?.returnCode === true &&
-              singleResponse.returnData?.length > 0
-            ) {
-              const a = singleResponse.returnData[0];
-              const statusStyle = getStatusStyle(a.appstat_html_name ?? "");
-              setUpcomingAppointments([
-                {
-                  id: String(a.p_appt_id ?? a.appt_id ?? ""),
-                  doctorName: a.resource_name ?? "",
-                  specialty: a.dpt_description ?? "",
-                  avatar: a.p_doc_image_url ?? "",
-                  date: a.appt_date_dashboard ?? "",
-                  time: formatAmPm(a.appt_start_time ?? ""),
-                  statusLabel:
-                    stripHtml(a.appstat_html_name ?? "") ||
-                    (a.appstat_name ?? "Confirmed"),
-                  statusColor: statusStyle.color,
-                  statusBg: statusStyle.bg,
-                },
-              ]);
-            } else {
-              setUpcomingAppointments([]);
-            }
-          } catch (_) {
-            setUpcomingAppointments([]);
-          }
         } else {
-          setUpcomingAppointments([]);
           setUpcomingAppointmentsFull([]);
           setHistoryAppointmentsFull([]);
         }
+
+        // Bumping this on every focus re-triggers the "recent" upcoming
+        // appointment card fetch below (useSectionInstanceData), matching
+        // the previous per-focus refetch behavior.
+        setFocusTick((t) => t + 1);
       };
       load();
     }, []),
   );
 
-  const handleSeeAllProviders = (providersList: typeof FALLBACK_PROVIDERS) => {
+  const handleSeeAllProviders = () => {
     // Pass the already-fetched list along so NearbyProvidersScreen doesn't
-    // have to re-hit the same process — it reuses this data directly.
-    navigation.navigate("NearbyProviders", {
-      preloadedProviders: providersList,
-    });
+    // have to re-hit hospapp_get_resources — it reuses this data directly.
+    navigation.navigate("NearbyProviders", { preloadedProviders: Providers });
   };
   const handleSeeAllSpecialties = () => {
     // Unlike Providers, the dashboard only ever fetched the curated
@@ -408,179 +364,15 @@ export default function DashboardScreen() {
     navigation.navigate("AllSpecialties");
   };
 
-  // Fallback shown only if the backend fetch below fails or returns nothing.
-  // Matches NearbyProvidersScreen's Provider shape so this same list can be
-  // passed straight through via navigation params without remapping.
-  const FALLBACK_PROVIDERS = [
-    {
-      id: "fallback-1",
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-      name: "Dr. Wael Berro",
-      specialty: "Family Medicine Consul..",
-      qualification: "",
-      hospital: "",
-      distance: "",
-      rating: "",
-      reviews: "",
-      nextAvailable: "",
-    },
-    {
-      id: "fallback-2",
-      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-      name: "Dr. Sheena Cherry",
-      specialty: "Specialist Internal Med..",
-      qualification: "",
-      hospital: "",
-      distance: "",
-      rating: "",
-      reviews: "",
-      nextAvailable: "",
-    },
-    {
-      id: "fallback-3",
-      avatar: "https://randomuser.me/api/portraits/men/46.jpg",
-      name: "Dr. Yanal Salam",
-      specialty: "Consultant Internal Med..",
-      qualification: "",
-      hospital: "",
-      distance: "",
-      rating: "",
-      reviews: "",
-      nextAvailable: "",
-    },
-  ];
+  // Providers/specialties/health-summary data is fetched further down (see the
+  // useSectionInstanceData calls after useDashboardSections), driven per
+  // widget-instance by the backend's process_id / default_params_json. A
+  // widget instance whose call fails or returns no data simply doesn't render
+  // — see the `!isLoading && data.length === 0 -> return null` checks below.
 
-  const [Providers, setProviders] = useState(FALLBACK_PROVIDERS);
-  const [loadingProviders, setLoadingProviders] = useState(true);
-
-  // Shared response shape mapper — used by both the default fetch below and
-  // the per-widget-instance fetch further down, so a "providers" row driven
-  // by its own menu_additional_attributes.process_id still maps to the same
-  // card shape as the hardcoded default call.
-  const mapProviderRows = (rows: any[]): typeof FALLBACK_PROVIDERS =>
-    rows.map((r: any) => ({
-      id: String(r.resource_id ?? r.id ?? Math.random()),
-      name: r.resource_name ?? r.name ?? "",
-      specialty: r.dpt_description ?? r.dept_name ?? "",
-      qualification: r.doctor_education ?? r.doctor_short_description ?? "",
-      hospital: r.org_name ?? "",
-      distance: r.distance ?? "",
-      rating: String(r.rating ?? ""),
-      reviews: String(r.reviews ?? ""),
-      avatar: r.resource_image_url ?? "",
-      nextAvailable: r.next_available ?? r.next_slot ?? "",
-    }));
-
-  // Same hospapp_get_resources call used by NearbyProvidersScreen — fetches
-  // here too so the Home dashboard's "Providers" carousel shows real data,
-  // and the full result is passed to NearbyProvidersScreen on "See all" so
-  // it doesn't need to re-fetch (see handleSeeAllProviders above). This is
-  // also the fallback data source for any "providers" widget instance that
-  // doesn't configure its own process_id.
-  useEffect(() => {
-    const fetchProviders = async () => {
-      setLoadingProviders(true);
-      try {
-        const patientId = await fetchDataFromLocalStorage("sg_patientId");
-        const orgId = await fetchDataFromLocalStorage("sg_org_id");
-        const now = new Date();
-        const response = await callSuggestusAPI(
-          spd_processId_config.hospapp_get_resources,
-          {
-            p_patient_id: patientId ?? "",
-            p_resource_code: "",
-            p_month: now.getMonth() + 1,
-            p_year: now.getFullYear(),
-            p_process_type: "recent_appts",
-            p_visit_id: null,
-            p_category_code: "CAT005",
-            p_org_id: orgId,
-          },
-        );
-        if (response?.returnCode === true && response.returnData?.length > 0) {
-          setProviders(mapProviderRows(response.returnData));
-        }
-      } catch (e) {
-        console.error("Error fetching providers:", e);
-        // Keep the fallback list on error
-      } finally {
-        setLoadingProviders(false);
-      }
-    };
-    fetchProviders();
-  }, []);
-
-  const FALLBACK_SPECIALTIES = [
-    {
-      label: "Neurology",
-      Icon: MaterialCommunityIcons,
-      iconName: "brain",
-      iconSize: 28,
-      iconColor: "#6B7280",
-      bgColor: "#F3F4F6",
-    },
-    {
-      label: "ENT",
-      Icon: FontAwesome5,
-      iconName: "diagnoses",
-      iconSize: 26,
-      iconColor: "#E87722",
-      bgColor: "#FDF1EB",
-    },
-    {
-      label: "Gen. Medicine",
-      Icon: FontAwesome5,
-      iconName: "briefcase-medical",
-      iconSize: 22,
-      iconColor: "#2ECC71",
-      bgColor: "#EAF6F0",
-    },
-    {
-      label: "Pediatrics",
-      Icon: MaterialCommunityIcons,
-      iconName: "baby-face-outline",
-      iconSize: 28,
-      iconColor: "#F1C40F",
-      bgColor: "#FEF9E7",
-    },
-  ];
-
-  const [specialties, setSpecialties] = useState(FALLBACK_SPECIALTIES);
-  const [loadingSpecialties, setLoadingSpecialties] = useState(true);
-
-  // Populates the Home dashboard's "Specialties" carousel from the
-  // department master list (sgOrgId comes from userdata, auto-injected by
-  // callSuggestusAPI — not passed here).
-  useEffect(() => {
-    const fetchSpecialties = async () => {
-      setLoadingSpecialties(true);
-      try {
-        const response = await callSuggestusAPI(
-          spd_processId_config.hosapp_get_ct_department_pntapp,
-          {
-            p_additional_attributes: "",
-            p_process_type: "home_screen_recent",
-            p_internal_flag: "",
-          },
-        );
-        if (response?.returnCode === true && response.returnData?.length > 0) {
-          const fetched = response.returnData.map((d: any) => {
-            const label =
-              d.dpt_description ?? d.dpt_name ?? d.ct_description ?? "";
-            return { label, ...getSpecialtyIconMeta(label) };
-          });
-          setSpecialties(fetched);
-        }
-      } catch (e) {
-        console.error("Error fetching specialties:", e);
-        // Keep the fallback list on error
-      } finally {
-        setLoadingSpecialties(false);
-      }
-    };
-    fetchSpecialties();
-  }, []);
-
+  // Template for the 3 health-summary tiles (title/color/bgColor) — the
+  // fetched vitals fill in `value` per tile; a tile stays "--" when that
+  // specific vital wasn't captured at the last visit.
   const FALLBACK_HEALTH_SUMMARY = [
     {
       title: "Blood pressure",
@@ -594,71 +386,6 @@ export default function DashboardScreen() {
     // { title: "Allergies", value: "--", color: "#9B59B6", bgColor: "#F5EEF8" },
     // { title: "Last visit", value: "--", color: "#F39C12", bgColor: "#FEF5E7" },
   ];
-
-  const [healthSummary, setHealthSummary] = useState(FALLBACK_HEALTH_SUMMARY);
-
-  // Populates the "My health summary" tiles from the latest-vitals
-  // endpoint. The response is a single "latest reading" row with named
-  // fields (p_heart_rate, p_bp_sys/p_bp_dias, p_body_height,
-  // p_weight_measured, ...) rather than a list of vital rows — any field
-  // left as "" simply means that vital wasn't captured at the last visit.
-  // Only Blood pressure / Heart rate / BMI map to this vitals domain —
-  // Medications, Allergies, and Last visit have no vitals equivalent and
-  // stay "--" until a dedicated source is wired up.
-  useEffect(() => {
-    const fetchHealthSummary = async () => {
-      try {
-        const patientId = await fetchDataFromLocalStorage("sg_patientId");
-        if (!patientId || patientId === "null") return;
-
-        const response = await callSuggestusAPI(
-          spd_processId_config.hosapp_get_fb_trn_ff_data_detail_patient_vitals_details_pnt_app,
-          {
-            p_patient_id: patientId,
-            p_vitals_str: "",
-            p_addtional_attributes: { p_vital_latest_flag: "Y" },
-          },
-        );
-
-        if (response?.returnCode === true && response.returnData?.length > 0) {
-          const row = response.returnData[0];
-
-          const heartRate = row.p_heart_rate;
-          const hrValue = heartRate ? `${heartRate} bpm` : null;
-
-          const sys = row.p_bp_sys;
-          const dias = row.p_bp_dias;
-          const bpValue = sys && dias ? `${sys}/${dias}` : null;
-
-          // Backend doesn't send a computed BMI field — derive it from
-          // height/weight when both are present. Assumes cm and kg (the
-          // common convention), unconfirmed since both were empty in the
-          // sample response used to build this.
-          const heightCm = parseFloat(row.p_body_height);
-          const weightKg = parseFloat(row.p_weight_measured);
-          const bmiValue =
-            heightCm > 0 && weightKg > 0
-              ? (weightKg / (heightCm / 100) ** 2).toFixed(1)
-              : null;
-
-          setHealthSummary((prev) =>
-            prev.map((item) => {
-              if (item.title === "Blood pressure" && bpValue)
-                return { ...item, value: bpValue };
-              if (item.title === "Heart rate" && hrValue)
-                return { ...item, value: hrValue };
-              if (item.title === "BMI" && bmiValue)
-                return { ...item, value: bmiValue };
-              return item;
-            }),
-          );
-        }
-      } catch (e) {
-        console.error("Error fetching health summary vitals:", e);
-      }
-    };
-    fetchHealthSummary();
-  }, []);
 
   // Backend-controlled: code, label, order — used as-is until the
   // "quickActions" p_menu_type bucket resolves (see fetchQuickActions below).
@@ -839,110 +566,165 @@ export default function DashboardScreen() {
   const noPatient = !patientId || patientId === "null";
 
   // Fetch dynamic sections from backend (with automatic fallback to defaults)
-  const { visibleSections, sections, visibleSectionConfigs } =
-    useDashboardSections(noPatient);
+  const { visibleSections } = useDashboardSections(noPatient);
 
-  // Per-widget-instance overrides: a "providers" row whose backend config
-  // (menu_additional_attributes) includes a process_id fetches its OWN data
-  // via that process + default_params_json, instead of showing the shared
-  // default list above. This is what lets two "providers" rows (same key,
-  // different menu_id/order) render different data when their backend
-  // config differs.
-  const providerSectionInstances = useMemo(
-    () => sections.filter((s) => s.key === "providers" && s.processId),
-    [sections],
-  );
-
-  const [providersOverrideById, setProvidersOverrideById] = useState<
-    Record<string, typeof FALLBACK_PROVIDERS>
-  >({});
-  const [loadingProvidersOverrideById, setLoadingProvidersOverrideById] =
-    useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (providerSectionInstances.length === 0) return;
-
-    const fetchOverrides = async () => {
-      const patientId = await fetchDataFromLocalStorage("sg_patientId");
+  // Providers/specialties/health-summary/upcoming-appointment data is fetched
+  // once per matching widget instance (not once globally) — each instance uses
+  // its own backend-supplied processId/defaultParams (see useSectionInstanceData),
+  // merged under the dynamic runtime params computed here, so the same widget
+  // can appear more than once in the backend response and render independently.
+  const providerInstances = visibleSections.filter((s) => s.key === "providers");
+  const {
+    dataByInstance: providersByInstance,
+    loadingByInstance: loadingProvidersByInstance,
+  } = useSectionInstanceData(
+    providerInstances,
+    spd_processId_config.hospapp_get_resources,
+    async () => {
+      const pid = await fetchDataFromLocalStorage("sg_patientId");
       const orgId = await fetchDataFromLocalStorage("sg_org_id");
       const now = new Date();
-      // Same session-context defaults as the shared fetch above; a widget's
-      // own default_params_json is layered on top and wins on conflicts.
-      const baselineParams = {
-        p_patient_id: patientId ?? "",
-        p_resource_code: "",
+      return {
+        p_patient_id: pid ?? "",
+        p_org_id: orgId,
         p_month: now.getMonth() + 1,
         p_year: now.getFullYear(),
-        p_process_type: "recent_appts",
-        p_visit_id: null,
-        p_category_code: "CAT005",
-        p_org_id: orgId,
       };
+    },
+    (returnData) =>
+      returnData.map((r: any) => ({
+        id: String(r.resource_id ?? r.id ?? Math.random()),
+        name: r.resource_name ?? r.name ?? "",
+        specialty: r.dpt_description ?? r.dept_name ?? "",
+        qualification: r.doctor_education ?? r.doctor_short_description ?? "",
+        hospital: r.org_name ?? "",
+        distance: r.distance ?? "",
+        rating: String(r.rating ?? ""),
+        reviews: String(r.reviews ?? ""),
+        avatar: r.resource_image_url ?? "",
+        nextAvailable: r.next_available ?? r.next_slot ?? "",
+      })),
+    [],
+  );
+  // "See all" / quick-action pass-through need a single Providers list — use the
+  // first occurrence's data (there's normally only one providers instance).
+  const firstProviderInstanceId = providerInstances[0]?.instanceId;
+  const Providers =
+    (firstProviderInstanceId && providersByInstance[firstProviderInstanceId]) ||
+    [];
 
-      await Promise.all(
-        providerSectionInstances.map(async (section) => {
-          setLoadingProvidersOverrideById((prev) => ({
-            ...prev,
-            [section.id]: true,
-          }));
-          try {
-            const response = await callSuggestusAPI(section.processId!, {
-              ...baselineParams,
-              ...(section.defaultParams ?? {}),
-            });
-            if (
-              response?.returnCode === true &&
-              response.returnData?.length > 0
-            ) {
-              setProvidersOverrideById((prev) => ({
-                ...prev,
-                [section.id]: mapProviderRows(response.returnData),
-              }));
-            }
-          } catch (e) {
-            console.error(
-              `Error fetching providers for widget ${section.id}:`,
-              e,
-            );
-          } finally {
-            setLoadingProvidersOverrideById((prev) => ({
-              ...prev,
-              [section.id]: false,
-            }));
-          }
-        }),
-      );
-    };
+  const specialtyInstances = visibleSections.filter(
+    (s) => s.key === "specialties",
+  );
+  const {
+    dataByInstance: specialtiesByInstance,
+    loadingByInstance: loadingSpecialtiesByInstance,
+  } = useSectionInstanceData(
+    specialtyInstances,
+    spd_processId_config.hosapp_get_ct_department_pntapp,
+    async () => ({}),
+    (returnData) =>
+      returnData.map((d: any) => {
+        const label = d.dpt_description ?? d.dpt_name ?? d.ct_description ?? "";
+        return { label, ...getSpecialtyIconMeta(label) };
+      }),
+    [],
+  );
 
-    fetchOverrides();
-  }, [providerSectionInstances]);
+  const healthSummaryInstances = visibleSections.filter(
+    (s) => s.key === "healthSummary",
+  );
+  // Populates the "My health summary" tiles from the latest-vitals endpoint.
+  // The response is a single "latest reading" row with named fields
+  // (p_heart_rate, p_bp_sys/p_bp_dias, p_body_height, p_weight_measured, ...)
+  // rather than a list of vital rows — any field left as "" simply means that
+  // vital wasn't captured at the last visit. Only Blood pressure / Heart rate /
+  // BMI map to this vitals domain.
+  const {
+    dataByInstance: healthSummaryByInstance,
+    loadingByInstance: loadingHealthSummaryByInstance,
+  } = useSectionInstanceData(
+    healthSummaryInstances,
+    spd_processId_config.hosapp_get_fb_trn_ff_data_detail_patient_vitals_details_pnt_app,
+    async () => {
+      const pid = await fetchDataFromLocalStorage("sg_patientId");
+      return { p_patient_id: pid };
+    },
+    (returnData) => {
+      const row = returnData[0];
+      const heartRate = row.p_heart_rate;
+      const hrValue = heartRate ? `${heartRate} bpm` : null;
+      const sys = row.p_bp_sys;
+      const dias = row.p_bp_dias;
+      const bpValue = sys && dias ? `${sys}/${dias}` : null;
+      // Backend doesn't send a computed BMI field — derive it from
+      // height/weight when both are present. Assumes cm and kg.
+      const heightCm = parseFloat(row.p_body_height);
+      const weightKg = parseFloat(row.p_weight_measured);
+      const bmiValue =
+        heightCm > 0 && weightKg > 0
+          ? (weightKg / (heightCm / 100) ** 2).toFixed(1)
+          : null;
+      return FALLBACK_HEALTH_SUMMARY.map((item) => {
+        if (item.title === "Blood pressure" && bpValue)
+          return { ...item, value: bpValue };
+        if (item.title === "Heart rate" && hrValue)
+          return { ...item, value: hrValue };
+        if (item.title === "BMI" && bmiValue) return { ...item, value: bmiValue };
+        return item;
+      });
+    },
+    [],
+  );
 
-  // Debug log to verify sections are being loaded
+  const upcomingInstances = visibleSections.filter(
+    (s) => s.key === "upcomingAppointments",
+  );
+  // The "recent" card only — the full upcoming/history lists used for
+  // navigation pass-through are fetched separately above (useFocusEffect),
+  // since they aren't rendered as a widget themselves.
+  const { dataByInstance: upcomingByInstance } = useSectionInstanceData<
+    UpcomingAppointment[]
+  >(
+    upcomingInstances,
+    spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
+    async () => ({ p_patient_id: patientId ?? "" }),
+    (returnData) => {
+      const a = returnData[0];
+      const statusStyle = getStatusStyle(a.appstat_html_name ?? "");
+      return [
+        {
+          id: String(a.p_appt_id ?? a.appt_id ?? ""),
+          doctorName: a.resource_name ?? "",
+          specialty: a.dpt_description ?? "",
+          avatar: a.p_doc_image_url ?? "",
+          date: a.appt_date_dashboard ?? "",
+          time: formatAmPm(a.appt_start_time ?? ""),
+          statusLabel:
+            stripHtml(a.appstat_html_name ?? "") ||
+            (a.appstat_name ?? "Confirmed"),
+          statusColor: statusStyle.color,
+          statusBg: statusStyle.bg,
+        },
+      ];
+    },
+    [],
+    `${patientId ?? ""}_${focusTick}`,
+  );
 
-  // useEffect(() => {
-  //   console.log(
-  //     "[DashboardScreen] visibleSections:",
-  //     visibleSections,
-  //     "sections:",
-  //     sections,
-  //   );
-  // }, [visibleSections, sections]);
-
-  // Renders each "body" section (everything below the greeting hero).
-  // Called in the order of `visibleSectionConfigs`, so the backend's
-  // menu_display_order drives the actual render order on screen.
-  // Takes the full SectionConfig (not just its key) because the backend can
-  // legitimately repeat the same widget (e.g. two "providers" rows at
-  // different display orders, each with its own process_id/default_params)
-  // to show it more than once with independent data. `section.id` (the
-  // backend menu_id) is used as the React key — reusing `section.key` alone
-  // would collide across those repeats and corrupt React's reconciliation.
+  // Renders each "body" section (everything below the greeting hero) by
+  // instance. Called in the order of `visibleSections`, so the backend's
+  // menu_display_order drives the actual render order on screen, and the same
+  // widget_code can appear more than once — each occurrence is its own instance.
   const renderBodySection = (section: SectionConfig) => {
-    const { key: sectionKey, id: instanceId } = section;
-    switch (sectionKey) {
+    const key = section.key;
+    const instanceId = section.instanceId ?? key;
+    switch (key) {
       case "promoBanner": {
-        const promoBannerUrls =
-          sections.find((s) => s.key === "promoBanner")?.bannerUrls ?? [];
+        // Use this instance's own bannerUrls — looking it up by widget_code
+        // instead of instanceId would make every promoBanner occurrence show
+        // the first one's banners.
+        const promoBannerUrls = section.bannerUrls ?? [];
 
         return (
           <View key={instanceId} style={{ marginBottom: 14 }}>
@@ -988,7 +770,8 @@ export default function DashboardScreen() {
         );
 
       case "upcomingAppointments": {
-        if (noPatient || upcomingAppointments.length === 0) return null;
+        const upcomingForInstance = upcomingByInstance[instanceId] ?? [];
+        if (noPatient || upcomingForInstance.length === 0) return null;
         // Pass the already-fetched lists so AppointmentScreen doesn't
         // re-hit xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard.
         const goToAppointments = () =>
@@ -1000,7 +783,7 @@ export default function DashboardScreen() {
         return (
           <View key={instanceId}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Upcoming appointments</Text>
+              <Text style={styles.sectionTitle}>{section.label}</Text>
               <Pressable
                 onPress={goToAppointments}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
@@ -1016,7 +799,7 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
 
-            {upcomingAppointments.map((appt) => {
+            {upcomingForInstance.map((appt) => {
               const { day, month } = parseDateForBadge(appt.date);
               return (
                 <Pressable
@@ -1075,7 +858,7 @@ export default function DashboardScreen() {
                   style={styles.sectionHeaderIcon}
                 />
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
-                  Health awareness
+                  {section.label}
                 </Text>
               </View>
               <Pressable
@@ -1114,8 +897,13 @@ export default function DashboardScreen() {
           </View>
         );
 
-      case "healthSummary":
+      case "healthSummary": {
         if (noPatient) return null;
+        const healthSummaryForInstance = healthSummaryByInstance[instanceId] ?? [];
+        const isLoadingHealthSummaryInstance =
+          loadingHealthSummaryByInstance[instanceId] ?? true;
+        if (!isLoadingHealthSummaryInstance && healthSummaryForInstance.length === 0)
+          return null;
         return (
           <View key={instanceId} style={styles.sectionContainer}>
             <View style={[styles.sectionHeaderTitleRow, { marginBottom: 16 }]}>
@@ -1125,40 +913,44 @@ export default function DashboardScreen() {
                 color={Colors.secondary}
                 style={styles.sectionHeaderIcon}
               />
-              <Text style={styles.sectionTitle}>My health summary</Text>
+              <Text style={styles.sectionTitle}>{section.label}</Text>
             </View>
-            <View style={styles.healthSummaryGrid}>
-              {healthSummary.map((item, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.healthSummaryItem,
-                    { backgroundColor: item.bgColor },
-                  ]}
-                >
-                  <Text
-                    style={[styles.healthSummaryTitle, { color: item.color }]}
+            {isLoadingHealthSummaryInstance ? (
+              <ActivityIndicator
+                size="small"
+                color={Colors.secondary}
+                style={{ marginVertical: 16 }}
+              />
+            ) : (
+              <View style={styles.healthSummaryGrid}>
+                {healthSummaryForInstance.map((item, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.healthSummaryItem,
+                      { backgroundColor: item.bgColor },
+                    ]}
                   >
-                    {item.title}
-                  </Text>
-                  <Text style={styles.healthSummaryValue}>{item.value}</Text>
-                </View>
-              ))}
-            </View>
+                    <Text
+                      style={[styles.healthSummaryTitle, { color: item.color }]}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text style={styles.healthSummaryValue}>{item.value}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         );
+      }
 
       case "providers": {
-        // A widget instance with its own process_id (from
-        // menu_additional_attributes) shows its own fetched data; otherwise
-        // it falls back to the shared default Providers list/state.
-        const providerList = section.processId
-          ? providersOverrideById[instanceId] ?? []
-          : Providers;
-        const isProvidersLoading = section.processId
-          ? loadingProvidersOverrideById[instanceId] ?? true
-          : loadingProviders;
-
+        const providersForInstance = providersByInstance[instanceId] ?? [];
+        const isLoadingProvidersInstance =
+          loadingProvidersByInstance[instanceId] ?? true;
+        if (!isLoadingProvidersInstance && providersForInstance.length === 0)
+          return null;
         return (
           <View key={instanceId} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
@@ -1170,11 +962,11 @@ export default function DashboardScreen() {
                   style={styles.sectionHeaderIcon}
                 />
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
-                  Providers
+                  {section.label}
                 </Text>
               </View>
               <Pressable
-                onPress={() => handleSeeAllProviders(providerList)}
+                onPress={handleSeeAllProviders}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
@@ -1188,7 +980,7 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
 
-            {isProvidersLoading ? (
+            {isLoadingProvidersInstance ? (
               <ActivityIndicator
                 size="small"
                 color={Colors.secondary}
@@ -1200,7 +992,7 @@ export default function DashboardScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.providersScrollList}
               >
-                {providerList.map((provider) => (
+                {providersForInstance.map((provider) => (
                   <Pressable
                     key={provider.id}
                     style={({ pressed }) => [
@@ -1237,7 +1029,12 @@ export default function DashboardScreen() {
         );
       }
 
-      case "specialties":
+      case "specialties": {
+        const specialtiesForInstance = specialtiesByInstance[instanceId] ?? [];
+        const isLoadingSpecialtiesInstance =
+          loadingSpecialtiesByInstance[instanceId] ?? true;
+        if (!isLoadingSpecialtiesInstance && specialtiesForInstance.length === 0)
+          return null;
         return (
           <View key={instanceId} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
@@ -1249,7 +1046,7 @@ export default function DashboardScreen() {
                   style={styles.sectionHeaderIcon}
                 />
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
-                  Specialties
+                  {section.label}
                 </Text>
               </View>
               <Pressable
@@ -1267,7 +1064,7 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
 
-            {loadingSpecialties ? (
+            {isLoadingSpecialtiesInstance ? (
               <ActivityIndicator
                 size="small"
                 color={Colors.secondary}
@@ -1279,7 +1076,7 @@ export default function DashboardScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.specialtiesScrollList}
               >
-                {specialties.map((item, index) => {
+                {specialtiesForInstance.map((item, index) => {
                   const Icon = item.Icon;
                   return (
                     <Pressable
@@ -1312,6 +1109,7 @@ export default function DashboardScreen() {
             )}
           </View>
         );
+      }
 
       default:
         return null;
@@ -1410,7 +1208,7 @@ export default function DashboardScreen() {
         <View style={styles.stickyHeaderSpacer} />
 
         {/* Greeting Section */}
-        {visibleSections.includes("greeting") && (
+        {visibleSections.some((s) => s.key === "greeting") && (
           <View style={styles.headerGreetingSection}>
             <View style={styles.bgCircleLarge} />
             <FontAwesome name="plus" size={40} style={styles.bgPlus} />
@@ -1433,7 +1231,7 @@ export default function DashboardScreen() {
 
         {/* White Content Area — body sections render in backend sequence order */}
         <View style={[styles.bodyContent, { minHeight: height }]}>
-          {visibleSectionConfigs
+          {visibleSections
             .filter((section) => section.key !== "greeting")
             .map((section) => renderBodySection(section))}
 

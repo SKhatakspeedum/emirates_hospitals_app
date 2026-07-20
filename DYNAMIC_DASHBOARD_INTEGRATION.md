@@ -404,6 +404,270 @@ if (error) {
 - [ ] Test with backend unavailable
 - [ ] Deploy with confidence ✅
 
+## Dynamic Icons & Labels Feature (🆕)
+
+### Overview
+
+Both the **Left Menu Drawer** and **HomeScreen Widgets** now support **fully dynamic icons and labels** from the backend. Instead of hardcoded static icons, you can customize each menu item and widget header with different icon types and custom labels.
+
+### Supported Icon Types
+
+| Type | Format | Example | Use Case |
+|------|--------|---------|----------|
+| **icon** | Font Awesome string or JSON config | `"fa-solid fa-user-doctor"` | Vector icons mapped to available libraries |
+| **img** | Remote image URL | `"https://api.example.com/icon.png"` | Custom branded icons |
+| **svg** | Inline SVG XML or URL | `"<svg>...</svg>"` | Scalable graphics |
+| **other** | Raw HTML | `"<i class='fa-solid fa-hospital'></i>"` | Web fonts (auto-detects & maps) |
+
+### Implementation: Left Menu
+
+**File:** `app/(drawer)/tab_bar_home/CustomDrawer.tsx`
+
+**Hook:** `useLeftMenuItems()` (fetches with `p_menu_type: "LeftMenu"`)
+
+**Icon Rendering:**
+```typescript
+const drawerItems = useMemo(() => {
+  if (backendMenuItems.length > 0) {
+    return backendMenuItems.map((item) => ({
+      label: item.widget_name,
+      icon: getDrawerMenuIcon(
+        item.menu_image_type,  // "icon" | "img" | "svg" | "other"
+        item.menu_image,       // icon data (string or URL)
+        item.widget_code
+      ),
+      screen: item.screen,
+    }));
+  }
+  return DEFAULT_DRAWER_ITEMS;  // Hardcoded fallback
+}, [backendMenuItems]);
+```
+
+**API Response Example:**
+```json
+{
+  "menu_type": "LeftMenu",
+  "details": [
+    {
+      "menu_id": "104",
+      "menu_name": "Find Doctors",
+      "menu_image_type": "icon",
+      "menu_image": "fa-solid fa-user-doctor",
+      "menu_action_screen_identifier": "providers",
+      "menu_display_order": "100"
+    },
+    {
+      "menu_id": "105",
+      "menu_name": "Order Medicines",
+      "menu_image_type": "icon",
+      "menu_image": "fa-solid fa-shopping-cart",
+      "menu_action_screen_identifier": "orders",
+      "menu_display_order": "110"
+    }
+  ]
+}
+```
+
+### Implementation: HomeScreen Widgets
+
+**File:** `app/dashboard/DashboardScreen.tsx`
+
+**Data Flow:**
+```
+Backend (p_menu_type="HomeScreen")
+  ↓
+dashboardApi.ts (preserves menu_image & menu_image_type)
+  ↓
+sectionConfig.ts (populates menuImage & menuImageType)
+  ↓
+DashboardScreen renderBodySection() (uses getMenuIcon())
+```
+
+**Widget Headers Using Dynamic Icons:**
+
+| Widget | Line | Icon | Title |
+|--------|------|------|-------|
+| **upcomingAppointments** | 1008 | `section.menuImageType` | `section.menuName` |
+| **healthAwareness** | 1087 | `section.menuImageType` | `section.menuName` |
+| **healthSummary** | 1143 | `section.menuImageType` | `section.menuName` |
+| **providers** | 1193 | `section.menuImageType` | `section.menuName` |
+| **specialties** | 1276 | `section.menuImageType` | `section.menuName` |
+
+**Rendering Pattern:**
+```typescript
+{getMenuIcon(
+  section.menuImageType,           // Backend: "icon" | "img" | "svg" | "other"
+  section.menuImage,               // Backend: icon data
+  <Ionicons name="calendar" />,    // Fallback hardcoded icon
+  13,                              // Size
+)}
+```
+
+**API Response Example:**
+```json
+{
+  "menu_type": "HomeScreen",
+  "details": [
+    {
+      "menu_id": "96",
+      "widget_code": "providers",
+      "menu_name": "Find Doctors",
+      "menu_image_type": "icon",
+      "menu_image": "fa-solid fa-user-doctor",
+      "menu_display_order": "50"
+    },
+    {
+      "menu_id": "97",
+      "widget_code": "upcomingAppointments",
+      "menu_name": "My Appointments",
+      "menu_image_type": "icon",
+      "menu_image": "fa-solid fa-calendar",
+      "menu_display_order": "40"
+    }
+  ]
+}
+```
+
+### Shared Icon Rendering Logic
+
+**File:** `app/utils/menuIcon.tsx`
+
+**Core Function:** `getMenuIcon(imageType, imageData, fallbackIcon, size)`
+
+**Features:**
+- ✅ Font Awesome string format support (`"fa-solid fa-xxx"`)
+- ✅ Font Awesome JSON config support
+- ✅ Remote image URL with failure fallback
+- ✅ Inline SVG XML rendering
+- ✅ HTML web-font detection & mapping
+- ✅ Smart quote handling (CMS auto-conversion)
+- ✅ Always falls back to hardcoded icon when data missing/invalid
+
+**Supported Font Awesome Icons (50+):**
+```
+Medical: user-doctor, stethoscope, hospital, pills, prescription, heart, capsules
+Orders: cart, shopping-cart, bag-shopping, package
+Calendar: calendar, calendar-days, clock
+Settings: gear, cog
+Home: house, home
+Status: check, times, info
+User: user, bell
+Download/Upload: download, upload
+```
+
+### Data Preservation Pipeline
+
+1. **dashboardApi.ts** (lines 223-224):
+   ```typescript
+   menu_image: item.menu_image,
+   menu_image_type: item.menu_image_type,
+   ```
+
+2. **sectionConfig.ts** (lines 167-169):
+   ```typescript
+   menuImage: item.menu_image || undefined,
+   menuImageType: item.menu_image_type || undefined,
+   menuName: item.widget_name || undefined,
+   ```
+
+3. **DashboardScreen.tsx** (5 widgets):
+   ```typescript
+   {getMenuIcon(section.menuImageType, section.menuImage, fallback, size)}
+   ```
+
+### Empty Data Handling
+
+When API returns empty data, widgets are automatically hidden:
+
+- **providers**: Hides if `providerList.length === 0` and loaded
+- **specialties**: Hides if `specialties.length === 0` and loaded
+- **healthSummary**: Hides if all values are still `"--"`
+- **upcomingAppointments**: Hides if `upcomingAppointments.length === 0`
+- **quickActions**: Falls back to `FALLBACK_QUICK_ACTIONS`
+
+### Fallback Behavior (Guaranteed)
+
+**If backend doesn't send icon data:**
+```json
+{
+  "menu_image": null,
+  "menu_image_type": null
+}
+```
+
+**Result:** Uses hardcoded fallback icon (zero breakage)
+
+```typescript
+// LeftMenu: Uses ICON_MAP["widget_code"] or DEFAULT_ICON
+// HomeScreen: Uses hardcoded icon per widget (calendar, person, heart, etc.)
+```
+
+### Label Fallback (Guaranteed)
+
+**If backend doesn't send menu_name:**
+```json
+{
+  "menu_name": null
+}
+```
+
+**Result:** Uses hardcoded title
+
+```typescript
+// HomeScreen examples:
+{section.menuName?.trim() || "Upcoming appointments"}
+{section.menuName?.trim() || "Health awareness"}
+{section.menuName?.trim() || "Providers"}
+{section.menuName?.trim() || "Specialties"}
+```
+
+### Testing Dynamic Icons
+
+**Test Scenario 1: Font Awesome String**
+```json
+{
+  "menu_image_type": "icon",
+  "menu_image": "fa-solid fa-user-doctor"
+}
+```
+Expected: 🩺 Doctor icon renders
+
+**Test Scenario 2: Missing Icon Data**
+```json
+{
+  "menu_image_type": null,
+  "menu_image": null
+}
+```
+Expected: Hardcoded fallback icon renders (no error)
+
+**Test Scenario 3: Image URL**
+```json
+{
+  "menu_image_type": "img",
+  "menu_image": "https://api.example.com/icon.png"
+}
+```
+Expected: Remote image loads; falls back if 404
+
+**Test Scenario 4: Inline SVG**
+```json
+{
+  "menu_image_type": "svg",
+  "menu_image": "<svg>...</svg>"
+}
+```
+Expected: SVG renders inline
+
+**Test Scenario 5: HTML Web Font**
+```json
+{
+  "menu_image_type": "other",
+  "menu_image": "<i class=\"fa-solid fa-hospital\"></i>"
+}
+```
+Expected: Auto-detected, mapped to available vector icon
+
 ## Support
 
 For issues or questions:
@@ -412,3 +676,4 @@ For issues or questions:
 2. Verify backend API response format
 3. Confirm widget_code values match WIDGET_CODE_MAP
 4. Test with `getHomeScreenWidgets()` directly
+5. For icon mapping issues, verify `FONT_AWESOME_MAPPING` in `menuIcon.tsx`

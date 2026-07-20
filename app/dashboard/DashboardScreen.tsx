@@ -40,6 +40,7 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { getMenuWidgetsByType } from "../services/dashboardApi";
 import { getSpecialtyIconMeta } from "../config/specialtyIcons";
+import { getMenuIcon } from "../utils/menuIcon";
 import {
   fetchDataFromLocalStorage,
   getDecryptedID,
@@ -536,7 +537,9 @@ export default function DashboardScreen() {
     const fetchQuickActions = async () => {
       try {
         const widgets = await getMenuWidgetsByType("quickActions");
-        const quickActionsWidget = widgets?.find(
+        if (!widgets || widgets.length === 0) return;
+
+        const quickActionsWidget = widgets.find(
           (w) => w.widget_code === "quickActions",
         );
         const rawItems = quickActionsWidget?.additionalAttributes;
@@ -573,7 +576,9 @@ export default function DashboardScreen() {
   // its own backend-supplied processId/defaultParams (see useSectionInstanceData),
   // merged under the dynamic runtime params computed here, so the same widget
   // can appear more than once in the backend response and render independently.
-  const providerInstances = visibleSections.filter((s) => s.key === "providers");
+  const providerInstances = visibleSections.filter(
+    (s) => s.key === "providers",
+  );
   const {
     dataByInstance: providersByInstance,
     loadingByInstance: loadingProvidersByInstance,
@@ -670,7 +675,8 @@ export default function DashboardScreen() {
           return { ...item, value: bpValue };
         if (item.title === "Heart rate" && hrValue)
           return { ...item, value: hrValue };
-        if (item.title === "BMI" && bmiValue) return { ...item, value: bmiValue };
+        if (item.title === "BMI" && bmiValue)
+          return { ...item, value: bmiValue };
         return item;
       });
     },
@@ -783,7 +789,23 @@ export default function DashboardScreen() {
         return (
           <View key={instanceId}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>{section.label}</Text>
+              <View style={styles.sectionHeaderTitleRow}>
+                <View style={styles.sectionHeaderIcon}>
+                  {getMenuIcon(
+                    section.menuImageType,
+                    section.menuImage,
+                    <Ionicons
+                      name="calendar"
+                      size={13}
+                      color={Colors.secondary}
+                    />,
+                    13,
+                  )}
+                </View>
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
+                  {section.menuName?.trim() || "Upcoming appointments"}
+                </Text>
+              </View>
               <Pressable
                 onPress={goToAppointments}
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
@@ -851,14 +873,16 @@ export default function DashboardScreen() {
           <View key={instanceId} style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons
-                  name="play"
-                  size={13}
-                  color={Colors.secondary}
-                  style={styles.sectionHeaderIcon}
-                />
+                <View style={styles.sectionHeaderIcon}>
+                  {getMenuIcon(
+                    section.menuImageType,
+                    section.menuImage,
+                    <Ionicons name="play" size={13} color={Colors.secondary} />,
+                    13,
+                  )}
+                </View>
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
-                  {section.label}
+                  {section.menuName?.trim() || "Health awareness"}
                 </Text>
               </View>
               <Pressable
@@ -899,21 +923,28 @@ export default function DashboardScreen() {
 
       case "healthSummary": {
         if (noPatient) return null;
-        const healthSummaryForInstance = healthSummaryByInstance[instanceId] ?? [];
+        const healthSummaryForInstance =
+          healthSummaryByInstance[instanceId] ?? [];
         const isLoadingHealthSummaryInstance =
-          loadingHealthSummaryByInstance[instanceId] ?? true;
-        if (!isLoadingHealthSummaryInstance && healthSummaryForInstance.length === 0)
+          loadingHealthSummaryByInstance[instanceId] ?? false;
+        // Hide if all vital values are still the placeholder "--"
+        if (healthSummaryForInstance.every((item: any) => item.value === "--"))
           return null;
+
         return (
           <View key={instanceId} style={styles.sectionContainer}>
             <View style={[styles.sectionHeaderTitleRow, { marginBottom: 16 }]}>
-              <Ionicons
-                name="heart"
-                size={13}
-                color={Colors.secondary}
-                style={styles.sectionHeaderIcon}
-              />
-              <Text style={styles.sectionTitle}>{section.label}</Text>
+              <View style={styles.sectionHeaderIcon}>
+                {getMenuIcon(
+                  section.menuImageType,
+                  section.menuImage,
+                  <Ionicons name="heart" size={13} color={Colors.secondary} />,
+                  13,
+                )}
+              </View>
+              <Text style={styles.sectionTitle}>
+                {section.menuName?.trim() || "My health summary"}
+              </Text>
             </View>
             {isLoadingHealthSummaryInstance ? (
               <ActivityIndicator
@@ -946,23 +977,39 @@ export default function DashboardScreen() {
       }
 
       case "providers": {
-        const providersForInstance = providersByInstance[instanceId] ?? [];
-        const isLoadingProvidersInstance =
-          loadingProvidersByInstance[instanceId] ?? true;
+        // A widget instance with its own process_id (from
+        // menu_additional_attributes) shows its own fetched data; otherwise
+        // it falls back to the shared default Providers list/state.
+        const providersForInstance = section.processId
+          ? (providersByInstance[instanceId] ?? [])
+          : Providers;
+        const isLoadingProvidersInstance = section.processId
+          ? (loadingProvidersByInstance[instanceId] ?? true)
+          : firstProviderInstanceId
+            ? (loadingProvidersByInstance[firstProviderInstanceId] ?? false)
+            : false;
+
         if (!isLoadingProvidersInstance && providersForInstance.length === 0)
           return null;
+
         return (
           <View key={instanceId} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons
-                  name="person"
-                  size={13}
-                  color={Colors.secondary}
-                  style={styles.sectionHeaderIcon}
-                />
+                <View style={styles.sectionHeaderIcon}>
+                  {getMenuIcon(
+                    section.menuImageType,
+                    section.menuImage,
+                    <Ionicons
+                      name="person"
+                      size={13}
+                      color={Colors.secondary}
+                    />,
+                    13,
+                  )}
+                </View>
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
-                  {section.label}
+                  {section.menuName?.trim() || "Providers"}
                 </Text>
               </View>
               <Pressable
@@ -1030,23 +1077,45 @@ export default function DashboardScreen() {
       }
 
       case "specialties": {
-        const specialtiesForInstance = specialtiesByInstance[instanceId] ?? [];
-        const isLoadingSpecialtiesInstance =
-          loadingSpecialtiesByInstance[instanceId] ?? true;
-        if (!isLoadingSpecialtiesInstance && specialtiesForInstance.length === 0)
+        const firstSpecialtyInstanceId = specialtyInstances[0]?.instanceId;
+        const specialties = firstSpecialtyInstanceId
+          ? (specialtiesByInstance[firstSpecialtyInstanceId] ?? [])
+          : [];
+        const loadingSpecialties = firstSpecialtyInstanceId
+          ? (loadingSpecialtiesByInstance[firstSpecialtyInstanceId] ?? false)
+          : false;
+
+        const specialtiesForInstance = section.processId
+          ? (specialtiesByInstance[instanceId] ?? [])
+          : specialties;
+        const isLoadingSpecialtiesInstance = section.processId
+          ? (loadingSpecialtiesByInstance[instanceId] ?? true)
+          : loadingSpecialties;
+
+        if (
+          !isLoadingSpecialtiesInstance &&
+          specialtiesForInstance.length === 0
+        )
           return null;
+
         return (
           <View key={instanceId} style={styles.sectionContainerNoShadow}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionHeaderTitleRow}>
-                <Ionicons
-                  name="medkit"
-                  size={13}
-                  color={Colors.secondary}
-                  style={styles.sectionHeaderIcon}
-                />
+                <View style={styles.sectionHeaderIcon}>
+                  {getMenuIcon(
+                    section.menuImageType,
+                    section.menuImage,
+                    <Ionicons
+                      name="medkit"
+                      size={13}
+                      color={Colors.secondary}
+                    />,
+                    13,
+                  )}
+                </View>
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
-                  {section.label}
+                  {section.menuName?.trim() || "Specialties"}
                 </Text>
               </View>
               <Pressable

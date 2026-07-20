@@ -207,40 +207,23 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     //   return;
     // }
 
-    const validRoutes = [
-      "profile/ProfileScreen",
-      "explore_tab/ExploreScreen",
-      "orders/OrdersScreen",
-    ];
-    if (validRoutes.includes(screen)) {
-      props.navigation.navigate(screen);
-      props.navigation.closeDrawer();
+    props.navigation.closeDrawer();
+
+    const tabScreens = ["OrderScreen", "MedicinesScreen", "ProfileScreen"];
+
+    if (tabScreens.includes(screen)) {
+      props.navigation.navigate("tab_bar_home/HomeScreen", { screen });
     } else if (screen === "NearbyProviders") {
       props.navigation.navigate("tab_bar_home/HomeScreen", {
         screen: "HomeTab",
-        params: {
-          screen: "NearbyProviders",
-        }
+        params: { screen: "NearbyProviders" },
       });
-      props.navigation.closeDrawer();
-    } else if (screen === "OrderScreen") {
-      props.navigation.navigate("tab_bar_home/HomeScreen", {
-        screen: "OrderScreen",
-      });
-      props.navigation.closeDrawer();
-    } else if (screen === "MedicinesScreen") {
-      props.navigation.navigate("tab_bar_home/HomeScreen", {
-        screen: "MedicinesScreen",
-      });
-      props.navigation.closeDrawer();
-    }
-    else {
+    } else {
       Toast.show({
         type: "info",
         text1: "Feature coming soon",
         text2: `${screen} screen is under development.`,
       });
-      props.navigation.closeDrawer();
     }
   };
 
@@ -270,7 +253,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         {/* Profile Header */}
         <TouchableOpacity
           style={styles.headerRow}
-          onPress={() => handleNav("profile/ProfileScreen")}
+          onPress={() => handleNav("ProfileScreen")}
           activeOpacity={0.7}
         >
           {renderAvatar()}

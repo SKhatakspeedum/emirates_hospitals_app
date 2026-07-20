@@ -20,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
+import Toast from "react-native-toast-message";
 
 export default function ConfirmScreen() {
   const navigation = useNavigation<any>();
@@ -80,14 +81,13 @@ export default function ConfirmScreen() {
     return `${datePart}~${startPart}~${endPart}`;
   };
 
-  // react-native-web doesn't render Alert.alert dialogs — window.alert is
-  // the web-native equivalent, so error feedback isn't silently swallowed.
+  // React Native Toast message for error feedback
   const showError = (message: string) => {
-    if (Platform.OS === "web") {
-      if (typeof window !== "undefined") window.alert(message);
-    } else {
-      Alert.alert("Error", message);
-    }
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: message,
+    });
   };
 
   const handleDone = async () => {
@@ -119,25 +119,16 @@ export default function ConfirmScreen() {
       );
 
       if (res?.returnCode === true) {
-        Alert.alert(
-          "Success",
-          "Your appointment has been successfully scheduled.",
-          [
-            {
-              text: "OK",
-              onPress: () =>
-                navigation.navigate("Appointment", {
-                  fromBooking: true,
-                }),
-            },
-          ],
-        );
-
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Your appointment has been successfully scheduled.",
+        });
         setTimeout(() => {
           navigation.navigate("Appointment", {
             fromBooking: true,
           });
-        }, 1000);
+        }, 2000);
       } else {
         showError(
           res?.returnMessage ?? "Failed to save appointment. Please try again.",

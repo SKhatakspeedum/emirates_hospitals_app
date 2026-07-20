@@ -8,7 +8,6 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
-  Alert,
   Platform,
   Pressable,
   ActivityIndicator,
@@ -19,6 +18,8 @@ import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 import CustomTabs from "../components/CustomTabs";
+import { ConfirmationModal } from "../components/ConfirmationModal";
+import Toast from "react-native-toast-message";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
@@ -136,6 +137,8 @@ export default function AppointmentScreen() {
   );
   const [isLoading, setIsLoading] = useState(false);
   const [orgId, setOrgId] = useState<string>("");
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState<{ id: string; name: string } | null>(null);
   const appointments = activeTab === "upcoming" ? upcomingList : historyList;
 
   useEffect(() => {
@@ -241,41 +244,23 @@ export default function AppointmentScreen() {
     }
   }, [fromBooking, navigation]);
 
-  // react-native-web's Alert.alert doesn't render anything for multi-button
-  // dialogs (it's a native-only API) — on web the "Yes, Cancel" callback
-  // simply never fires, so tapping Cancel looked like it did nothing.
-  // window.confirm/alert are the web-native equivalents.
-  const confirmCancel = (message: string): Promise<boolean> => {
-    if (Platform.OS === "web") {
-      return Promise.resolve(
-        typeof window !== "undefined" ? window.confirm(message) : false,
-      );
-    }
-    return new Promise((resolve) => {
-      Alert.alert("Cancel Appointment", message, [
-        { text: "No", style: "cancel", onPress: () => resolve(false) },
-        {
-          text: "Yes, Cancel",
-          style: "destructive",
-          onPress: () => resolve(true),
-        },
-      ]);
+  const showError = (message: string) => {
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: message,
     });
   };
 
-  const showError = (message: string) => {
-    if (Platform.OS === "web") {
-      if (typeof window !== "undefined") window.alert(message);
-    } else {
-      Alert.alert("Error", message);
-    }
+  const promptCancelAppointment = (id: string, name: string) => {
+    setAppointmentToCancel({ id, name });
+    setCancelModalVisible(true);
   };
 
-  const handleCancelAppointment = async (id: string, name: string) => {
-    const confirmed = await confirmCancel(
-      `Are you sure you want to cancel your appointment with ${name}?`,
-    );
-    if (!confirmed) return;
+  const handleCancelAppointment = async () => {
+    if (!appointmentToCancel) return;
+    const { id } = appointmentToCancel;
+    setCancelModalVisible(false);
 
     try {
       const res = await callSuggestusAPI(
@@ -491,7 +476,7 @@ export default function AppointmentScreen() {
                         style={styles.cancelButton}
                         activeOpacity={0.8}
                         onPress={() =>
-                          handleCancelAppointment(item.id, item.doctorName)
+                          promptCancelAppointment(item.id, item.doctorName)
                         }
                       >
                         <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -535,6 +520,16 @@ export default function AppointmentScreen() {
           </Pressable>
         )}
       </SafeAreaView>
+
+      <ConfirmationModal
+        visible={cancelModalVisible}
+        title="Cancel Appointment"
+        description={`Are you sure you want to cancel your appointment with ${appointmentToCancel?.name}?`}
+        confirmText="Yes, Cancel"
+        cancelText="No"
+        onConfirm={handleCancelAppointment}
+        onCancel={() => setCancelModalVisible(false)}
+      />
     </View>
   );
 }

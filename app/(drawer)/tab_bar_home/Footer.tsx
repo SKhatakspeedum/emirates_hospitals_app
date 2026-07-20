@@ -7,7 +7,7 @@ import {
   Dimensions,
   Image,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+// import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
 import { OrderIcon, PinIcon, ChatIcon, RxIcon } from "./TabIcons";
@@ -56,7 +56,7 @@ export default function Footer({
         </Text>
       </TouchableOpacity>
 
-      {/* Sleep Tab */}
+      {/* Order Tab */}
       <TouchableOpacity
         style={state.index === 1 ? styles.tabItemActive : styles.tabItem}
         onPress={() => navigation.navigate("OrderScreen")}
@@ -75,7 +75,15 @@ export default function Footer({
           style={styles.centerLogoButton}
           onPress={toggleSheet}
         >
-          <PinIcon />
+          {/* <PinIcon /> */}
+          <Image
+            source={require("@/assets/images/menu_logo.png")}
+            style={{
+              width: 35,
+              height: 35,
+            }}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       </View>
 

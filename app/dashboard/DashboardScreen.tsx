@@ -15,6 +15,7 @@ import {
   Modal,
   FlatList,
   TouchableOpacity,
+  DeviceEventEmitter,
 } from "react-native";
 import {
   useNavigation,
@@ -509,96 +510,99 @@ export default function DashboardScreen() {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      const load = async () => {
-        const patStr = await AsyncStorage.getItem(SPD_SELECTED_PATIENT);
-        if (patStr) {
-          try {
-            const p = JSON.parse(patStr);
-            if (p.name) setUserProfileName(p.name);
-            if (p.age || p.gender)
-              setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-          } catch (_) {}
-        } else {
-          const name = await AsyncStorage.getItem(SPD_USER_NAME);
-          if (name) setUserProfileName(name);
-        }
-        const pid = await AsyncStorage.getItem("sg_patientId");
-        setPatientId(pid);
+  useEffect(() => {
+    const load = async () => {
+      const patStr = await AsyncStorage.getItem(SPD_SELECTED_PATIENT);
+      if (patStr) {
+        try {
+          const p = JSON.parse(patStr);
+          if (p.name) setUserProfileName(p.name);
+          if (p.age || p.gender)
+            setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
+        } catch (_) {}
+      } else {
+        const name = await AsyncStorage.getItem(SPD_USER_NAME);
+        if (name) setUserProfileName(name);
+      }
+      const pid = await AsyncStorage.getItem("sg_patientId");
+      setPatientId(pid);
 
-        if (pid && pid !== "null") {
-          try {
-            const response = await callSuggestusAPI(
-              spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
-              {
-                p_patient_id: pid,
-                p_visit_id: null,
-                menu_name: "Wellness",
-                menu_tab_type: "always_patient_specific",
-                maximization_redirection_label: "Make appointment",
-                p_max_offset: 100,
-                p_process_type: "fetch_all_appointments",
-                p_offset: 0,
-              },
-            );
-            if (
-              response?.returnCode === true &&
-              response.returnData?.length > 0
-            ) {
-              // Same mapping AppointmentScreen uses, so the full lists are
-              // directly usable there without remapping.
-              const mapFull = (a: any): FullAppointment => ({
-                id: String(a.p_appt_id ?? a.appt_id ?? ""),
-                doctorName: a.resource_name ?? "",
-                specialty: a.dpt_description ?? "",
-                avatar: a.p_doc_image_url ?? "",
-                date: a.appt_date_dashboard ?? "",
-                time: a.appt_start_time ?? "",
-                status: a.appstat_name ?? "Confirmed",
-                statusHtml: a.appstat_html_name ?? "",
-                type: a.appsubtyp_name ?? "In-Clinic",
-                apptypName: stripHtml(a.apptyp_name ?? ""),
-                patientDet: a.patient_det ?? "",
-                resourceId: String(a.appt_resource_id ?? a.resource_id ?? ""),
-                appSubtypeId: String(a.appsubtyp_id ?? ""),
-              });
+      if (pid && pid !== "null") {
+        try {
+          const response = await callSuggestusAPI(
+            spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
+            {
+              p_patient_id: pid,
+              p_visit_id: null,
+              menu_name: "Wellness",
+              menu_tab_type: "always_patient_specific",
+              maximization_redirection_label: "Make appointment",
+              p_max_offset: 100,
+              p_process_type: "fetch_all_appointments",
+              p_offset: 0,
+            },
+          );
+          if (
+            response?.returnCode === true &&
+            response.returnData?.length > 0
+          ) {
+            // Same mapping AppointmentScreen uses, so the full lists are
+            // directly usable there without remapping.
+            const mapFull = (a: any): FullAppointment => ({
+              id: String(a.p_appt_id ?? a.appt_id ?? ""),
+              doctorName: a.resource_name ?? "",
+              specialty: a.dpt_description ?? "",
+              avatar: a.p_doc_image_url ?? "",
+              date: a.appt_date_dashboard ?? "",
+              time: a.appt_start_time ?? "",
+              status: a.appstat_name ?? "Confirmed",
+              statusHtml: a.appstat_html_name ?? "",
+              type: a.appsubtyp_name ?? "In-Clinic",
+              apptypName: stripHtml(a.apptyp_name ?? ""),
+              patientDet: a.patient_det ?? "",
+              resourceId: String(a.appt_resource_id ?? a.resource_id ?? ""),
+              appSubtypeId: String(a.appsubtyp_id ?? ""),
+            });
 
-              const upcomingFull: FullAppointment[] = [];
-              const historyFull: FullAppointment[] = [];
-              response.returnData.forEach((a: any) => {
-                const histType = (
-                  a.appointment_history_type ?? ""
-                ).toLowerCase();
-                if (histType.includes("hist")) {
-                  historyFull.push(mapFull(a));
-                } else {
-                  upcomingFull.push(mapFull(a));
-                }
-              });
-              setUpcomingAppointmentsFull(upcomingFull);
-              setHistoryAppointmentsFull(historyFull);
-            } else {
-              setUpcomingAppointmentsFull([]);
-              setHistoryAppointmentsFull([]);
-            }
-          } catch (_) {
+            const upcomingFull: FullAppointment[] = [];
+            const historyFull: FullAppointment[] = [];
+            response.returnData.forEach((a: any) => {
+              const histType = (a.appointment_history_type ?? "").toLowerCase();
+              if (histType.includes("hist")) {
+                historyFull.push(mapFull(a));
+              } else {
+                upcomingFull.push(mapFull(a));
+              }
+            });
+            setUpcomingAppointmentsFull(upcomingFull);
+            setHistoryAppointmentsFull(historyFull);
+          } else {
             setUpcomingAppointmentsFull([]);
             setHistoryAppointmentsFull([]);
           }
-        } else {
+        } catch (_) {
           setUpcomingAppointmentsFull([]);
           setHistoryAppointmentsFull([]);
         }
+      } else {
+        setUpcomingAppointmentsFull([]);
+        setHistoryAppointmentsFull([]);
+      }
 
-        // Bumping this on every focus re-triggers the "recent" upcoming
-        // appointment card fetch below (useSectionInstanceData), matching
-        // the previous per-focus refetch behavior.
-        setFocusTick((t) => t + 1);
-      };
+      // Bumping this on every focus re-triggers the "recent" upcoming
+      // appointment card fetch below (useSectionInstanceData)
+      setFocusTick((t) => t + 1);
+    };
+    load();
+
+    const sub = DeviceEventEmitter.addListener("appointmentBooked", () => {
       load();
-    }, []),
-  );
+    });
+
+    return () => {
+      sub.remove();
+    };
+  }, [orgRefreshTick]);
 
   // Takes the specific instance's own list — with more than one "providers"
   // widget on screen (each with its own process_id/default_params), "See

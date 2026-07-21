@@ -11,6 +11,7 @@ import {
   Platform,
   Pressable,
   ActivityIndicator,
+  DeviceEventEmitter,
 } from "react-native";
 import {
   useNavigation,
@@ -303,6 +304,9 @@ export default function AppointmentScreen() {
         prev.filter((item: Appointment) => item.id !== id),
       );
     }
+
+    // Notify Dashboard to refresh its widgets
+    DeviceEventEmitter.emit("appointmentBooked");
   };
 
   const handleReschedule = (item: Appointment) => {

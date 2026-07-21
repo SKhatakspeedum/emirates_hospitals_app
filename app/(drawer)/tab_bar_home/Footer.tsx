@@ -44,7 +44,7 @@ export default function Footer({
         style={state.index === 0 ? styles.tabItemActive : styles.tabItem}
         onPress={() => {
           if (state.index === 0) {
-            navigation.dispatch(StackActions.popToTop());
+            navigation.navigate("HomeTab", { screen: "Dashboard" });
           } else {
             navigation.navigate("HomeTab");
           }

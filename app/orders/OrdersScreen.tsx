@@ -488,7 +488,12 @@ export default function OrdersScreen() {
       <StatusBar barStyle="dark-content" />
 
       {/* Screen Header */}
-      <CustomHeader title="Orders" />
+      <CustomHeader
+        title="Orders"
+        onBackPress={() =>
+          navigation.navigate("HomeTab", { screen: "Dashboard" })
+        }
+      />
 
       {/* Tab Selector + Filter Row */}
       <View style={styles.tabWrapper}>

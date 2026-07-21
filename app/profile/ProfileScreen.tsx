@@ -24,6 +24,7 @@ import Toast from "react-native-toast-message";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import dayjs from "dayjs";
+import { useOrgLogo } from "../hooks/useOrgLogo";
 
 const HEADER_IMAGE = require("@/assets/images/profile_bg.svg");
 const AVATAR_PLACEHOLDER = require("@/assets/images/icon.png");
@@ -38,6 +39,7 @@ interface ProfileData {
 
 export default function ProfileScreen() {
   const horizontalMargin = useResponsiveHorizontalMargin();
+  const logoSource = useOrgLogo();
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export default function ProfileScreen() {
       ? typeof window !== "undefined"
         ? window.innerWidth
         : 0
-      : 0
+      : 0,
   );
 
   React.useEffect(() => {
@@ -97,29 +99,55 @@ export default function ProfileScreen() {
       let mergedData = { ...userData };
       if (userData.additional_attributes) {
         try {
-          const parsed = typeof userData.additional_attributes === "string"
-            ? JSON.parse(userData.additional_attributes)
-            : userData.additional_attributes;
+          const parsed =
+            typeof userData.additional_attributes === "string"
+              ? JSON.parse(userData.additional_attributes)
+              : userData.additional_attributes;
           mergedData = { ...mergedData, ...parsed };
         } catch (e) {
           console.warn("Could not parse additional_attributes", e);
         }
       }
 
-      const eId = mergedData.p_emirates_id || mergedData.user_emirates_id || mergedData.emirates_id || mergedData.usr_emirates_id || "";
-      const fname = mergedData.p_first_name || mergedData.firstName || mergedData.fname || mergedData.user_fname || "";
-      const lname = mergedData.p_last_name || mergedData.lastName || mergedData.lname || mergedData.user_lname || "";
-      const dobRaw = mergedData.user_dob || mergedData.usr_dob || mergedData.dob || "";
+      const eId =
+        mergedData.p_emirates_id ||
+        mergedData.user_emirates_id ||
+        mergedData.emirates_id ||
+        mergedData.usr_emirates_id ||
+        "";
+      const fname =
+        mergedData.p_first_name ||
+        mergedData.firstName ||
+        mergedData.fname ||
+        mergedData.user_fname ||
+        "";
+      const lname =
+        mergedData.p_last_name ||
+        mergedData.lastName ||
+        mergedData.lname ||
+        mergedData.user_lname ||
+        "";
+      const dobRaw =
+        mergedData.user_dob || mergedData.usr_dob || mergedData.dob || "";
       const formattedDob = dobRaw ? dayjs(dobRaw).format("MMM DD, YYYY") : "";
-      const genderRaw = mergedData.user_gender || mergedData.gender || mergedData.usr_gender || "";
+      const genderRaw =
+        mergedData.user_gender ||
+        mergedData.gender ||
+        mergedData.usr_gender ||
+        "";
 
       let genderDisplay = genderRaw;
-      if (genderRaw.toLowerCase() === 'm' || genderRaw.toLowerCase() === 'male') genderDisplay = "Male";
-      else if (genderRaw.toLowerCase() === 'f' || genderRaw.toLowerCase() === 'female') genderDisplay = "Female";
+      if (genderRaw.toLowerCase() === "m" || genderRaw.toLowerCase() === "male")
+        genderDisplay = "Male";
+      else if (
+        genderRaw.toLowerCase() === "f" ||
+        genderRaw.toLowerCase() === "female"
+      )
+        genderDisplay = "Female";
 
       let maskedEid = eId;
-      if (eId && eId.replace(/\D/g, '').length >= 15) {
-        const rawNums = eId.replace(/\D/g, '');
+      if (eId && eId.replace(/\D/g, "").length >= 15) {
+        const rawNums = eId.replace(/\D/g, "");
         if (rawNums.length === 15) {
           maskedEid = `***-****-****${rawNums.substring(10, 13)}-${rawNums.substring(13)}`;
         }
@@ -143,7 +171,7 @@ export default function ProfileScreen() {
     try {
       const response = await callSuggestusAPI(
         spd_processId_config.spdonmood9_get_md_user_accounts_profile,
-        { p_user_id: id }
+        { p_user_id: id },
       );
 
       if (response?.returnCode === true && response.returnData) {
@@ -162,7 +190,8 @@ export default function ProfileScreen() {
 
   const handleProfileImageEdit = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
         alert("Permission to access media library is required!");
         return;
@@ -179,7 +208,7 @@ export default function ProfileScreen() {
       const cropResult = await ImageManipulator.manipulateAsync(
         pickerResult.assets[0].uri,
         [{ resize: { width: 512, height: 512 } }],
-        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG },
       );
 
       setAvatarUploading(true);
@@ -226,7 +255,7 @@ export default function ProfileScreen() {
 
       const apiRes = await callSuggestusAPI(
         spd_processId_config.spdonmood9_update_md_onmood9_users_assets_for_profile,
-        { p_user_id: id, p_asset_type: "profile_image", p_asset_url: imageUrl }
+        { p_user_id: id, p_asset_type: "profile_image", p_asset_url: imageUrl },
       );
 
       if (apiRes?.returnCode === true) {
@@ -238,47 +267,107 @@ export default function ProfileScreen() {
         throw new Error("Failed to update profile image");
       }
     } catch (err: any) {
-      Toast.show({ type: "error", text1: "Error", text2: err.message || "Could not update profile image." });
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: err.message || "Could not update profile image.",
+      });
     } finally {
       setAvatarUploading(false);
     }
   };
 
   const mainContent = (
-    <View style={[styles.containerNew, { marginLeft: horizontalMargin, marginRight: horizontalMargin }]}>
+    <View
+      style={[
+        styles.containerNew,
+        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+      ]}
+    >
       <ImageBackground
         source={require("@/assets/images/internal_screen_bg.png")}
         style={styles.background}
       >
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={[styles.container, Platform.OS === "web" && screenWidth >= 1024 ? { width: '100%', maxWidth: 620, marginLeft: 'auto', marginRight: 'auto' } : {}]}>
-
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
+          <View
+            style={[
+              styles.container,
+              Platform.OS === "web" && screenWidth >= 1024
+                ? {
+                    width: "100%",
+                    maxWidth: 620,
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                  }
+                : {},
+            ]}
+          >
             <View style={styles.topHeader}>
               <Text style={styles.headerTitle}>Profile</Text>
             </View>
 
-            <View style={styles.bannerContainer}>
-              <Image source={HEADER_IMAGE} style={styles.bannerImg} />
+            <View
+              style={[
+                styles.bannerContainer,
+                { backgroundColor: Colors.backgroundCardLight },
+              ]}
+            >
+              <Image
+                source={require("@/assets/images/splash_bg.png")}
+                style={[styles.bannerWatermark, { top: 0, right: 0 }]}
+                resizeMode="contain"
+              />
+              <Image
+                source={require("@/assets/images/splash_bg.png")}
+                style={[
+                  styles.bannerWatermark,
+                  { bottom: 0, left: 0, transform: [{ rotate: "180deg" }] },
+                ]}
+                resizeMode="contain"
+              />
+              <View style={styles.bannerLogoContainer}>
+                <Image
+                  source={logoSource}
+                  style={styles.bannerOrgLogo}
+                  resizeMode="contain"
+                />
+              </View>
               <TouchableOpacity style={styles.bannerEditIcon}>
                 <Feather name="edit-3" size={16} color={Colors.primary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.avatarWrapper}>
-              <TouchableOpacity onPress={handleProfileImageEdit} disabled={avatarUploading} style={styles.avatarTouch}>
+              <TouchableOpacity
+                onPress={handleProfileImageEdit}
+                disabled={avatarUploading}
+                style={styles.avatarTouch}
+              >
                 <Image
                   source={
-                    profileImageUrl ? { uri: profileImageUrl }
-                      : avatarUrl ? { uri: avatarUrl }
+                    profileImageUrl
+                      ? { uri: profileImageUrl }
+                      : avatarUrl
+                        ? { uri: avatarUrl }
                         : AVATAR_PLACEHOLDER
                   }
                   style={styles.avatar}
                 />
                 <View style={styles.avatarEditBadge}>
                   {avatarUploading ? (
-                    <ActivityIndicator size="small" color={Colors.backgroundLight} />
+                    <ActivityIndicator
+                      size="small"
+                      color={Colors.backgroundLight}
+                    />
                   ) : (
-                    <Feather name="edit-3" size={12} color={Colors.backgroundLight} />
+                    <Feather
+                      name="edit-3"
+                      size={12}
+                      color={Colors.backgroundLight}
+                    />
                   )}
                 </View>
               </TouchableOpacity>
@@ -290,7 +379,6 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={styles.detailsContainer}>
-
                 <View style={styles.detailRow}>
                   <View style={styles.detailIconBox}>
                     <Ionicons name="card" size={18} color={Colors.primary} />
@@ -304,17 +392,27 @@ export default function ProfileScreen() {
                 <View style={styles.detailRowSplit}>
                   <View style={styles.detailRowHalf}>
                     <View style={styles.detailIconBoxSecondary}>
-                      <Ionicons name="person" size={18} color={Colors.warning} />
+                      <Ionicons
+                        name="person"
+                        size={18}
+                        color={Colors.warning}
+                      />
                     </View>
                     <View style={styles.detailTextCol}>
                       <Text style={styles.detailLabel}>First name</Text>
-                      <Text style={styles.detailValue}>{profile.firstName}</Text>
+                      <Text style={styles.detailValue}>
+                        {profile.firstName}
+                      </Text>
                     </View>
                   </View>
 
                   <View style={styles.detailRowHalf}>
                     <View style={styles.detailIconBoxSecondaryDark}>
-                      <Ionicons name="person" size={18} color={Colors.success} />
+                      <Ionicons
+                        name="person"
+                        size={18}
+                        color={Colors.success}
+                      />
                     </View>
                     <View style={styles.detailTextCol}>
                       <Text style={styles.detailLabel}>Last name</Text>
@@ -325,7 +423,11 @@ export default function ProfileScreen() {
 
                 <View style={styles.detailRow}>
                   <View style={styles.detailIconBoxTertiary}>
-                    <Ionicons name="calendar" size={18} color={Colors.primary} />
+                    <Ionicons
+                      name="calendar"
+                      size={18}
+                      color={Colors.primary}
+                    />
                   </View>
                   <View style={styles.detailTextCol}>
                     <Text style={styles.detailLabel}>Date of birth</Text>
@@ -335,17 +437,19 @@ export default function ProfileScreen() {
 
                 <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                   <View style={styles.detailIconBoxQuaternary}>
-                    <Ionicons name="male-female" size={18} color={Colors.warning} />
+                    <Ionicons
+                      name="male-female"
+                      size={18}
+                      color={Colors.warning}
+                    />
                   </View>
                   <View style={styles.detailTextCol}>
                     <Text style={styles.detailLabel}>Gender</Text>
                     <Text style={styles.detailValue}>{profile.gender}</Text>
                   </View>
                 </View>
-
               </View>
             )}
-
           </View>
         </ScrollView>
       </ImageBackground>
@@ -381,7 +485,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   topHeader: {
-    marginTop: Platform.OS === 'android' ? 50 : 30,
+    marginTop: Platform.OS === "android" ? 50 : 30,
     marginBottom: 20,
   },
   headerTitle: {
@@ -390,36 +494,53 @@ const styles = StyleSheet.create({
     fontFamily: FontFamilies.bold,
   },
   bannerContainer: {
-    position: 'relative',
-    width: '100%',
+    position: "relative",
+    width: "100%",
     height: 140,
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Colors.backgroundCardLight,
   },
   bannerImg: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   bannerEditIcon: {
-    position: 'absolute',
+    position: "absolute",
     top: 12,
     right: 12,
     width: 24,
     height: 24,
     borderRadius: 12,
     backgroundColor: Colors.backgroundOverlayVeryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  bannerWatermark: {
+    position: "absolute",
+    width: "70%",
+    height: "100%",
+    opacity: 0.15,
+  },
+  bannerLogoContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  bannerOrgLogo: {
+    width: "70%",
+    maxWidth: 240,
+    height: 50,
+    marginTop: -20, // Shift up slightly to fit better with the avatar
   },
   avatarWrapper: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: -55,
     zIndex: 10,
   },
   avatarTouch: {
-    position: 'relative',
+    position: "relative",
   },
   avatar: {
     width: 110,
@@ -430,34 +551,34 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundLight,
   },
   avatarEditBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 4,
     right: 4,
     width: 24,
     height: 24,
     borderRadius: 12,
     backgroundColor: Colors.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 2,
     borderColor: Colors.background,
   },
   loadingContainer: {
     paddingVertical: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
   detailsContainer: {
     marginTop: 20,
   },
   detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: Colors.backgroundOverlayVeryLight,
   },
   detailRowSplit: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: Colors.backgroundOverlayVeryLight,
@@ -465,16 +586,16 @@ const styles = StyleSheet.create({
   },
   detailRowHalf: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   detailIconBox: {
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: Colors.pressed,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 14,
   },
   detailIconBoxSecondary: {
@@ -482,8 +603,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: Colors.warningBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 14,
   },
   detailIconBoxSecondaryDark: {
@@ -491,8 +612,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: Colors.successBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 14,
   },
   detailIconBoxTertiary: {
@@ -500,8 +621,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: Colors.pressed,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 14,
   },
   detailIconBoxQuaternary: {
@@ -509,12 +630,12 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: Colors.warningBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 14,
   },
   detailTextCol: {
-    flexDirection: 'column',
+    flexDirection: "column",
   },
   detailLabel: {
     fontSize: 13,
@@ -526,5 +647,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.text,
     fontFamily: FontFamilies.medium,
-  }
+  },
 });

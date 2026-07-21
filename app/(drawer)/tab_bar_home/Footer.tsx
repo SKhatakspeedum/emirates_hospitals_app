@@ -48,11 +48,7 @@ export default function Footer({
       <TouchableOpacity
         style={isHomeActive ? styles.tabItemActive : styles.tabItem}
         onPress={() => {
-          if (state.index === 0) {
-            navigation.navigate("HomeTab", { screen: "Dashboard" });
-          } else {
-            navigation.navigate("HomeTab");
-          }
+          navigation.navigate("HomeTab", { screen: "Dashboard" });
         }}
       >
         <HomeIcon color={isHomeActive ? Colors.primary : Colors.grayDark} />

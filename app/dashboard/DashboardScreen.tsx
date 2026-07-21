@@ -93,7 +93,9 @@ const extractYoutubeId = (url: string): string | null => {
 
 const extractVimeoId = (url: string): string | null => {
   if (!url) return null;
-  const match = url.match(/vimeo\.com\/(?:video\/|channels\/\w+\/|groups\/[^/]+\/videos\/)?(\d+)/i);
+  const match = url.match(
+    /vimeo\.com\/(?:video\/|channels\/\w+\/|groups\/[^/]+\/videos\/)?(\d+)/i,
+  );
   return match ? match[1] : null;
 };
 
@@ -1370,10 +1372,7 @@ export default function DashboardScreen() {
             {isLoadingHealthSummaryInstance ? (
               <View style={styles.healthSummaryGrid}>
                 {[1, 2, 3, 4].map((i) => (
-                  <Skeleton
-                    key={i}
-                    style={styles.healthSummarySkeletonItem}
-                  />
+                  <Skeleton key={i} style={styles.healthSummarySkeletonItem} />
                 ))}
               </View>
             ) : (
@@ -1963,7 +1962,8 @@ export default function DashboardScreen() {
                       resizeMode={ResizeMode.CONTAIN}
                       shouldPlay
                       onPlaybackStatusUpdate={(status) => {
-                        if (status.didJustFinish) setPlayingVideoUrl(null);
+                        if (status.isLoaded && status.didJustFinish)
+                          setPlayingVideoUrl(null);
                       }}
                     />
                   );

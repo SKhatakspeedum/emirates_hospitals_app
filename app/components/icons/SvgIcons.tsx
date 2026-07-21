@@ -11,7 +11,7 @@ interface SvgVectorIconProps {
 
 // Drop-in SVG replacements for the @expo/vector-icons font components —
 // same (name, size, color) prop shape, so a call site can switch from
-// <Ionicons name="x" size={n} color={c} /> to <SvgIonicons .../> with no
+// <SvgIonicons name="x" size={n} color={c} /> to <SvgIonicons .../> with no
 // other changes. Path data in generatedIconPaths.ts is extracted directly
 // from the exact font files @expo/vector-icons vendors, so the rendered
 // shape is pixel-identical to what the font glyph already produced.
@@ -31,7 +31,20 @@ const makeSvgIconComponent = (library: string) => {
     const width = (size * vbWidth) / vbHeight;
     return (
       <Svg width={width} height={size} viewBox={entry.viewBox} style={style}>
-        <Path d={entry.d} fill={color} />
+        {entry.stroke ? (
+          // Outline/line icons are stroked, not filled — a filled zero-width
+          // line would render as nothing.
+          <Path
+            d={entry.d}
+            fill="none"
+            stroke={color}
+            strokeWidth={entry.strokeWidth ?? 32}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : (
+          <Path d={entry.d} fill={color} />
+        )}
       </Svg>
     );
   };

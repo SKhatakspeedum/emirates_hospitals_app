@@ -656,7 +656,7 @@ export default function OrdersScreen() {
                 style={styles.closeButton}
                 onPress={() => setIsFilterVisible(false)}
               >
-                <Ionicons name="close-outline" size={24} color={Colors.text} />
+                <SvgIonicons name="close-outline" size={24} color={Colors.text} />
               </TouchableOpacity> */}
             </View>
 

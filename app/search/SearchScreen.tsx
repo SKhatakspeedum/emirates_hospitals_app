@@ -11,7 +11,8 @@ import {
   Platform,
   Image,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { MaterialCommunityIcons  } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { SiteConfig } from "@/app/config/site_config";
 import { COURSES_SUB_URL, SPD_USER_SUBSCRIPTION } from "@/app/config/config";
@@ -169,7 +170,7 @@ export default function SearchScreen() {
         <CustomTopHeader title="Back" />
         {/* Search Bar */}
         <View style={styles.searchBarWrapper}>
-          <Ionicons
+          <SvgIonicons 
             name="search"
             size={20}
             color="#A1A1A1"
@@ -187,7 +188,7 @@ export default function SearchScreen() {
           />
           {!!searchQuery && (
             <TouchableOpacity onPress={() => handleSearch("")}>
-              <Ionicons
+              <SvgIonicons 
                 name="close-circle"
                 size={18}
                 color="#A1A1A1"

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import RenderHtml from "react-native-render-html";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "@/app/components/icons/SvgIcons";
 import CustomHeader from "../components/CustomHeader";
 import { getDecryptedID } from "../suggestus_plugin/util/util_functions";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
@@ -118,7 +118,7 @@ export default function TermsAndPrivacyScreen() {
               style={[styles.checkboxBase, agreed && styles.checkboxChecked]}
             >
               {agreed && (
-                <Ionicons name="checkmark" size={16} color={Colors.lightgray} />
+                <SvgIonicons name="checkmark" size={16} color={Colors.lightgray} />
               )}
             </View>
             <Text style={styles.consentText}>

@@ -17,7 +17,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import WebTimePicker from "../components/WebTimePicker";
 import { Calendar, DateData } from "react-native-calendars";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "@/app/components/icons/SvgIcons";
 import { useNavigation } from "expo-router";
 import { spd_processId_config } from "../config/process_id";
 // Import API client (same as SleepCheckIn)

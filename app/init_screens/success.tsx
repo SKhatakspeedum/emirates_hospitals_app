@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "@/app/components/icons/SvgIcons";
 import confettiParticles from "../json_dummy_datas/confettiParticles";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -83,7 +83,7 @@ export default function SuccessScreen() {
             ))}
 
             <View style={styles.checkmarkCircle}>
-              <Ionicons name="checkmark" size={50} color="#fff" />
+              <SvgIonicons name="checkmark" size={50} color="#fff" />
             </View>
           </View>
         </View>

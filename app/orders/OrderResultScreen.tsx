@@ -45,10 +45,7 @@ export default function OrderResultScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
 
-      <CustomHeader
-        title={order.docName || "Result"}
-        onBackPress={() => navigation.navigate("OrderScreen")}
-      />
+      <CustomHeader title={"Orders"} onBackPress={() => navigation.goBack()} />
 
       {docUrl && !webViewError ? (
         <View style={styles.viewerContainer}>

@@ -429,10 +429,7 @@ export default function OrdersScreen() {
       case "book":
         return handleBook(order);
       case "view_result":
-        return navigation.navigate("HomeTab", {
-          screen: "OrderResult",
-          params: { order },
-        });
+        return navigation.navigate("OrderResult", { order });
       case "view_details":
         setSelectedOrder(order);
         setIsDetailsVisible(true);
@@ -488,12 +485,7 @@ export default function OrdersScreen() {
       <StatusBar barStyle="dark-content" />
 
       {/* Screen Header */}
-      <CustomHeader
-        title="Orders"
-        onBackPress={() =>
-          navigation.navigate("HomeTab", { screen: "Dashboard" })
-        }
-      />
+      <CustomHeader title="Orders" showBackButton={false} />
 
       {/* Tab Selector + Filter Row */}
       <View style={styles.tabWrapper}>

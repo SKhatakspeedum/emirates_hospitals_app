@@ -28,10 +28,10 @@ import ExploreScreen from "../../explore_tab/ExploreScreen";
 // import AppHeader from "./AppHeader";
 import DashboardScreen from "@/app/dashboard/DashboardScreen";
 // import AppHeaderWeb from "./AppHeaderWeb";
-import OrdersScreen from "@/app/orders/OrdersScreen";
 import MedicinesStackScreen from "@/app/medicines/MedicinesStackScreen";
 import ProfileScreen from "@/app/profile/ProfileScreen";
 import HomeStackScreen from "./HomeStackScreen";
+import OrdersStackScreen from "./OrdersStackScreen";
 
 const { width, height } = Dimensions.get("window");
 const Tab = createBottomTabNavigator();
@@ -181,7 +181,7 @@ export default function HomeScreen() {
               screenOptions={{ headerShown: false }}
             >
               <Tab.Screen name="HomeTab" component={HomeStackScreen} />
-              <Tab.Screen name="OrdersScreen" component={OrdersScreen} />
+              <Tab.Screen name="OrderScreen" component={OrdersStackScreen} />
               {/* This is a dummy screen for the center logo button - it won't be navigated to */}
               <Tab.Screen
                 name="DrawerTab"
@@ -190,7 +190,10 @@ export default function HomeScreen() {
                   tabBarButton: () => null,
                 }}
               />
-              <Tab.Screen name="MedicinesScreen" component={MedicinesStackScreen} />
+              <Tab.Screen
+                name="MedicinesScreen"
+                component={MedicinesStackScreen}
+              />
               <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
             </Tab.Navigator>
 
@@ -247,7 +250,7 @@ export default function HomeScreen() {
             screenOptions={{ headerShown: false }}
           >
             <Tab.Screen name="HomeTab" component={HomeStackScreen} />
-            <Tab.Screen name="OrderScreen" component={OrdersScreen} />
+            <Tab.Screen name="OrderScreen" component={OrdersStackScreen} />
             {/* This is a dummy screen for the center logo button - it won't be navigated to */}
             <Tab.Screen
               name="DrawerTab"
@@ -256,7 +259,10 @@ export default function HomeScreen() {
                 tabBarButton: () => null,
               }}
             />
-            <Tab.Screen name="MedicinesScreen" component={MedicinesStackScreen} />
+            <Tab.Screen
+              name="MedicinesScreen"
+              component={MedicinesStackScreen}
+            />
             <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
           </Tab.Navigator>
 

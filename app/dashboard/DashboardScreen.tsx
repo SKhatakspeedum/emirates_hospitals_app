@@ -62,6 +62,8 @@ import dayjs from "dayjs";
 import { getStoredAiCode } from "../services/aiCode";
 import { getUserEntityReferenceCode } from "../services/entityReferenceCode";
 import YoutubePlayer from "react-native-youtube-iframe";
+import { Video, ResizeMode } from "expo-av";
+import { WebView } from "react-native-webview";
 
 const getGreetingTime = () => {
   const currentHour = new Date().getHours();
@@ -87,6 +89,36 @@ const extractYoutubeId = (url: string): string | null => {
     /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/,
   );
   return match && match[2].length === 11 ? match[2] : null;
+};
+
+const extractVimeoId = (url: string): string | null => {
+  if (!url) return null;
+  const match = url.match(/vimeo\.com\/(?:video\/|channels\/\w+\/|groups\/[^/]+\/videos\/)?(\d+)/i);
+  return match ? match[1] : null;
+};
+
+const isDirectVideoFile = (url: string): boolean =>
+  /\.(mp4|m3u8|mov|webm|ogg|ogv|avi|mkv|3gp)(\?.*)?$/i.test(url);
+
+// Classifies any backend-supplied video URL so the modal below can pick the
+// right playback strategy — YouTube/Vimeo need their embed players, direct
+// file links (mp4/m3u8/...) play natively via expo-av, and anything else
+// falls back to loading the URL itself in a WebView/iframe (best-effort,
+// since not every site allows being embedded).
+type VideoSource =
+  | { kind: "youtube"; id: string }
+  | { kind: "vimeo"; id: string }
+  | { kind: "file"; url: string }
+  | { kind: "embed"; url: string };
+
+const classifyVideoUrl = (url: string): VideoSource | null => {
+  if (!url) return null;
+  const youtubeId = extractYoutubeId(url);
+  if (youtubeId) return { kind: "youtube", id: youtubeId };
+  const vimeoId = extractVimeoId(url);
+  if (vimeoId) return { kind: "vimeo", id: vimeoId };
+  if (isDirectVideoFile(url)) return { kind: "file", url };
+  return { kind: "embed", url };
 };
 
 // Converts "09:15:00" or "09:15 AM" → "09:15 AM"
@@ -198,10 +230,9 @@ export default function DashboardScreen() {
   // (instanceId, patient id, focus tick) don't change on an org switch alone.
   const [orgRefreshTick, setOrgRefreshTick] = useState(0);
 
-  // In-app player for the Health Awareness widget's video cards.
-  const [playingYoutubeId, setPlayingYoutubeId] = useState<string | null>(
-    null,
-  );
+  // In-app player for the Health Awareness widget's video cards — holds the
+  // raw backend video URL; classifyVideoUrl() picks the playback strategy.
+  const [playingVideoUrl, setPlayingVideoUrl] = useState<string | null>(null);
 
   // Splits a description like "Emirates Hospital - Jumeirah" into a name
   // + area subtitle for the two-line row in the "Switch location" sheet.
@@ -955,17 +986,21 @@ export default function DashboardScreen() {
       returnData
         .filter((c: any) => c.content_type === "video_url")
         .map((c: any) => {
-          const youtubeId = extractYoutubeId(c.content_reference_details ?? "");
+          const videoUrl = c.content_reference_details ?? "";
+          const youtubeId = extractYoutubeId(videoUrl);
           return {
             id: String(c.id ?? Math.random()),
             title: stripHtml(c.html_description ?? c.description ?? ""),
-            youtubeId,
+            videoUrl,
+            // Only YouTube has a free thumbnail endpoint — other sources
+            // (Vimeo, direct files, generic embeds) fall back to a plain
+            // play-button card via videoThumbnail's placeholder background.
             thumbnail: youtubeId
               ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`
               : "",
           };
         })
-        .filter((v) => !!v.youtubeId),
+        .filter((v) => !!v.videoUrl),
     [],
     String(orgRefreshTick),
   );
@@ -1252,7 +1287,7 @@ export default function DashboardScreen() {
             ) : healthAwarenessForInstance.length === 1 ? (
               <Pressable
                 onPress={() =>
-                  setPlayingYoutubeId(healthAwarenessForInstance[0].youtubeId)
+                  setPlayingVideoUrl(healthAwarenessForInstance[0].videoUrl)
                 }
                 style={({ pressed }) => [
                   styles.videoCard,
@@ -1279,7 +1314,7 @@ export default function DashboardScreen() {
                 {healthAwarenessForInstance.map((video) => (
                   <Pressable
                     key={video.id}
-                    onPress={() => setPlayingYoutubeId(video.youtubeId)}
+                    onPress={() => setPlayingVideoUrl(video.videoUrl)}
                     style={({ pressed }) => [
                       styles.videoCardHorizontal,
                       {
@@ -1829,12 +1864,13 @@ export default function DashboardScreen() {
         </Pressable>
       </Modal>
 
-      {/* Health Awareness video player */}
+      {/* Health Awareness video player — supports YouTube, Vimeo, direct
+          file links (mp4/m3u8/...), and generic embeddable page URLs. */}
       <Modal
-        visible={!!playingYoutubeId}
+        visible={!!playingVideoUrl}
         animationType="fade"
         transparent
-        onRequestClose={() => setPlayingYoutubeId(null)}
+        onRequestClose={() => setPlayingVideoUrl(null)}
       >
         <View style={styles.videoModalOverlay}>
           <View
@@ -1845,64 +1881,122 @@ export default function DashboardScreen() {
           >
             <TouchableOpacity
               style={styles.videoModalCloseButton}
-              onPress={() => setPlayingYoutubeId(null)}
+              onPress={() => setPlayingVideoUrl(null)}
             >
               <Ionicons name="close" size={28} color={Colors.background} />
             </TouchableOpacity>
-            {playingYoutubeId && Platform.OS === "web" ? (
-              // react-native-youtube-iframe's bridge relies on
-              // react-native-webview's native postMessage channel, which
-              // doesn't exist under react-native-web (no real native
-              // WebView) — render a plain HTML iframe instead.
-              React.createElement("iframe", {
-                src: `https://www.youtube.com/embed/${playingYoutubeId}?autoplay=1&rel=0&modestbranding=1`,
-                width: width - 40,
-                height: (width - 40) * 9 / 16,
-                style: { border: 0 },
-                allow:
-                  "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
-                allowFullScreen: true,
-              })
-            ) : (
-              playingYoutubeId && (
-                <YoutubePlayer
-                  height={(width - 40) * 9 / 16}
-                  width={width - 40}
-                  play
-                  videoId={playingYoutubeId}
-                  onChangeState={(state: string) => {
-                    if (state === "ended") setPlayingYoutubeId(null);
-                  }}
-                  initialPlayerParams={{
-                    preventFullScreen: false,
-                    controls: true,
-                    modestbranding: true,
-                    rel: false,
-                  }}
-                  webViewProps={{
-                    scrollEnabled: false,
-                    bounces: false,
-                    androidLayerType:
-                      Platform.OS === "android" ? "hardware" : undefined,
-                    // The library only blocks youtube.com navigation on iOS —
-                    // override here so tapping the embed's own end-screen /
-                    // "Watch on YouTube" card never leaves the app, on any
-                    // platform, for the initial load or any in-page navigation.
-                    onShouldStartLoadWithRequest: (request: { url: string }) =>
-                      !/youtube\.com|youtu\.be|google\.com\/url/.test(
-                        request.url,
-                      ),
-                    // Those same cards often open via window.open() rather
-                    // than a top-level navigation, which the check above can't
-                    // see — block Android's new-window popups outright, and no-op
-                    // any window the WebView still tries to open on iOS/other.
-                    setSupportMultipleWindows: false,
-                    onOpenWindow: () => {},
-                  }}
-                  webViewStyle={{ opacity: 0.99 }}
-                />
-              )
-            )}
+            {playingVideoUrl &&
+              (() => {
+                const source = classifyVideoUrl(playingVideoUrl);
+                const playerWidth = width - 40;
+                const playerHeight = ((width - 40) * 9) / 16;
+                if (!source) return null;
+
+                if (source.kind === "youtube") {
+                  return Platform.OS === "web" ? (
+                    // react-native-youtube-iframe's bridge relies on
+                    // react-native-webview's native postMessage channel,
+                    // which doesn't exist under react-native-web (no real
+                    // native WebView) — render a plain HTML iframe instead.
+                    React.createElement("iframe", {
+                      src: `https://www.youtube.com/embed/${source.id}?autoplay=1&rel=0&modestbranding=1`,
+                      width: playerWidth,
+                      height: playerHeight,
+                      style: { border: 0 },
+                      allow:
+                        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                      allowFullScreen: true,
+                    })
+                  ) : (
+                    <YoutubePlayer
+                      height={playerHeight}
+                      width={playerWidth}
+                      play
+                      videoId={source.id}
+                      onChangeState={(state: string) => {
+                        if (state === "ended") setPlayingVideoUrl(null);
+                      }}
+                      initialPlayerParams={{
+                        preventFullScreen: false,
+                        controls: true,
+                        modestbranding: true,
+                        rel: false,
+                      }}
+                      webViewProps={{
+                        scrollEnabled: false,
+                        bounces: false,
+                        androidLayerType:
+                          Platform.OS === "android" ? "hardware" : undefined,
+                        // The library only blocks youtube.com navigation on
+                        // iOS — override here so tapping the embed's own
+                        // end-screen / "Watch on YouTube" card never leaves
+                        // the app, on any platform, for the initial load or
+                        // any in-page navigation.
+                        onShouldStartLoadWithRequest: (request: {
+                          url: string;
+                        }) =>
+                          !/youtube\.com|youtu\.be|google\.com\/url/.test(
+                            request.url,
+                          ),
+                        // Those same cards often open via window.open()
+                        // rather than a top-level navigation, which the
+                        // check above can't see — block Android's new-window
+                        // popups outright, and no-op any window the WebView
+                        // still tries to open on iOS/other.
+                        setSupportMultipleWindows: false,
+                        onOpenWindow: () => {},
+                      }}
+                      webViewStyle={{ opacity: 0.99 }}
+                    />
+                  );
+                }
+
+                if (source.kind === "file") {
+                  // Direct media file (mp4/m3u8/...) — expo-av's Video
+                  // component plays natively on iOS/Android and via the
+                  // HTML5 <video> tag on web, no embed/bridge needed.
+                  return (
+                    <Video
+                      source={{ uri: source.url }}
+                      style={{ width: playerWidth, height: playerHeight }}
+                      useNativeControls
+                      resizeMode={ResizeMode.CONTAIN}
+                      shouldPlay
+                      onPlaybackStatusUpdate={(status) => {
+                        if (status.didJustFinish) setPlayingVideoUrl(null);
+                      }}
+                    />
+                  );
+                }
+
+                // Vimeo or any other URL: load the appropriate embed page.
+                // Best-effort for arbitrary "embed" URLs — some sites block
+                // being iframed via X-Frame-Options, which no client-side
+                // workaround can bypass.
+                const embedUrl =
+                  source.kind === "vimeo"
+                    ? `https://player.vimeo.com/video/${source.id}?autoplay=1`
+                    : source.url;
+
+                return Platform.OS === "web" ? (
+                  React.createElement("iframe", {
+                    src: embedUrl,
+                    width: playerWidth,
+                    height: playerHeight,
+                    style: { border: 0 },
+                    allow:
+                      "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                    allowFullScreen: true,
+                  })
+                ) : (
+                  <WebView
+                    source={{ uri: embedUrl }}
+                    style={{ width: playerWidth, height: playerHeight }}
+                    allowsFullscreenVideo
+                    mediaPlaybackRequiresUserAction={false}
+                  />
+                );
+              })()}
           </View>
         </View>
       </Modal>

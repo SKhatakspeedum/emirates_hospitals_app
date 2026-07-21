@@ -14,11 +14,11 @@ import {
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { useRouter } from "expo-router";
 import {
-  Fontisto,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons,
-} from "@expo/vector-icons";
+  SvgFontisto,
+  SvgIonicons,
+  SvgMaterialCommunityIcons,
+  SvgMaterialIcons,
+} from "@/app/components/icons/SvgIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   IS_LOGGED_IN,
@@ -67,13 +67,13 @@ const getInitials = (name: string): string => {
 const DEFAULT_DRAWER_ITEMS = [
   {
     label: "Providers",
-    icon: <Fontisto name="stethoscope" size={22} color={Colors.secondary} />,
+    icon: <SvgFontisto name="stethoscope" size={22} color={Colors.secondary} />,
     screen: "NearbyProviders",
   },
   {
     label: "Orders",
     icon: (
-      <MaterialCommunityIcons
+      <SvgMaterialCommunityIcons
         name="clipboard-text-clock-outline"
         size={20}
         color={Colors.secondary}
@@ -84,14 +84,14 @@ const DEFAULT_DRAWER_ITEMS = [
   {
     label: "Medicines",
     icon: (
-      <MaterialCommunityIcons name="pill" size={20} color={Colors.secondary} />
+      <SvgMaterialCommunityIcons name="pill" size={20} color={Colors.secondary} />
     ),
     screen: "MedicinesScreen",
   },
   {
     label: "Health Packages",
     icon: (
-      <MaterialIcons
+      <SvgMaterialIcons
         name="medical-services"
         size={20}
         color={Colors.secondary}
@@ -102,34 +102,34 @@ const DEFAULT_DRAWER_ITEMS = [
   {
     label: "Settings",
     icon: (
-      <Ionicons name="settings-outline" size={20} color={Colors.secondary} />
+      <SvgIonicons name="settings-outline" size={20} color={Colors.secondary} />
     ),
     screen: "Settings",
   },
 ];
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  providers: <Fontisto name="stethoscope" size={22} color={Colors.secondary} />,
+  providers: <SvgFontisto name="stethoscope" size={22} color={Colors.secondary} />,
   orders: (
-    <MaterialCommunityIcons
+    <SvgMaterialCommunityIcons
       name="clipboard-text-clock-outline"
       size={20}
       color={Colors.secondary}
     />
   ),
   medicines: (
-    <MaterialCommunityIcons name="pill" size={20} color={Colors.secondary} />
+    <SvgMaterialCommunityIcons name="pill" size={20} color={Colors.secondary} />
   ),
   healthPackages: (
-    <MaterialIcons name="medical-services" size={20} color={Colors.secondary} />
+    <SvgMaterialIcons name="medical-services" size={20} color={Colors.secondary} />
   ),
   settings: (
-    <Ionicons name="settings-outline" size={20} color={Colors.secondary} />
+    <SvgIonicons name="settings-outline" size={20} color={Colors.secondary} />
   ),
 };
 
 const DEFAULT_ICON = (
-  <Ionicons name="help-circle-outline" size={20} color={Colors.secondary} />
+  <SvgIonicons name="help-circle-outline" size={20} color={Colors.secondary} />
 );
 
 // Resolves the drawer-specific default icon for a widget, then defers to the
@@ -387,7 +387,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             disabled={isSigningOut}
           >
             <View style={styles.linkIconWrapper}>
-              <Ionicons
+              <SvgIonicons
                 name="log-out-outline"
                 size={22}
                 color={Colors.secondary}

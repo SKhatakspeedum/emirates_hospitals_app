@@ -17,7 +17,10 @@ import {
   Image,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { Fontisto, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  SvgIonicons,
+  SvgMaterialCommunityIcons,
+} from "../components/icons/SvgIcons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -416,7 +419,7 @@ export default function OrdersScreen() {
 
   const ACTION_META: Record<
     ButtonAction,
-    { label: string; icon: React.ComponentProps<typeof Ionicons>["name"] }
+    { label: string; icon: string }
   > = {
     call: { label: "Call", icon: "call-outline" },
     book: { label: "Book appointment", icon: "calendar-outline" },
@@ -466,7 +469,7 @@ export default function OrdersScreen() {
               {isResolvingBooking ? (
                 <ActivityIndicator size="small" color={Colors.primary} />
               ) : (
-                <Ionicons name={meta.icon} size={15} color={Colors.primary} />
+                <SvgIonicons name={meta.icon} size={15} color={Colors.primary} />
               )}
               <Text
                 style={styles.footerActionText}
@@ -510,7 +513,7 @@ export default function OrdersScreen() {
           onPress={() => setIsFilterVisible(true)}
           activeOpacity={0.7}
         >
-          <Ionicons
+          <SvgIonicons
             name="options"
             size={20}
             color={
@@ -549,7 +552,7 @@ export default function OrdersScreen() {
           </View>
         ) : filteredOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons
+            <SvgIonicons
               name="document-text-outline"
               size={80}
               color={Colors.inactive}
@@ -617,7 +620,7 @@ export default function OrdersScreen() {
               {/* Bottom Footer: department row + evenly-spaced action bar */}
               <View style={styles.cardFooter}>
                 <View style={styles.footerDeptRow}>
-                  <MaterialCommunityIcons
+                  <SvgMaterialCommunityIcons
                     name={
                       order.department.toLowerCase().includes("lab")
                         ? "microscope"
@@ -679,7 +682,7 @@ export default function OrdersScreen() {
                   {dept === "All" ? "All Departments" : dept}
                 </Text>
                 {selectedDepartment === dept && (
-                  <Ionicons name="checkmark" size={20} color={Colors.primary} />
+                  <SvgIonicons name="checkmark" size={20} color={Colors.primary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -701,7 +704,7 @@ export default function OrdersScreen() {
           <View style={styles.detailsModalContent}>
             <View style={styles.detailsModalHeader}>
               <View style={styles.detailsModalTitleRow}>
-                <Ionicons
+                <SvgIonicons
                   name={
                     selectedOrder?.status.toLowerCase().includes("cancel")
                       ? "warning-outline"
@@ -728,7 +731,7 @@ export default function OrdersScreen() {
                   setSelectedOrder(null);
                 }}
               >
-                <Ionicons name="close" size={22} color={Colors.text} />
+                <SvgIonicons name="close" size={22} color={Colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -780,7 +783,7 @@ export default function OrdersScreen() {
                       );
                     }}
                   >
-                    <Ionicons
+                    <SvgIonicons
                       name="chatbubble-ellipses-outline"
                       size={18}
                       color={Colors.background}
@@ -822,7 +825,7 @@ export default function OrdersScreen() {
                       );
                     }}
                   >
-                    <Ionicons
+                    <SvgIonicons
                       name="download-outline"
                       size={18}
                       color={Colors.primary}

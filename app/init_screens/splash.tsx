@@ -89,11 +89,7 @@ export default function SplashScreen() {
         resizeMode="contain"
       />
       <View style={styles.centerContent}>
-        <Image
-          source={logoSource}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <Image source={logoSource} style={styles.logo} resizeMode="contain" />
         {/* <Text style={styles.title}>Emirates Hospital</Text> */}
         {loading && (
           <View style={styles.loaderContainer}>
@@ -128,6 +124,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: bgSize,
     height: bgSize,
+    opacity: 0.2,
   },
   bottomBg: {
     position: "absolute",
@@ -136,6 +133,7 @@ const styles = StyleSheet.create({
     width: bgSize,
     height: bgSize,
     transform: [{ rotate: "180deg" }],
+    opacity: 0.2,
   },
   centerContent: {
     flex: 1,

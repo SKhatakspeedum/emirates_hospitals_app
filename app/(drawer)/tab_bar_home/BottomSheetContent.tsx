@@ -7,11 +7,9 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import {
-  Feather,
-  MaterialCommunityIcons,
-  Ionicons,
-} from "@expo/vector-icons";
+import { SvgIonicons } from "../../components/icons/SvgIcons";
+import { Feather,
+  MaterialCommunityIcons,  } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "../../config/colors";
@@ -167,7 +165,7 @@ const BottomSheetContent: React.FC<BottomSheetContentProps> = ({
               </View>
               <View style={styles.menuItemRight}>
                 <Text style={styles.menuCount}>{item.count}</Text>
-                <Ionicons name="arrow-forward" size={16} color={Colors.inactive} />
+                <SvgIonicons name="arrow-forward" size={16} color={Colors.inactive} />
               </View>
             </TouchableOpacity>
           ))}

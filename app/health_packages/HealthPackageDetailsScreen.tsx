@@ -13,7 +13,7 @@ import {
   Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
 import { Colors } from "../config/colors";
 
 const { width } = Dimensions.get("window");
@@ -53,7 +53,7 @@ export default function HealthPackageDetailsScreen() {
         {/* Title Header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="chevron-back" size={22} color={Colors.text} />
+            <SvgIonicons name="chevron-back" size={22} color={Colors.text} />
             <Text style={styles.headerTitle}>Health packages</Text>
           </TouchableOpacity>
         </View>
@@ -99,7 +99,7 @@ export default function HealthPackageDetailsScreen() {
               onPress={handleBook}
             >
               <Text style={styles.buyBtnText}>Buy now</Text>
-              <Ionicons name="arrow-forward" size={16} color={Colors.background} style={styles.btnIcon} />
+              <SvgIonicons name="arrow-forward" size={16} color={Colors.background} style={styles.btnIcon} />
             </Pressable>
           </View>
         </View>

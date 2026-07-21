@@ -12,10 +12,8 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
-import {
-  MaterialCommunityIcons,
-  Ionicons,
-} from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
+import { MaterialCommunityIcons,  } from "@expo/vector-icons";
 import Toast from 'react-native-toast-message';
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
@@ -263,7 +261,7 @@ useFocusEffect(
               <FontAwesome name="play-circle" size={32} color="#fff" style={styles.recentPlayIcon} />
             </View> */}
       <View style={styles.recentPlayIconWrap}>
-        <Ionicons
+        <SvgIonicons 
           name="play"
           style={{ marginRight: "-2px" }}
           size={18}

@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -95,13 +95,13 @@ export default function OrderResultScreen() {
             onPress={() => Linking.openURL(docUrl)}
             activeOpacity={0.8}
           >
-            <Ionicons name="open-outline" size={16} color={Colors.background} />
+            <SvgIonicons name="open-outline" size={16} color={Colors.background} />
             <Text style={styles.openExternalText}>Open in browser</Text>
           </TouchableOpacity> */}
         </View>
       ) : (
         <View style={styles.summaryContainer}>
-          <Ionicons
+          <SvgIonicons 
             name={
               webViewError ? "alert-circle-outline" : "document-text-outline"
             }

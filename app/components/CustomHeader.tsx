@@ -8,7 +8,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { SvgIonicons } from "./icons/SvgIcons";
 import { Colors } from '../config/colors';
 import { FontFamilies } from '../config/fonts';
 
@@ -33,7 +33,7 @@ export default function CustomHeader({ title, onBackPress, showBackButton = true
     <View style={styles.headerContainer}>
       <TouchableOpacity onPress={handleBack} style={styles.backButton} disabled={!showBackButton}>
         {
-          showBackButton && <Ionicons name="chevron-back" size={22} color={Colors.text} style={styles.backIcon} />
+          showBackButton && <SvgIonicons name="chevron-back" size={22} color={Colors.text} style={styles.backIcon} />
         }
         <Text style={styles.headerTitle}>{title}</Text>
       </TouchableOpacity>

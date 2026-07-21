@@ -11,7 +11,8 @@ import {
   Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
+import { Feather  } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
 
@@ -156,7 +157,7 @@ export default function CartScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.proceedText}>Proceed to checkout</Text>
-          <Ionicons
+          <SvgIonicons 
             name="arrow-forward"
             size={16}
             color="#FFFFFF"

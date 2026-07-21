@@ -61,6 +61,7 @@ import { SiteConfig } from "../config/site_config";
 import dayjs from "dayjs";
 import { getStoredAiCode } from "../services/aiCode";
 import { getUserEntityReferenceCode } from "../services/entityReferenceCode";
+import YoutubePlayer from "react-native-youtube-iframe";
 
 const getGreetingTime = () => {
   const currentHour = new Date().getHours();
@@ -75,6 +76,18 @@ const getGreetingTime = () => {
 
 // Strips HTML tags: "<div class="badge-success">BOOKED</div>" → "BOOKED"
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
+
+// Extracts the 11-char video id from any common YouTube URL shape
+// (youtu.be/<id>, watch?v=<id>, embed/<id>, ...) — used to build a thumbnail
+// URL and to drive the in-app player, since the backend only sends the
+// video's page URL (content_reference_details), not a direct image/id.
+const extractYoutubeId = (url: string): string | null => {
+  if (!url) return null;
+  const match = url.match(
+    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/,
+  );
+  return match && match[2].length === 11 ? match[2] : null;
+};
 
 // Converts "09:15:00" or "09:15 AM" → "09:15 AM"
 const formatAmPm = (timeStr: string): string => {
@@ -184,6 +197,11 @@ export default function DashboardScreen() {
   // upcomingAppointments) is forced to refetch — their own effect deps
   // (instanceId, patient id, focus tick) don't change on an org switch alone.
   const [orgRefreshTick, setOrgRefreshTick] = useState(0);
+
+  // In-app player for the Health Awareness widget's video cards.
+  const [playingYoutubeId, setPlayingYoutubeId] = useState<string | null>(
+    null,
+  );
 
   // Splits a description like "Emirates Hospital - Jumeirah" into a name
   // + area subtitle for the two-line row in the "Switch location" sheet.
@@ -919,6 +937,39 @@ export default function DashboardScreen() {
     String(orgRefreshTick),
   );
 
+  const healthAwarenessInstances = visibleSections.filter(
+    (s) => s.key === "healthAwareness",
+  );
+  const {
+    dataByInstance: healthAwarenessByInstance,
+    loadingByInstance: loadingHealthAwarenessByInstance,
+  } = useSectionInstanceData(
+    healthAwarenessInstances,
+    spd_processId_config.hosapp_get_mst_lm_course_for_public_pnt_app,
+    async () => ({}),
+    // content_reference_details is the YouTube page URL (not a direct video
+    // id or image) — derive both the video id (for the in-app player) and a
+    // thumbnail from it via extractYoutubeId. html_description carries the
+    // real title as HTML ("<p><b>Title</b></p>"), description is blank.
+    (returnData) =>
+      returnData
+        .filter((c: any) => c.content_type === "video_url")
+        .map((c: any) => {
+          const youtubeId = extractYoutubeId(c.content_reference_details ?? "");
+          return {
+            id: String(c.id ?? Math.random()),
+            title: stripHtml(c.html_description ?? c.description ?? ""),
+            youtubeId,
+            thumbnail: youtubeId
+              ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`
+              : "",
+          };
+        })
+        .filter((v) => !!v.youtubeId),
+    [],
+    String(orgRefreshTick),
+  );
+
   const healthSummaryInstances = visibleSections.filter(
     (s) => s.key === "healthSummary",
   );
@@ -1154,7 +1205,18 @@ export default function DashboardScreen() {
         );
       }
 
-      case "healthAwareness":
+      case "healthAwareness": {
+        const healthAwarenessForInstance =
+          healthAwarenessByInstance[instanceId] ?? [];
+        const isLoadingHealthAwarenessInstance =
+          loadingHealthAwarenessByInstance[instanceId] ?? true;
+
+        if (
+          !isLoadingHealthAwarenessInstance &&
+          healthAwarenessForInstance.length === 0
+        )
+          return null;
+
         return (
           <View key={instanceId} style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
@@ -1185,27 +1247,65 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.videoCard,
-                {
-                  opacity: pressed ? 0.9 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                },
-              ]}
-            >
-              <Image
-                source={{
-                  uri: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-                }}
-                style={styles.videoThumbnail}
-              />
-              <View style={styles.playButtonOverlay}>
-                <Ionicons name="play" size={40} color={Colors.background} />
-              </View>
-            </Pressable>
+            {isLoadingHealthAwarenessInstance ? (
+              <Skeleton style={styles.videoCard} />
+            ) : healthAwarenessForInstance.length === 1 ? (
+              <Pressable
+                onPress={() =>
+                  setPlayingYoutubeId(healthAwarenessForInstance[0].youtubeId)
+                }
+                style={({ pressed }) => [
+                  styles.videoCard,
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
+              >
+                <Image
+                  source={{ uri: healthAwarenessForInstance[0].thumbnail }}
+                  style={styles.videoThumbnail}
+                />
+                <View style={styles.playButtonOverlay}>
+                  <Ionicons name="play" size={40} color={Colors.background} />
+                </View>
+              </Pressable>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.healthAwarenessScrollList}
+              >
+                {healthAwarenessForInstance.map((video) => (
+                  <Pressable
+                    key={video.id}
+                    onPress={() => setPlayingYoutubeId(video.youtubeId)}
+                    style={({ pressed }) => [
+                      styles.videoCardHorizontal,
+                      {
+                        opacity: pressed ? 0.9 : 1,
+                        transform: [{ scale: pressed ? 0.97 : 1 }],
+                      },
+                    ]}
+                  >
+                    <Image
+                      source={{ uri: video.thumbnail }}
+                      style={styles.videoThumbnail}
+                    />
+                    <View style={styles.playButtonOverlay}>
+                      <Ionicons
+                        name="play"
+                        size={32}
+                        color={Colors.background}
+                      />
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
           </View>
         );
+      }
 
       case "healthSummary": {
         if (noPatient) return null;
@@ -1728,6 +1828,68 @@ export default function DashboardScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Health Awareness video player */}
+      <Modal
+        visible={!!playingYoutubeId}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setPlayingYoutubeId(null)}
+      >
+        <View style={styles.videoModalOverlay}>
+          <View
+            style={[
+              styles.videoModalContent,
+              { width: width - 40, height: ((width - 40) * 9) / 16 },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.videoModalCloseButton}
+              onPress={() => setPlayingYoutubeId(null)}
+            >
+              <Ionicons name="close" size={28} color={Colors.background} />
+            </TouchableOpacity>
+            {playingYoutubeId && (
+              <YoutubePlayer
+                height={(width - 40) * 9 / 16}
+                width={width - 40}
+                play
+                videoId={playingYoutubeId}
+                onChangeState={(state: string) => {
+                  if (state === "ended") setPlayingYoutubeId(null);
+                }}
+                initialPlayerParams={{
+                  preventFullScreen: false,
+                  controls: true,
+                  modestbranding: true,
+                  rel: false,
+                }}
+                webViewProps={{
+                  scrollEnabled: false,
+                  bounces: false,
+                  androidLayerType:
+                    Platform.OS === "android" ? "hardware" : undefined,
+                  // The library only blocks youtube.com navigation on iOS —
+                  // override here so tapping the embed's own end-screen /
+                  // "Watch on YouTube" card never leaves the app, on any
+                  // platform, for the initial load or any in-page navigation.
+                  onShouldStartLoadWithRequest: (request: { url: string }) =>
+                    !/youtube\.com|youtu\.be|google\.com\/url/.test(
+                      request.url,
+                    ),
+                  // Those same cards often open via window.open() rather
+                  // than a top-level navigation, which the check above can't
+                  // see — block Android's new-window popups outright, and no-op
+                  // any window the WebView still tries to open on iOS/other.
+                  setSupportMultipleWindows: false,
+                  onOpenWindow: () => {},
+                }}
+                webViewStyle={{ opacity: 0.99 }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2087,6 +2249,18 @@ const styles = StyleSheet.create({
     position: "relative",
     backgroundColor: Colors.lightgray,
   },
+  healthAwarenessScrollList: {
+    paddingRight: 10,
+  },
+  videoCardHorizontal: {
+    width: 220,
+    height: 140,
+    borderRadius: 16,
+    overflow: "hidden",
+    position: "relative",
+    backgroundColor: Colors.lightgray,
+    marginRight: 12,
+  },
   videoThumbnail: {
     width: "100%",
     height: "100%",
@@ -2097,6 +2271,30 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  videoModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  videoModalContent: {
+    backgroundColor: "#000",
+    borderRadius: 10,
+    overflow: "hidden",
+    position: "relative",
+  },
+  videoModalCloseButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
   },

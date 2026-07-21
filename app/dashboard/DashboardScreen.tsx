@@ -609,22 +609,36 @@ export default function DashboardScreen() {
     };
   }, [orgRefreshTick]);
 
-  // Takes the specific instance's own list — with more than one "providers"
-  // widget on screen (each with its own process_id/default_params), "See
-  // all" must show that card's data, not always the first instance's.
-  const handleSeeAllProviders = (providersList: any[]) => {
-    // Pass the already-fetched list along so NearbyProvidersScreen doesn't
-    // have to re-hit hospapp_get_resources — it reuses this data directly.
+  // Takes the specific instance's own list and its backend-supplied
+  // processId/defaultParams — with more than one "providers" widget on
+  // screen (each with its own process_id/default_params), "See all" must
+  // refetch using that same card's API/params, not always the first
+  // instance's or the screen's hardcoded default.
+  const handleSeeAllProviders = (
+    providersList: any[],
+    processId?: string,
+    defaultParams?: Record<string, any>,
+  ) => {
+    // Preloaded list still seeds initial state so NearbyProvidersScreen
+    // isn't empty while it refetches with this widget's own params.
     navigation.navigate("NearbyProviders", {
       preloadedProviders: providersList,
+      widgetProcessId: processId,
+      widgetDefaultParams: defaultParams,
     });
   };
-  // Takes the specific instance's own list, same as handleSeeAllProviders —
-  // and lets AllSpecialtiesScreen reuse it instead of re-hitting
-  // hosapp_get_ct_department_pntapp for data we already have.
-  const handleSeeAllSpecialties = (specialtiesList: any[]) => {
+  // Takes the specific instance's own list/processId/defaultParams, same as
+  // handleSeeAllProviders — AllSpecialtiesScreen refetches with this
+  // widget's own API/params instead of its hardcoded default.
+  const handleSeeAllSpecialties = (
+    specialtiesList: any[],
+    processId?: string,
+    defaultParams?: Record<string, any>,
+  ) => {
     navigation.navigate("AllSpecialties", {
       preloadedSpecialties: specialtiesList,
+      widgetProcessId: processId,
+      widgetDefaultParams: defaultParams,
     });
   };
 
@@ -1048,13 +1062,15 @@ export default function DashboardScreen() {
       case "upcomingAppointments": {
         const upcomingForInstance = upcomingByInstance[instanceId] ?? [];
         if (noPatient || upcomingForInstance.length === 0) return null;
-        // Pass the already-fetched lists so AppointmentScreen doesn't
-        // re-hit xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard.
+        // Preloaded lists seed initial state so AppointmentScreen isn't
+        // empty while it refetches with this widget's own processId/params.
         const goToAppointments = () =>
           navigation.navigate("Appointment", {
             preloadedUpcoming: upcomingAppointmentsFull,
             preloadedHistory: historyAppointmentsFull,
             preloadedProviders: Providers,
+            widgetProcessId: section.processId,
+            widgetDefaultParams: section.defaultParams,
           });
         return (
           <View key={instanceId}>
@@ -1286,7 +1302,13 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <Pressable
-                onPress={() => handleSeeAllProviders(providersForInstance)}
+                onPress={() =>
+                  handleSeeAllProviders(
+                    providersForInstance,
+                    section.processId,
+                    section.defaultParams,
+                  )
+                }
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>
@@ -1401,7 +1423,13 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <Pressable
-                onPress={() => handleSeeAllSpecialties(specialtiesForInstance)}
+                onPress={() =>
+                  handleSeeAllSpecialties(
+                    specialtiesForInstance,
+                    section.processId,
+                    section.defaultParams,
+                  )
+                }
                 style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
               >
                 <Text style={styles.seeAllText}>

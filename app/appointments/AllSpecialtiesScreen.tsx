@@ -25,25 +25,35 @@ export default function AllSpecialtiesScreen() {
   const route = useRoute<any>();
   const preloadedSpecialties: Specialty[] | undefined =
     route.params?.preloadedSpecialties;
+  // Dashboard forwards the specialties widget's own backend-supplied
+  // processId/defaultParams so "See all" hits the same API/params as that
+  // specific widget instance instead of this screen's hardcoded default.
+  const widgetProcessId: string | undefined = route.params?.widgetProcessId;
+  const widgetDefaultParams: Record<string, any> | undefined =
+    route.params?.widgetDefaultParams;
   const [specialties, setSpecialties] = useState<Specialty[]>(
     preloadedSpecialties ?? [],
   );
   const [isLoading, setIsLoading] = useState(!preloadedSpecialties?.length);
 
   useEffect(() => {
-    // Dashboard already fetched this via the same hosapp_get_ct_department_pntapp
-    // call and passed it along — skip the redundant re-fetch.
-    if (preloadedSpecialties?.length) return;
-
+    // Always refetch on landing — same as OrdersScreen's useFocusEffect —
+    // so "See all" shows current data instead of the Dashboard's stale
+    // preloaded snapshot. preloadedSpecialties still seeds initial state
+    // above so the list isn't empty while this call is in flight.
     const fetchAllSpecialties = async () => {
-      setIsLoading(true);
+      if (!preloadedSpecialties?.length) setIsLoading(true);
       try {
+        // Widget defaultParams first so a widget-supplied dynamic value
+        // could still be overridden by a hardcoded one below if ever added —
+        // same merge order as useSectionInstanceData.
         const response = await callSuggestusAPI(
-          spd_processId_config.hosapp_get_ct_department_pntapp,
+          widgetProcessId || spd_processId_config.hosapp_get_ct_department_pntapp,
           {
             p_additional_attributes: "",
             p_process_type: "",
             p_internal_flag: "",
+            ...widgetDefaultParams,
           },
         );
         if (response?.returnCode === true && response.returnData?.length > 0) {

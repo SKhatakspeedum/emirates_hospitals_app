@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
 import {
   useNavigation,
   useRoute,
+  useFocusEffect,
   StackActions,
 } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -130,6 +131,12 @@ export default function AppointmentScreen() {
   // Forwarded from Dashboard so "Book an appointment" → NearbyProviders
   // doesn't have to re-hit hospapp_get_resources either.
   const preloadedProviders = route.params?.preloadedProviders;
+  // Dashboard forwards the upcomingAppointments widget's own backend-supplied
+  // processId/defaultParams so this screen refetches with that same widget
+  // instance's API/params instead of the hardcoded default below.
+  const widgetProcessId: string | undefined = route.params?.widgetProcessId;
+  const widgetDefaultParams: Record<string, any> | undefined =
+    route.params?.widgetDefaultParams;
   const goToNearbyProviders = () =>
     navigation.navigate("NearbyProviders", { preloadedProviders });
 
@@ -165,28 +172,31 @@ export default function AppointmentScreen() {
     loadOrgId();
   }, []);
 
-  useEffect(() => {
-    // Dashboard already fetched this via the same
-    // xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard
-    // call and passed both lists along — skip the redundant re-fetch.
-    if (hasPreloaded) return;
-
+  useFocusEffect(
+    useCallback(() => {
+    // Always refetch on landing — same as OrdersScreen — so this screen
+    // shows current data instead of the Dashboard's stale preloaded
+    // snapshot. Preloaded lists still seed initial state above so the
+    // list isn't empty while this call is in flight.
     const fetchAppointments = async () => {
-      setIsLoading(true);
+      if (!hasPreloaded) setIsLoading(true);
       try {
         const patientId = await fetchDataFromLocalStorage("sg_patientId");
+        // Widget defaultParams first, dynamic runtime values last so they
+        // always win on conflict — same merge order as useSectionInstanceData.
         const response = await callSuggestusAPI(
-          spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
+          widgetProcessId ||
+            spd_processId_config.xcelsch_get_patient_future_appointments_pntportal_hv_patient_dashboard,
           {
-            p_patient_id: patientId ?? "",
             p_visit_id: null,
-
             menu_name: "Wellness",
             menu_tab_type: "always_patient_specific",
             maximization_redirection_label: "Make appointment",
             p_max_offset: 100,
             p_process_type: "fetch_all_appointments",
             p_offset: 0,
+            ...widgetDefaultParams,
+            p_patient_id: patientId ?? "",
           },
         );
 
@@ -242,7 +252,8 @@ export default function AppointmentScreen() {
       }
     };
     fetchAppointments();
-  }, []);
+    }, [hasPreloaded]),
+  );
 
   useEffect(() => {
     if (fromBooking) {

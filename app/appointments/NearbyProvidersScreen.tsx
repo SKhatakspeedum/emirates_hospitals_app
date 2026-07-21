@@ -75,6 +75,12 @@ export default function NearbyProvidersScreen() {
   const route = useRoute<any>();
   const preloadedProviders: Provider[] | undefined =
     route.params?.preloadedProviders;
+  // Dashboard forwards the providers widget's own backend-supplied
+  // processId/defaultParams so "See all" hits the same API/params as that
+  // specific widget instance instead of this screen's hardcoded default.
+  const widgetProcessId: string | undefined = route.params?.widgetProcessId;
+  const widgetDefaultParams: Record<string, any> | undefined =
+    route.params?.widgetDefaultParams;
   // Lets AllSpecialtiesScreen deep-link straight into a filtered view
   // (e.g. tapping "Cardiology" opens this screen pre-filtered to it).
   const initialCategory: string | undefined = route.params?.initialCategory;
@@ -105,26 +111,28 @@ export default function NearbyProvidersScreen() {
   const [isLoading, setIsLoading] = useState(!preloadedProviders?.length);
 
   useEffect(() => {
-    // Dashboard already fetched this via the same hospapp_get_resources
-    // call and passed it along — skip the redundant re-fetch.
-    console.log("preloadedProviders?.length :>>", preloadedProviders?.length);
-    if (preloadedProviders?.length) return;
-
+    // Always refetch on landing — same as OrdersScreen's useFocusEffect —
+    // so "See all" shows current data instead of the Dashboard's stale
+    // preloaded snapshot. preloadedProviders still seeds initial state
+    // above so the list isn't empty while this call is in flight.
     const fetchProviders = async () => {
-      setIsLoading(true);
+      if (!preloadedProviders?.length) setIsLoading(true);
       try {
         const patientId = await fetchDataFromLocalStorage("sg_patientId");
         const now = new Date();
+        // Widget defaultParams first, dynamic runtime values last so they
+        // always win on conflict — same merge order as useSectionInstanceData.
         const response = await callSuggestusAPI(
-          spd_processId_config.hospapp_get_resources,
+          widgetProcessId || spd_processId_config.hospapp_get_resources,
           {
-            p_patient_id: patientId ?? "",
             p_resource_code: "",
             p_month: now.getMonth() + 1,
             p_year: now.getFullYear(),
             p_process_type: "",
             p_visit_id: null,
             p_category_code: "CAT005",
+            ...widgetDefaultParams,
+            p_patient_id: patientId ?? "",
           },
         );
         if (response?.returnCode === true && response.returnData?.length > 0) {

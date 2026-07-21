@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Platform,
+  SafeAreaView,
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -24,6 +25,7 @@ import Toast from "react-native-toast-message";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import { Skeleton } from "../components/Skeleton";
+import CustomHeader from "../components/CustomHeader";
 import dayjs from "dayjs";
 import { useOrgLogo } from "../hooks/useOrgLogo";
 
@@ -279,218 +281,231 @@ export default function ProfileScreen() {
   };
 
   const mainContent = (
-    <View
-      style={[
-        styles.containerNew,
-        { marginLeft: horizontalMargin, marginRight: horizontalMargin },
-      ]}
-    >
-      <ImageBackground
-        source={require("@/assets/images/internal_screen_bg.png")}
-        style={styles.background}
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }}>
+      <CustomHeader title="Profile" showBackButton={true} />
+      <View
+        style={[
+          styles.containerNew,
+          { marginLeft: horizontalMargin, marginRight: horizontalMargin },
+        ]}
       >
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
+        <ImageBackground
+          source={require("@/assets/images/internal_screen_bg.png")}
+          style={styles.background}
         >
-          <View
-            style={[
-              styles.container,
-              Platform.OS === "web" && screenWidth >= 1024
-                ? {
-                    width: "100%",
-                    maxWidth: 620,
-                    marginLeft: "auto",
-                    marginRight: "auto",
-                  }
-                : {},
-            ]}
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.topHeader}>
-              <Text style={styles.headerTitle}>Profile</Text>
-            </View>
-
             <View
               style={[
-                styles.bannerContainer,
-                { backgroundColor: Colors.backgroundCardLight },
+                styles.container,
+                Platform.OS === "web" && screenWidth >= 1024
+                  ? {
+                      width: "100%",
+                      maxWidth: 620,
+                      marginLeft: "auto",
+                      marginRight: "auto",
+                    }
+                  : {},
               ]}
             >
-              <Image
-                source={require("@/assets/images/splash_bg.png")}
-                style={[styles.bannerWatermark, { top: 0, right: 0 }]}
-                resizeMode="contain"
-              />
-              <Image
-                source={require("@/assets/images/splash_bg.png")}
+              <View
                 style={[
-                  styles.bannerWatermark,
-                  { bottom: 0, left: 0, transform: [{ rotate: "180deg" }] },
+                  styles.bannerContainer,
+                  { backgroundColor: Colors.backgroundCardLight },
                 ]}
-                resizeMode="contain"
-              />
-              <View style={styles.bannerLogoContainer}>
-                <Image
-                  source={logoSource}
-                  style={styles.bannerOrgLogo}
-                  resizeMode="contain"
-                />
-              </View>
-              <TouchableOpacity style={styles.bannerEditIcon}>
-                <Feather name="edit-3" size={16} color={Colors.primary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.avatarWrapper}>
-              <TouchableOpacity
-                onPress={handleProfileImageEdit}
-                disabled={avatarUploading}
-                style={styles.avatarTouch}
               >
                 <Image
-                  source={
-                    profileImageUrl
-                      ? { uri: profileImageUrl }
-                      : avatarUrl
-                        ? { uri: avatarUrl }
-                        : AVATAR_PLACEHOLDER
-                  }
-                  style={styles.avatar}
+                  source={require("@/assets/images/splash_bg.png")}
+                  style={[styles.bannerWatermark, { top: 0, right: 0 }]}
+                  resizeMode="contain"
                 />
-                <View style={styles.avatarEditBadge}>
-                  {avatarUploading ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={Colors.backgroundLight}
-                    />
-                  ) : (
-                    <Feather
-                      name="edit-3"
-                      size={12}
-                      color={Colors.backgroundLight}
-                    />
-                  )}
+                <Image
+                  source={require("@/assets/images/splash_bg.png")}
+                  style={[
+                    styles.bannerWatermark,
+                    { bottom: 0, left: 0, transform: [{ rotate: "180deg" }] },
+                  ]}
+                  resizeMode="contain"
+                />
+                <View style={styles.bannerLogoContainer}>
+                  <Image
+                    source={logoSource}
+                    style={styles.bannerOrgLogo}
+                    resizeMode="contain"
+                  />
                 </View>
-              </TouchableOpacity>
-            </View>
-
-            {loading ? (
-              <View style={styles.detailsContainer}>
-                <View style={styles.detailRow}>
-                  <Skeleton style={styles.detailIconBox} />
-                  <View style={styles.detailTextCol}>
-                    <Skeleton style={{ width: 90, height: 12, marginBottom: 6 }} />
-                    <Skeleton style={{ width: 140, height: 15 }} />
-                  </View>
-                </View>
-                <View style={styles.detailRowSplit}>
-                  <View style={styles.detailRowHalf}>
-                    <Skeleton style={styles.detailIconBox} />
-                    <View style={styles.detailTextCol}>
-                      <Skeleton style={{ width: 70, height: 12, marginBottom: 6 }} />
-                      <Skeleton style={{ width: 100, height: 15 }} />
-                    </View>
-                  </View>
-                  <View style={styles.detailRowHalf}>
-                    <Skeleton style={styles.detailIconBox} />
-                    <View style={styles.detailTextCol}>
-                      <Skeleton style={{ width: 70, height: 12, marginBottom: 6 }} />
-                      <Skeleton style={{ width: 100, height: 15 }} />
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.detailRow}>
-                  <Skeleton style={styles.detailIconBox} />
-                  <View style={styles.detailTextCol}>
-                    <Skeleton style={{ width: 100, height: 12, marginBottom: 6 }} />
-                    <Skeleton style={{ width: 120, height: 15 }} />
-                  </View>
-                </View>
-                <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
-                  <Skeleton style={styles.detailIconBox} />
-                  <View style={styles.detailTextCol}>
-                    <Skeleton style={{ width: 60, height: 12, marginBottom: 6 }} />
-                    <Skeleton style={{ width: 90, height: 15 }} />
-                  </View>
-                </View>
+                <TouchableOpacity style={styles.bannerEditIcon}>
+                  <Feather name="edit-3" size={16} color={Colors.primary} />
+                </TouchableOpacity>
               </View>
-            ) : (
-              <View style={styles.detailsContainer}>
-                <View style={styles.detailRow}>
-                  <View style={styles.detailIconBox}>
-                    <Ionicons name="card" size={18} color={Colors.primary} />
+
+              <View style={styles.avatarWrapper}>
+                <TouchableOpacity
+                  onPress={handleProfileImageEdit}
+                  disabled={avatarUploading}
+                  style={styles.avatarTouch}
+                >
+                  <Image
+                    source={
+                      profileImageUrl
+                        ? { uri: profileImageUrl }
+                        : avatarUrl
+                          ? { uri: avatarUrl }
+                          : AVATAR_PLACEHOLDER
+                    }
+                    style={styles.avatar}
+                  />
+                  <View style={styles.avatarEditBadge}>
+                    {avatarUploading ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={Colors.backgroundLight}
+                      />
+                    ) : (
+                      <Feather
+                        name="edit-3"
+                        size={12}
+                        color={Colors.backgroundLight}
+                      />
+                    )}
                   </View>
-                  <View style={styles.detailTextCol}>
-                    <Text style={styles.detailLabel}>Emirates ID</Text>
-                    <Text style={styles.detailValue}>{profile.emiratesId}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {loading ? (
+                <View style={styles.detailsContainer}>
+                  <View style={styles.detailRow}>
+                    <Skeleton style={styles.detailIconBox} />
+                    <View style={styles.detailTextCol}>
+                      <Skeleton
+                        style={{ width: 90, height: 12, marginBottom: 6 }}
+                      />
+                      <Skeleton style={{ width: 140, height: 15 }} />
+                    </View>
+                  </View>
+                  <View style={styles.detailRowSplit}>
+                    <View style={styles.detailRowHalf}>
+                      <Skeleton style={styles.detailIconBox} />
+                      <View style={styles.detailTextCol}>
+                        <Skeleton
+                          style={{ width: 70, height: 12, marginBottom: 6 }}
+                        />
+                        <Skeleton style={{ width: 100, height: 15 }} />
+                      </View>
+                    </View>
+                    <View style={styles.detailRowHalf}>
+                      <Skeleton style={styles.detailIconBox} />
+                      <View style={styles.detailTextCol}>
+                        <Skeleton
+                          style={{ width: 70, height: 12, marginBottom: 6 }}
+                        />
+                        <Skeleton style={{ width: 100, height: 15 }} />
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Skeleton style={styles.detailIconBox} />
+                    <View style={styles.detailTextCol}>
+                      <Skeleton
+                        style={{ width: 100, height: 12, marginBottom: 6 }}
+                      />
+                      <Skeleton style={{ width: 120, height: 15 }} />
+                    </View>
+                  </View>
+                  <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                    <Skeleton style={styles.detailIconBox} />
+                    <View style={styles.detailTextCol}>
+                      <Skeleton
+                        style={{ width: 60, height: 12, marginBottom: 6 }}
+                      />
+                      <Skeleton style={{ width: 90, height: 15 }} />
+                    </View>
                   </View>
                 </View>
+              ) : (
+                <View style={styles.detailsContainer}>
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailIconBox}>
+                      <Ionicons name="card" size={18} color={Colors.primary} />
+                    </View>
+                    <View style={styles.detailTextCol}>
+                      <Text style={styles.detailLabel}>Emirates ID</Text>
+                      <Text style={styles.detailValue}>
+                        {profile.emiratesId}
+                      </Text>
+                    </View>
+                  </View>
 
-                <View style={styles.detailRowSplit}>
-                  <View style={styles.detailRowHalf}>
-                    <View style={styles.detailIconBoxSecondary}>
+                  <View style={styles.detailRowSplit}>
+                    <View style={styles.detailRowHalf}>
+                      <View style={styles.detailIconBoxSecondary}>
+                        <Ionicons
+                          name="person"
+                          size={18}
+                          color={Colors.warning}
+                        />
+                      </View>
+                      <View style={styles.detailTextCol}>
+                        <Text style={styles.detailLabel}>First name</Text>
+                        <Text style={styles.detailValue}>
+                          {profile.firstName}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.detailRowHalf}>
+                      <View style={styles.detailIconBoxSecondaryDark}>
+                        <Ionicons
+                          name="person"
+                          size={18}
+                          color={Colors.success}
+                        />
+                      </View>
+                      <View style={styles.detailTextCol}>
+                        <Text style={styles.detailLabel}>Last name</Text>
+                        <Text style={styles.detailValue}>
+                          {profile.lastName}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailIconBoxTertiary}>
                       <Ionicons
-                        name="person"
+                        name="calendar"
+                        size={18}
+                        color={Colors.primary}
+                      />
+                    </View>
+                    <View style={styles.detailTextCol}>
+                      <Text style={styles.detailLabel}>Date of birth</Text>
+                      <Text style={styles.detailValue}>{profile.dob}</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                    <View style={styles.detailIconBoxQuaternary}>
+                      <Ionicons
+                        name="male-female"
                         size={18}
                         color={Colors.warning}
                       />
                     </View>
                     <View style={styles.detailTextCol}>
-                      <Text style={styles.detailLabel}>First name</Text>
-                      <Text style={styles.detailValue}>
-                        {profile.firstName}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailRowHalf}>
-                    <View style={styles.detailIconBoxSecondaryDark}>
-                      <Ionicons
-                        name="person"
-                        size={18}
-                        color={Colors.success}
-                      />
-                    </View>
-                    <View style={styles.detailTextCol}>
-                      <Text style={styles.detailLabel}>Last name</Text>
-                      <Text style={styles.detailValue}>{profile.lastName}</Text>
+                      <Text style={styles.detailLabel}>Gender</Text>
+                      <Text style={styles.detailValue}>{profile.gender}</Text>
                     </View>
                   </View>
                 </View>
-
-                <View style={styles.detailRow}>
-                  <View style={styles.detailIconBoxTertiary}>
-                    <Ionicons
-                      name="calendar"
-                      size={18}
-                      color={Colors.primary}
-                    />
-                  </View>
-                  <View style={styles.detailTextCol}>
-                    <Text style={styles.detailLabel}>Date of birth</Text>
-                    <Text style={styles.detailValue}>{profile.dob}</Text>
-                  </View>
-                </View>
-
-                <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
-                  <View style={styles.detailIconBoxQuaternary}>
-                    <Ionicons
-                      name="male-female"
-                      size={18}
-                      color={Colors.warning}
-                    />
-                  </View>
-                  <View style={styles.detailTextCol}>
-                    <Text style={styles.detailLabel}>Gender</Text>
-                    <Text style={styles.detailValue}>{profile.gender}</Text>
-                  </View>
-                </View>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-      </ImageBackground>
-    </View>
+              )}
+            </View>
+          </ScrollView>
+        </ImageBackground>
+      </View>
+    </SafeAreaView>
   );
 
   if (Platform.OS === "web" && screenWidth >= 1024) {

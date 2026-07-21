@@ -487,7 +487,7 @@ export default function OrdersScreen() {
       <StatusBar barStyle="dark-content" />
 
       {/* Screen Header */}
-      <CustomHeader title="Orders" showBackButton={false} />
+      <CustomHeader title="Orders" showBackButton={true} />
 
       {/* Tab Selector + Filter Row */}
       <View style={styles.tabWrapper}>
@@ -533,7 +533,9 @@ export default function OrdersScreen() {
               <View key={i} style={styles.card}>
                 <View style={styles.cardHeaderRow}>
                   <Skeleton style={{ width: "55%", height: 16 }} />
-                  <Skeleton style={{ width: 60, height: 20, borderRadius: 10 }} />
+                  <Skeleton
+                    style={{ width: 60, height: 20, borderRadius: 10 }}
+                  />
                 </View>
                 <View style={styles.cardDetailsRow}>
                   <Skeleton style={{ width: "40%", height: 14 }} />

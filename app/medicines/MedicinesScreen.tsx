@@ -128,7 +128,7 @@ export default function MedicinesScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
-      <CustomHeader title="Catalogue" showBackButton={false} />
+      <CustomHeader title="Catalogue" showBackButton={true} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

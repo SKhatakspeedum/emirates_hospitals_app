@@ -192,6 +192,7 @@ export default function OrdersScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setActiveTab("active");
       const fetchOrders = async () => {
         setIsLoading(true);
         try {

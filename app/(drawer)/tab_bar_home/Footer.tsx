@@ -37,11 +37,16 @@ export default function Footer({
     rootNavigation.dispatch(DrawerActions.openDrawer());
   };
 
+  const isHomeActive =
+    state.index === 0 &&
+    navigation.getState().routes[0].state?.routes?.[
+      navigation.getState().routes[0].state?.index ?? 0
+    ]?.name === "Dashboard";
   return (
     <View style={styles.container}>
       {/* Home Tab */}
       <TouchableOpacity
-        style={state.index === 0 ? styles.tabItemActive : styles.tabItem}
+        style={isHomeActive ? styles.tabItemActive : styles.tabItem}
         onPress={() => {
           if (state.index === 0) {
             navigation.navigate("HomeTab", { screen: "Dashboard" });
@@ -50,12 +55,8 @@ export default function Footer({
           }
         }}
       >
-        <HomeIcon
-          color={state.index === 0 ? Colors.primary : Colors.grayDark}
-        />
-        <Text
-          style={state.index === 0 ? styles.tabLabelActive : styles.tabLabel}
-        >
+        <HomeIcon color={isHomeActive ? Colors.primary : Colors.grayDark} />
+        <Text style={isHomeActive ? styles.tabLabelActive : styles.tabLabel}>
           Home
         </Text>
       </TouchableOpacity>

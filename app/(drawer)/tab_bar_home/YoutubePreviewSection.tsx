@@ -12,7 +12,7 @@ import {
   Platform,
 } from "react-native";
 import YoutubePlayer from "react-native-youtube-iframe";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "@/app/components/icons/SvgIcons";
 import { callSuggestusAPI } from "@/app/suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "@/app/config/process_id";
 
@@ -137,7 +137,7 @@ export default function YoutubePreviewSection() {
             {/* Play button overlay */}
             <View style={styles.playButtonWrapper} pointerEvents="none">
               <View style={styles.playCircle}>
-                <Ionicons
+                <SvgIonicons 
                   name="play"
                   size={28}
                   color="#fff"
@@ -213,7 +213,7 @@ export default function YoutubePreviewSection() {
             ]}
           >
             <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Ionicons name="close" size={28} color="#fff" />
+              <SvgIonicons name="close" size={28} color="#fff" />
             </TouchableOpacity>
             {videoId && (
               <YoutubePlayer

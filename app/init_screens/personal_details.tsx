@@ -20,7 +20,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "@/app/components/icons/SvgIcons";
 import Toast from "react-native-toast-message";
 import { Messages } from "../config/messages";
 import dayjs from "dayjs";
@@ -783,14 +783,14 @@ export default function PersonalDetailsScreen() {
       return <ActivityIndicator size="small" color={Colors.secondary} />;
     if (check.status === "available")
       return (
-        <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+        <SvgIonicons name="checkmark-circle" size={20} color={Colors.success} />
       );
     if (
       check.status === "exists" ||
       check.status === "error" ||
       check.status === "invalid"
     )
-      return <Ionicons name="close-circle" size={20} color={Colors.error} />;
+      return <SvgIonicons name="close-circle" size={20} color={Colors.error} />;
     return null;
   };
 
@@ -1556,7 +1556,7 @@ export default function PersonalDetailsScreen() {
                     }}
                     activeOpacity={0.7}
                   >
-                    <Ionicons
+                    <SvgIonicons 
                       name="scan-outline"
                       size={16}
                       color={Colors.secondary}
@@ -1645,7 +1645,7 @@ export default function PersonalDetailsScreen() {
                     }}
                     activeOpacity={0.7}
                   >
-                    <Ionicons
+                    <SvgIonicons 
                       name="scan-outline"
                       size={16}
                       color={Colors.secondary}
@@ -1742,7 +1742,7 @@ export default function PersonalDetailsScreen() {
                       styles.inputWrapperFocused,
                     ]}
                   >
-                    <Ionicons
+                    <SvgIonicons 
                       name="person-outline"
                       size={20}
                       color={Colors.secondary}
@@ -1773,7 +1773,7 @@ export default function PersonalDetailsScreen() {
                       focusedField === "lastName" && styles.inputWrapperFocused,
                     ]}
                   >
-                    <Ionicons
+                    <SvgIonicons 
                       name="person-outline"
                       size={20}
                       color={Colors.secondary}
@@ -1819,7 +1819,7 @@ export default function PersonalDetailsScreen() {
                     {dob ? (
                       "Change"
                     ) : (
-                      <Ionicons
+                      <SvgIonicons 
                         name="calendar-outline"
                         size={20}
                         color={Colors.secondary}
@@ -1905,7 +1905,7 @@ export default function PersonalDetailsScreen() {
                 {loadingLocations ? (
                   <ActivityIndicator size="small" color={Colors.secondary} />
                 ) : (
-                  <Ionicons
+                  <SvgIonicons 
                     name="chevron-down"
                     size={20}
                     color={Colors.textLabel}
@@ -2026,7 +2026,7 @@ export default function PersonalDetailsScreen() {
                         onPress={() => jumpTo("year", -1)}
                         style={styles.calendarNavBtn}
                       >
-                        <Ionicons
+                        <SvgIonicons 
                           name="play-back"
                           size={16}
                           color={Colors.primary}
@@ -2036,7 +2036,7 @@ export default function PersonalDetailsScreen() {
                         onPress={() => jumpTo("month", -1)}
                         style={styles.calendarNavBtn}
                       >
-                        <Ionicons
+                        <SvgIonicons 
                           name="chevron-back"
                           size={20}
                           color={Colors.primary}
@@ -2050,7 +2050,7 @@ export default function PersonalDetailsScreen() {
                         <Text style={styles.calendarHeaderText}>
                           {dayjs(calendarMonth).format("MMMM YYYY")}
                         </Text>
-                        <Ionicons
+                        <SvgIonicons 
                           name="caret-down"
                           size={12}
                           color={Colors.primary}
@@ -2061,7 +2061,7 @@ export default function PersonalDetailsScreen() {
                         onPress={() => jumpTo("month", 1)}
                         style={styles.calendarNavBtn}
                       >
-                        <Ionicons
+                        <SvgIonicons 
                           name="chevron-forward"
                           size={20}
                           color={Colors.primary}
@@ -2071,7 +2071,7 @@ export default function PersonalDetailsScreen() {
                         onPress={() => jumpTo("year", 1)}
                         style={styles.calendarNavBtn}
                       >
-                        <Ionicons
+                        <SvgIonicons 
                           name="play-forward"
                           size={16}
                           color={Colors.primary}
@@ -2169,7 +2169,7 @@ export default function PersonalDetailsScreen() {
                       activeOpacity={0.7}
                     >
                       <View style={styles.locationSheetIconWrap}>
-                        <Ionicons
+                        <SvgIonicons 
                           name="location"
                           size={18}
                           color={Colors.secondary}
@@ -2189,7 +2189,7 @@ export default function PersonalDetailsScreen() {
                           )}
                         </View>
                       </View>
-                      <Ionicons
+                      <SvgIonicons 
                         name={
                           isSelected ? "checkmark-circle" : "ellipse-outline"
                         }
@@ -2221,7 +2221,7 @@ export default function PersonalDetailsScreen() {
                   { backgroundColor: SUCCESS_TINT },
                 ]}
               >
-                <Ionicons
+                <SvgIonicons 
                   name="checkmark-circle"
                   size={36}
                   color={Colors.success}
@@ -2297,7 +2297,7 @@ export default function PersonalDetailsScreen() {
                   { backgroundColor: ERROR_TINT },
                 ]}
               >
-                <Ionicons name="alert-circle" size={36} color={Colors.error} />
+                <SvgIonicons name="alert-circle" size={36} color={Colors.error} />
               </View>
               <Text style={styles.scanSuccessTitle}>Scan Failed</Text>
               <Text style={styles.scanSuccessSubtitle}>{scanErrorMessage}</Text>
@@ -2327,7 +2327,7 @@ export default function PersonalDetailsScreen() {
                   { backgroundColor: NEUTRAL_TINT },
                 ]}
               >
-                <Ionicons
+                <SvgIonicons 
                   name="camera-outline"
                   size={36}
                   color={Colors.textLabel}
@@ -2446,7 +2446,7 @@ export default function PersonalDetailsScreen() {
                   style={styles.scanHeaderCloseBtn}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons name="close" size={20} color={Colors.lightgray} />
+                  <SvgIonicons name="close" size={20} color={Colors.lightgray} />
                 </TouchableOpacity>
                 <Text style={styles.scanHeaderTitle}>Scan {scanDocLabel}</Text>
                 <View style={styles.scanHeaderSpacer} />

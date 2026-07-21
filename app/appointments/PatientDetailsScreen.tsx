@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "@/app/components/icons/SvgIcons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -364,7 +364,7 @@ export default function PatientDetailsScreen() {
               />
             ) : patients.length === 0 ? (
               <View style={styles.emptyState}>
-                <Ionicons
+                <SvgIonicons 
                   name="person-outline"
                   size={48}
                   color={Colors.inactive}
@@ -402,7 +402,7 @@ export default function PatientDetailsScreen() {
                       {patient.age} year old {patient.gender.toLowerCase()}
                     </Text>
                   </View>
-                  <Ionicons
+                  <SvgIonicons 
                     name="chevron-forward"
                     size={20}
                     color={Colors.text}
@@ -424,7 +424,7 @@ export default function PatientDetailsScreen() {
                 router.replace("/patient/register_new_patient");
               }}
             >
-              <Ionicons
+              <SvgIonicons 
                 name="person-add-outline"
                 size={20}
                 color={Colors.secondary}
@@ -457,7 +457,7 @@ export default function PatientDetailsScreen() {
                 ]}
                 onPress={() => handleSelectPatientType("self")}
               >
-                <Ionicons
+                <SvgIonicons 
                   name="person-outline"
                   size={20}
                   color={
@@ -481,7 +481,7 @@ export default function PatientDetailsScreen() {
                 ]}
                 onPress={() => handleSelectPatientType("family")}
               >
-                <Ionicons
+                <SvgIonicons 
                   name="people-outline"
                   size={20}
                   color={

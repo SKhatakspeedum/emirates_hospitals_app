@@ -263,7 +263,7 @@ useFocusEffect(
               <FontAwesome name="play-circle" size={32} color="#fff" style={styles.recentPlayIcon} />
             </View> */}
       <View style={styles.recentPlayIconWrap}>
-        <Ionicons
+        <SvgIonicons 
           name="play"
           style={{ marginRight: "-2px" }}
           size={18}

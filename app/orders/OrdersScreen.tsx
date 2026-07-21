@@ -22,6 +22,7 @@ import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 import CustomTabs from "../components/CustomTabs";
+import { Skeleton } from "../components/Skeleton";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { fetchDataFromLocalStorage } from "../suggestus_plugin/util/util_functions";
@@ -527,11 +528,23 @@ export default function OrdersScreen() {
         showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
-          <ActivityIndicator
-            size="large"
-            color={Colors.primary}
-            style={{ marginTop: 60 }}
-          />
+          <View>
+            {[1, 2, 3].map((i) => (
+              <View key={i} style={styles.card}>
+                <View style={styles.cardHeaderRow}>
+                  <Skeleton style={{ width: "55%", height: 16 }} />
+                  <Skeleton style={{ width: 60, height: 20, borderRadius: 10 }} />
+                </View>
+                <View style={styles.cardDetailsRow}>
+                  <Skeleton style={{ width: "40%", height: 14 }} />
+                  <Skeleton style={{ width: "35%", height: 14 }} />
+                </View>
+                <View style={styles.cardFooter}>
+                  <Skeleton style={{ width: "50%", height: 14 }} />
+                </View>
+              </View>
+            ))}
+          </View>
         ) : filteredOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons

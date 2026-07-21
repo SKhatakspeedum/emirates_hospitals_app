@@ -23,6 +23,7 @@ import { SiteConfig } from "../config/site_config";
 import Toast from "react-native-toast-message";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
+import { Skeleton } from "../components/Skeleton";
 import dayjs from "dayjs";
 import { useOrgLogo } from "../hooks/useOrgLogo";
 
@@ -374,8 +375,44 @@ export default function ProfileScreen() {
             </View>
 
             {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={Colors.primary} />
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailRow}>
+                  <Skeleton style={styles.detailIconBox} />
+                  <View style={styles.detailTextCol}>
+                    <Skeleton style={{ width: 90, height: 12, marginBottom: 6 }} />
+                    <Skeleton style={{ width: 140, height: 15 }} />
+                  </View>
+                </View>
+                <View style={styles.detailRowSplit}>
+                  <View style={styles.detailRowHalf}>
+                    <Skeleton style={styles.detailIconBox} />
+                    <View style={styles.detailTextCol}>
+                      <Skeleton style={{ width: 70, height: 12, marginBottom: 6 }} />
+                      <Skeleton style={{ width: 100, height: 15 }} />
+                    </View>
+                  </View>
+                  <View style={styles.detailRowHalf}>
+                    <Skeleton style={styles.detailIconBox} />
+                    <View style={styles.detailTextCol}>
+                      <Skeleton style={{ width: 70, height: 12, marginBottom: 6 }} />
+                      <Skeleton style={{ width: 100, height: 15 }} />
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.detailRow}>
+                  <Skeleton style={styles.detailIconBox} />
+                  <View style={styles.detailTextCol}>
+                    <Skeleton style={{ width: 100, height: 12, marginBottom: 6 }} />
+                    <Skeleton style={{ width: 120, height: 15 }} />
+                  </View>
+                </View>
+                <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                  <Skeleton style={styles.detailIconBox} />
+                  <View style={styles.detailTextCol}>
+                    <Skeleton style={{ width: 60, height: 12, marginBottom: 6 }} />
+                    <Skeleton style={{ width: 90, height: 15 }} />
+                  </View>
+                </View>
               </View>
             ) : (
               <View style={styles.detailsContainer}>

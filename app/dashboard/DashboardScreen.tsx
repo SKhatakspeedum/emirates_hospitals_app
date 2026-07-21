@@ -46,6 +46,7 @@ import { getMenuWidgetsByType } from "../services/dashboardApi";
 import { getSpecialtyIconMeta } from "../config/specialtyIcons";
 import { getMenuIcon } from "../utils/menuIcon";
 import { DashboardSkeleton } from "../components/DashboardSkeleton";
+import { Skeleton } from "../components/Skeleton";
 import {
   fetchDataFromLocalStorage,
   getDecryptedID,
@@ -1216,11 +1217,14 @@ export default function DashboardScreen() {
               </Text>
             </View>
             {isLoadingHealthSummaryInstance ? (
-              <ActivityIndicator
-                size="small"
-                color={Colors.secondary}
-                style={{ marginVertical: 16 }}
-              />
+              <View style={styles.healthSummaryGrid}>
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton
+                    key={i}
+                    style={styles.healthSummarySkeletonItem}
+                  />
+                ))}
+              </View>
             ) : (
               <View style={styles.healthSummaryGrid}>
                 {healthSummaryForInstance.map((item, index) => (
@@ -1297,11 +1301,11 @@ export default function DashboardScreen() {
             </View>
 
             {isLoadingProvidersInstance ? (
-              <ActivityIndicator
-                size="small"
-                color={Colors.secondary}
-                style={{ marginVertical: 16 }}
-              />
+              <View style={styles.providersScrollList}>
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} style={styles.providerCardSkeleton} />
+                ))}
+              </View>
             ) : (
               <ScrollView
                 horizontal
@@ -1412,11 +1416,11 @@ export default function DashboardScreen() {
             </View>
 
             {isLoadingSpecialtiesInstance ? (
-              <ActivityIndicator
-                size="small"
-                color={Colors.secondary}
-                style={{ marginVertical: 16 }}
-              />
+              <View style={styles.specialtiesScrollList}>
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} style={styles.specialtyIconSkeleton} />
+                ))}
+              </View>
             ) : (
               <ScrollView
                 horizontal
@@ -2080,6 +2084,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
+  healthSummarySkeletonItem: {
+    width: "31%",
+    height: 64,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
   healthSummaryTitle: {
     fontSize: 11,
     fontFamily: FontFamilies.semiBold,
@@ -2092,6 +2102,12 @@ const styles = StyleSheet.create({
   },
   providersScrollList: {
     paddingRight: 10,
+  },
+  providerCardSkeleton: {
+    width: 140,
+    height: 160,
+    borderRadius: 16,
+    marginRight: 12,
   },
   providerCard: {
     width: 140,
@@ -2138,6 +2154,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 20,
     width: 76,
+  },
+  specialtyIconSkeleton: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    marginRight: 20,
   },
   specialtyIconCircle: {
     width: 68,

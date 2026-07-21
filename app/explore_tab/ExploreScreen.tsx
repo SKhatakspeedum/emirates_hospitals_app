@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Dimensions,
   ImageBackground,
-  ActivityIndicator,
   Image,
 } from "react-native";
 import { useRouter, useNavigation } from "expo-router";
@@ -25,6 +24,7 @@ import {
 } from "../config/config";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Skeleton } from "../components/Skeleton";
 
 const { width } = Dimensions.get("window");
 const CARD_RADIUS = 16;
@@ -300,6 +300,16 @@ const ExploreScreen = () => {
     </TouchableOpacity>
   );
 
+  const HorizontalCardSkeleton = () => (
+    <View style={styles.horizontalList}>
+      <View style={{ flexDirection: "row" }}>
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} style={styles.card} />
+        ))}
+      </View>
+    </View>
+  );
+
   return (
     <ImageBackground
       source={require("@/assets/images/internal_screen_bg.png")}
@@ -317,9 +327,7 @@ const ExploreScreen = () => {
           sectionKey="program"
         />
         {programsLoading ? (
-          <View style={styles.sectionContent}>
-            <ActivityIndicator size="small" color="#8B4CFC" />
-          </View>
+          <HorizontalCardSkeleton />
         ) : programsError ? (
           <View style={styles.sectionContent}>
             <Text style={{ color: "red" }}>{programsError}</Text>
@@ -371,9 +379,7 @@ const ExploreScreen = () => {
           sectionKey="de-stress"
         />
         {deStressLoading ? (
-          <View style={styles.sectionContent}>
-            <ActivityIndicator size="small" color="#8B4CFC" />
-          </View>
+          <HorizontalCardSkeleton />
         ) : deStressError ? (
           <View style={styles.sectionContent}>
             <Text style={{ color: "red" }}>{deStressError}</Text>
@@ -398,9 +404,7 @@ const ExploreScreen = () => {
           sectionKey="meditate"
         />
         {meditateLoading ? (
-          <View style={styles.sectionContent}>
-            <ActivityIndicator size="small" color="#8B4CFC" />
-          </View>
+          <HorizontalCardSkeleton />
         ) : meditateError ? (
           <View style={styles.sectionContent}>
             <Text style={{ color: "red" }}>{meditateError}</Text>
@@ -421,9 +425,7 @@ const ExploreScreen = () => {
         {/* Learn */}
         <SectionHeader title="Learn" onSeeAll={onSeeAll} sectionKey="learn" />
         {blogsLoading ? (
-          <View style={styles.sectionContent}>
-            <ActivityIndicator size="small" color="#8B4CFC" />
-          </View>
+          <HorizontalCardSkeleton />
         ) : blogsError ? (
           <View style={styles.sectionContent}>
             <Text style={{ color: "red" }}>{blogsError}</Text>

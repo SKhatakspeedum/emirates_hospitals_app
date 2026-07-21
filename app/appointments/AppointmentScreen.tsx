@@ -10,7 +10,6 @@ import {
   StatusBar,
   Platform,
   Pressable,
-  ActivityIndicator,
   DeviceEventEmitter,
 } from "react-native";
 import {
@@ -23,6 +22,7 @@ import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
 import CustomTabs from "../components/CustomTabs";
+import { Skeleton } from "../components/Skeleton";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import Toast from "react-native-toast-message";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
@@ -356,11 +356,28 @@ export default function AppointmentScreen() {
           showsVerticalScrollIndicator={false}
         >
           {isLoading ? (
-            <ActivityIndicator
-              size="large"
-              color={Colors.primary}
-              style={{ marginTop: 60 }}
-            />
+            <View>
+              {[1, 2, 3].map((i) => (
+                <View key={i} style={styles.card}>
+                  <View style={styles.cardTopSection}>
+                    <Skeleton style={styles.cardAvatar} />
+                    <View style={styles.cardDoctorCol}>
+                      <Skeleton style={{ width: "70%", height: 16, marginBottom: 8 }} />
+                      <Skeleton style={{ width: "45%", height: 13 }} />
+                    </View>
+                  </View>
+                  <View style={styles.cardInfoGrid}>
+                    <View style={styles.cardInfoCol}>
+                      <Skeleton style={{ width: "80%", height: 14, marginBottom: 6 }} />
+                      <Skeleton style={{ width: "60%", height: 13 }} />
+                    </View>
+                    <View style={styles.cardInfoCol}>
+                      <Skeleton style={{ width: "90%", height: 14 }} />
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
           ) : appointments.length === 0 ? (
             // Empty State UI (Screen 1 & Screen 2)
             <View style={styles.emptyContainer}>

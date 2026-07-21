@@ -6,7 +6,6 @@ import {
   FlatList,
   ImageBackground,
   TouchableOpacity,
-  ActivityIndicator,
   TextInput,
   Keyboard,
   Platform,
@@ -22,6 +21,7 @@ import CustomTopHeader from "../(drawer)/tab_bar_home/CustomTopHeader";
 import Toast from 'react-native-toast-message';
 import useResponsiveHorizontalMargin from "../hooks/useResponsiveHorizontalMargin";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Skeleton } from "../components/Skeleton";
 
 const BACKGROUND_IMAGE = require("@/assets/images/internal_screen_bg.png");
 
@@ -198,17 +198,15 @@ export default function SearchScreen() {
         </View>
         {/* Results */}
         <View style={styles.resultsWrapper}>
-          {loading && (
-            <ActivityIndicator
-              size="large"
-              color="#8b4cfc"
-              style={{ marginTop: 30 }}
-            />
-          )}
-          {!loading && error ? (
+          {loading ? (
+            <View style={[styles.flatListContainer, { flexDirection: "row", flexWrap: "wrap" }]}>
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} style={styles.thumbCard} />
+              ))}
+            </View>
+          ) : error ? (
             <Text style={styles.errorText}>{error}</Text>
-          ) : 
-            (!loading && !searchQuery) ? (
+          ) : !searchQuery ? (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 }}>
                 <Image
                   source={require('@/assets/images/assess.png')}
@@ -233,9 +231,7 @@ export default function SearchScreen() {
                 key={"columns-" + numColumns}
                 contentContainerStyle={styles.flatListContainer}
                 ListEmptyComponent={
-                  !loading && searchQuery ? (
-                    <Text style={styles.noResultsText}>No results found.</Text>
-                  ) : null
+                  <Text style={styles.noResultsText}>No results found.</Text>
                 }
                 keyboardShouldPersistTaps="handled"
               />

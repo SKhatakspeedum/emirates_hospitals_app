@@ -64,7 +64,9 @@ export default function Footer({
       {/* Order Tab */}
       <TouchableOpacity
         style={state.index === 1 ? styles.tabItemActive : styles.tabItem}
-        onPress={() => navigation.navigate("OrderScreen")}
+        onPress={() =>
+          navigation.navigate("OrderScreen", { screen: "OrdersMain" })
+        }
       >
         <OrderIcon
           color={state.index === 1 ? Colors.primary : Colors.grayDark}

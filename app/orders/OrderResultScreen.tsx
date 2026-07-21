@@ -35,6 +35,7 @@ export default function OrderResultScreen() {
   const route = useRoute<any>();
   const order = route.params?.order || {};
   const [webViewError, setWebViewError] = useState(false);
+  const [isDocLoading, setIsDocLoading] = useState(true);
 
   const docUrl: string = order.docUrl || "";
   const nativeViewerUrl = docUrl
@@ -50,12 +51,30 @@ export default function OrderResultScreen() {
       {docUrl && !webViewError ? (
         <View style={styles.viewerContainer}>
           {Platform.OS === "web" ? (
-            React.createElement("iframe", {
-              src: docUrl,
-              title: order.docName || "Result",
-              style: { flex: 1, border: "none", width: "100%", height: "100%" },
-              onError: () => setWebViewError(true),
-            })
+            <>
+              {isDocLoading && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color={Colors.primary} />
+                  <Text style={styles.loadingText}>Loading document...</Text>
+                </View>
+              )}
+              {React.createElement("iframe", {
+                src: docUrl,
+                title: order.docName || "Result",
+                style: {
+                  flex: 1,
+                  border: "none",
+                  width: "100%",
+                  height: "100%",
+                  opacity: isDocLoading ? 0 : 1,
+                  position: isDocLoading ? "absolute" : "relative",
+                  top: 0,
+                  left: 0,
+                },
+                onLoad: () => setIsDocLoading(false),
+                onError: () => setWebViewError(true),
+              })}
+            </>
           ) : (
             <WebView
               source={{ uri: nativeViewerUrl }}

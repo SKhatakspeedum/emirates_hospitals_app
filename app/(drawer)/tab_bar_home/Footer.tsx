@@ -7,7 +7,7 @@ import {
   Dimensions,
   Image,
 } from "react-native";
-// import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+// import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import {
   DrawerActions,

@@ -13,7 +13,7 @@ import {
   Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -141,7 +141,7 @@ export default function AppointmentDetailsScreen() {
 
             {/* patient_det */}
             <View style={styles.listItem}>
-              <SvgIonicons 
+              <Ionicons
                 name="person-outline"
                 size={22}
                 color={Colors.primary}
@@ -156,7 +156,7 @@ export default function AppointmentDetailsScreen() {
             {!!apptypName && (
               <>
                 <View style={styles.listItem}>
-                  <SvgIonicons 
+                  <Ionicons
                     name="medical-outline"
                     size={22}
                     color={Colors.primary}
@@ -170,7 +170,7 @@ export default function AppointmentDetailsScreen() {
 
             {/* Date and Time */}
             <View style={styles.listItem}>
-              <SvgIonicons 
+              <Ionicons
                 name="time-outline"
                 size={22}
                 color={Colors.primary}
@@ -188,7 +188,7 @@ export default function AppointmentDetailsScreen() {
 
             {/* Location / Address */}
             {/* <View style={styles.listItem}>
-              <SvgIonicons 
+              <Ionicons
                 name="location-outline"
                 size={22}
                 color={Colors.primary}
@@ -240,7 +240,7 @@ export default function AppointmentDetailsScreen() {
                 onPress={handleBookAgain}
               >
                 <Text style={styles.primaryButtonText}>Book Again</Text>
-                <SvgIonicons 
+                <Ionicons
                   name="arrow-forward"
                   size={18}
                   color={Colors.background}
@@ -286,7 +286,7 @@ export default function AppointmentDetailsScreen() {
                 <Text style={styles.primaryButtonText}>
                   {isPackage ? "Home" : "Appointments"}
                 </Text>
-                <SvgIonicons 
+                <Ionicons
                   name="arrow-forward"
                   size={18}
                   color={Colors.background}

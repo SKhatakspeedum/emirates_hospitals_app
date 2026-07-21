@@ -15,7 +15,7 @@ import {
   Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { USER_FULL_DATA, SPD_SELECTED_PATIENT } from "../config/config";
 import { SiteConfig } from "../config/site_config";
@@ -518,7 +518,7 @@ export default function RegisteredPatientsScreen() {
             <View style={styles.userCard}>
               <View style={styles.cardHeaderRow}>
                 <View style={styles.avatarContainer}>
-                  <SvgIonicons name="person" size={24} color="#FFF" />
+                  <Ionicons name="person" size={24} color="#FFF" />
                 </View>
                 <View style={styles.userInfoCol}>
                   <Text style={styles.userName}>{userData.name}</Text>
@@ -530,7 +530,7 @@ export default function RegisteredPatientsScreen() {
 
               {alreadyAssigned ? (
                 <View style={styles.alreadyAssignedBadge}>
-                  <SvgIonicons name="checkmark-circle" size={18} color="#22C55E" />
+                  <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
                   <Text style={styles.alreadyAssignedText}>
                     Already assigned as a patient
                   </Text>
@@ -549,7 +549,7 @@ export default function RegisteredPatientsScreen() {
                       <Text style={styles.registerInnerBtnText}>
                         Register as a patient
                       </Text>
-                      <SvgIonicons 
+                      <Ionicons
                         name="chevron-forward"
                         size={16}
                         color={Colors.secondary}
@@ -597,7 +597,7 @@ export default function RegisteredPatientsScreen() {
                     </Text>
                   </View>
 
-                  <SvgIonicons 
+                  <Ionicons
                     name="chevron-forward"
                     size={20}
                     color={Colors.secondary}
@@ -615,7 +615,7 @@ export default function RegisteredPatientsScreen() {
           onPress={handleAddNewPatient}
           activeOpacity={0.8}
         >
-          <SvgIonicons 
+          <Ionicons
             name="person-add-outline"
             size={20}
             color={Colors.secondary}

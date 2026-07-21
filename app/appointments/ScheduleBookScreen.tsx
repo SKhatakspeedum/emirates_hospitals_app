@@ -10,7 +10,7 @@ import {
   Modal,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { Calendar } from "react-native-calendars";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../config/colors";
@@ -261,7 +261,7 @@ export default function ScheduleBookScreen() {
 
         {/* Service Type Row */}
         <View style={styles.serviceRow}>
-          <SvgIonicons 
+          <Ionicons
             name={getServiceIcon(type)}
             size={24}
             color={Colors.primary}
@@ -283,7 +283,7 @@ export default function ScheduleBookScreen() {
             onPress={() => setIsCalendarVisible(true)}
           >
             <View style={styles.dateRowLeft}>
-              <SvgIonicons 
+              <Ionicons
                 name="calendar-outline"
                 size={18}
                 color={Colors.primary}
@@ -308,7 +308,7 @@ export default function ScheduleBookScreen() {
         <View style={styles.slotsScroll}>
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyStateIconWrap}>
-              <SvgIonicons 
+              <Ionicons
                 name="calendar-clear-outline"
                 size={90}
                 color={Colors.backgroundOverlay}
@@ -374,7 +374,7 @@ export default function ScheduleBookScreen() {
           onPress={handleConfirm}
         >
           <Text style={styles.confirmButtonText}>Continue</Text>
-          <SvgIonicons name="arrow-forward" size={18} color={Colors.background} />
+          <Ionicons name="arrow-forward" size={18} color={Colors.background} />
         </Pressable>
       </View>
 

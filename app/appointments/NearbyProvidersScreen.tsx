@@ -15,7 +15,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
@@ -281,7 +281,7 @@ export default function NearbyProvidersScreen() {
               style={styles.categoriesScrollHintGradientLeft}
             >
               <View style={styles.scrollHintBadge}>
-                <SvgIonicons 
+                <Ionicons
                   name="chevron-back"
                   size={HINT_ICON_SIZE}
                   color={Colors.primary}
@@ -315,7 +315,7 @@ export default function NearbyProvidersScreen() {
               style={styles.categoriesScrollHintGradient}
             >
               <View style={styles.scrollHintBadge}>
-                <SvgIonicons 
+                <Ionicons
                   name="chevron-forward"
                   size={HINT_ICON_SIZE}
                   color={Colors.primary}
@@ -339,7 +339,7 @@ export default function NearbyProvidersScreen() {
           />
         ) : filteredProviders.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <SvgIonicons name="people-outline" size={64} color="#B3B7C6" />
+            <Ionicons name="people-outline" size={64} color="#B3B7C6" />
             <Text style={styles.emptyText}>
               No providers found matching search
             </Text>
@@ -386,13 +386,13 @@ export default function NearbyProvidersScreen() {
                       style={styles.actionIconButton}
                       activeOpacity={0.7}
                     >
-                      <SvgIonicons name="call" size={14} color={Colors.primary} />
+                      <Ionicons name="call" size={14} color={Colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.actionIconButton}
                       activeOpacity={0.7}
                     >
-                      <SvgIonicons 
+                      <Ionicons
                         name="chatbubble"
                         size={14}
                         color={Colors.primary}

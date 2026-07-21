@@ -21,7 +21,7 @@ import {
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { SPD_AI_CODE } from "../config/config";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -204,7 +204,7 @@ export default function ConfirmScreen() {
                 <View
                   style={[styles.doctorAvatar, styles.doctorAvatarFallback]}
                 >
-                  <SvgIonicons name="person" size={18} color={Colors.background} />
+                  <Ionicons name="person" size={18} color={Colors.background} />
                 </View>
               )}
               <View style={styles.textColumn}>
@@ -220,7 +220,7 @@ export default function ConfirmScreen() {
                 <Text style={styles.reasonText} numberOfLines={1}>
                   {symptoms}
                 </Text>
-                <SvgIonicons 
+                <Ionicons
                   name="information-circle-outline"
                   size={16}
                   color={Colors.label}
@@ -232,7 +232,7 @@ export default function ConfirmScreen() {
           {/* Date and Time Slot with Change link */}
           <View style={[styles.listItem, styles.listItemSpaceBetween]}>
             <View style={styles.listItemLeft}>
-              <SvgIonicons 
+              <Ionicons
                 name="calendar-outline"
                 size={20}
                 color={Colors.primary}
@@ -256,7 +256,7 @@ export default function ConfirmScreen() {
           {!!locationText && (
             <>
               <View style={styles.listItem}>
-                <SvgIonicons 
+                <Ionicons
                   name="location-outline"
                   size={20}
                   color={Colors.primary}
@@ -270,7 +270,7 @@ export default function ConfirmScreen() {
 
           {/* Patient Info */}
           <View style={styles.listItem}>
-            <SvgIonicons 
+            <Ionicons
               name="person-outline"
               size={20}
               color={Colors.primary}

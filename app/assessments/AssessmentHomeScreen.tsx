@@ -16,7 +16,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { spd_processId_config } from "../config/process_id";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ASSESSMENT_API_URL, SPD_USER_ID } from "../config/config";

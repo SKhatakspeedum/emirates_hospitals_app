@@ -369,7 +369,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             >
               <View style={styles.linkIconWrapper}>{item.icon}</View>
               <Text style={styles.linkLabel}>{item.label}</Text>
-              {/* <SvgIonicons 
+              {/* <Ionicons
                 name="chevron-forward"
                 size={16}
                 color={Colors.inactive}
@@ -394,7 +394,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
               />
             </View>
             <Text style={styles.logoutLabel}>Log out</Text>
-            {/* <SvgIonicons 
+            {/* <Ionicons
               name="chevron-forward"
               size={16}
               color={Colors.inactive}

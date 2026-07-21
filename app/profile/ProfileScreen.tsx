@@ -12,8 +12,7 @@ import {
   Platform,
   SafeAreaView,
 } from "react-native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { SPD_USER_ID, USER_FULL_DATA } from "../config/config";
@@ -429,7 +428,7 @@ export default function ProfileScreen() {
                 <View style={styles.detailsContainer}>
                   <View style={styles.detailRow}>
                     <View style={styles.detailIconBox}>
-                      <SvgIonicons name="card" size={18} color={Colors.primary} />
+                      <Ionicons name="card" size={18} color={Colors.primary} />
                     </View>
                     <View style={styles.detailTextCol}>
                       <Text style={styles.detailLabel}>Emirates ID</Text>
@@ -442,7 +441,7 @@ export default function ProfileScreen() {
                   <View style={styles.detailRowSplit}>
                     <View style={styles.detailRowHalf}>
                       <View style={styles.detailIconBoxSecondary}>
-                        <SvgIonicons 
+                        <Ionicons
                           name="person"
                           size={18}
                           color={Colors.warning}
@@ -458,7 +457,7 @@ export default function ProfileScreen() {
 
                     <View style={styles.detailRowHalf}>
                       <View style={styles.detailIconBoxSecondaryDark}>
-                        <SvgIonicons 
+                        <Ionicons
                           name="person"
                           size={18}
                           color={Colors.success}
@@ -475,7 +474,7 @@ export default function ProfileScreen() {
 
                   <View style={styles.detailRow}>
                     <View style={styles.detailIconBoxTertiary}>
-                      <SvgIonicons 
+                      <Ionicons
                         name="calendar"
                         size={18}
                         color={Colors.primary}
@@ -489,7 +488,7 @@ export default function ProfileScreen() {
 
                   <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                     <View style={styles.detailIconBoxQuaternary}>
-                      <SvgIonicons 
+                      <Ionicons
                         name="male-female"
                         size={18}
                         color={Colors.warning}

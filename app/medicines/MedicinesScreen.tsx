@@ -12,11 +12,12 @@ import {
   Image,
   Pressable,
 } from "react-native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
-import { Feather,
+import {
+  Ionicons,
+  Feather,
   FontAwesome5,
   MaterialCommunityIcons,
- } from "@expo/vector-icons";
+} from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
 import { useNavigation } from "@react-navigation/native";
@@ -246,7 +247,7 @@ export default function MedicinesScreen() {
                     pressed && { opacity: 0.8, transform: [{ scale: 0.9 }] },
                   ]}
                 >
-                  <SvgIonicons name="add" size={14} color={Colors.background} />
+                  <Ionicons name="add" size={14} color={Colors.background} />
                 </Pressable>
               </View>
             </Pressable>
@@ -291,7 +292,7 @@ export default function MedicinesScreen() {
                       pressed && { opacity: 0.8, transform: [{ scale: 0.9 }] },
                     ]}
                   >
-                    <SvgIonicons name="add" size={14} color={Colors.background} />
+                    <Ionicons name="add" size={14} color={Colors.background} />
                   </Pressable>
                 </View>
               </View>

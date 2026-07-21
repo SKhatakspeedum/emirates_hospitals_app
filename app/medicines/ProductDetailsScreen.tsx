@@ -11,7 +11,7 @@ import {
     Dimensions,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import CustomHeader from "../components/CustomHeader";
 
@@ -73,7 +73,7 @@ export default function ProductDetailsScreen() {
                         activeOpacity={0.7}
                     >
                         <Text style={styles.accordionTitle}>Nutritional facts</Text>
-                        <SvgIonicons 
+                        <Ionicons
                             name={isNutritionalExpanded ? "chevron-up" : "chevron-down"}
                             size={20}
                             color="#A0AEC0"
@@ -94,7 +94,7 @@ export default function ProductDetailsScreen() {
                         activeOpacity={0.7}
                     >
                         <Text style={styles.accordionTitle}>Reviews</Text>
-                        <SvgIonicons 
+                        <Ionicons
                             name={isReviewsExpanded ? "chevron-up" : "chevron-down"}
                             size={20}
                             color="#A0AEC0"
@@ -119,7 +119,7 @@ export default function ProductDetailsScreen() {
                     onPress={() => navigation.navigate("Cart")}
                 >
                     <Text style={styles.continueText}>Continue</Text>
-                    <SvgIonicons name="arrow-forward" size={16} color="#FFFFFF" style={styles.continueIcon} />
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={styles.continueIcon} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

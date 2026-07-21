@@ -18,7 +18,7 @@ import {
   useFocusEffect,
   StackActions,
 } from "@react-navigation/native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -471,7 +471,7 @@ export default function AppointmentScreen() {
                     <View style={styles.cardInfoCol}>
                       {!!dateDisplay && (
                         <View style={styles.metaRow}>
-                          <SvgIonicons 
+                          <Ionicons
                             name="calendar-outline"
                             size={16}
                             color={Colors.secondary}
@@ -490,7 +490,7 @@ export default function AppointmentScreen() {
                     <View style={styles.cardInfoCol}>
                       {!!(item.hospitalName || item.hospitalArea || orgId) && (
                         <View style={styles.metaRow}>
-                          <SvgIonicons 
+                          <Ionicons
                             name="location-outline"
                             size={16}
                             color={Colors.secondary}
@@ -561,7 +561,7 @@ export default function AppointmentScreen() {
             onPress={goToNearbyProviders}
             disabled={false}
           >
-            <SvgIonicons name="add" size={28} color={Colors.background} />
+            <Ionicons name="add" size={28} color={Colors.background} />
           </Pressable>
         )}
       </SafeAreaView>

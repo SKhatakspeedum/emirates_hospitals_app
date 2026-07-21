@@ -1662,7 +1662,7 @@ export default function DashboardScreen() {
               })}
               onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
             >
-              {/* <SvgIonicons 
+              {/* <Ionicons
                 name="menu-outline"
                 size={32}
                 color={Colors.background}

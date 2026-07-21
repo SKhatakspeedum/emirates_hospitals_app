@@ -431,10 +431,10 @@ export default function PersonalDetailsScreen() {
 
       setScannedData(parsed);
       setScanPhase("success");
-    } catch (e) {
+    } catch (e: any) {
       console.error(`${scanDocLabel} scan error:`, e);
       setScanErrorMessage(
-        "Something went wrong while scanning. Please try again.",
+        `Scanning failed: ${e?.message || 'Unknown error'}`,
       );
       setScanPhase("error");
     }
@@ -453,40 +453,20 @@ export default function PersonalDetailsScreen() {
       });
       if (!photo?.uri) throw new Error("No image captured");
 
-      const { width: screenWidth, height: screenHeight } =
-        Dimensions.get("window");
-      const scale = Math.max(
-        photo.width / screenWidth,
-        photo.height / screenHeight,
-      );
-
-      const cropWidth = SCAN_FRAME_WIDTH * scale;
-      const cropHeight = SCAN_FRAME_HEIGHT * scale;
-
-      const originX = (photo.width - cropWidth) / 2;
-      const originY = (photo.height - cropHeight) / 2;
-
+      // Skip cropping to avoid cutting out the ID due to mismatched
+      // sensor orientations on Android, just compress slightly for performance
       const manipResult = await ImageManipulator.manipulateAsync(
         photo.uri,
-        [
-          {
-            crop: {
-              originX: Math.max(0, originX),
-              originY: Math.max(0, originY),
-              width: Math.min(photo.width, cropWidth),
-              height: Math.min(photo.height, cropHeight),
-            },
-          },
-        ],
+        [],
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
       );
 
       setCapturedImageUri(manipResult.uri);
       await processScannedImage(manipResult.uri);
-    } catch (e) {
+    } catch (e: any) {
       console.error(`${scanDocLabel} capture error:`, e);
       setScanErrorMessage(
-        "Something went wrong while scanning. Please try again.",
+        `Capture failed: ${e?.message || 'Unknown error'}`,
       );
       setScanPhase("error");
     }

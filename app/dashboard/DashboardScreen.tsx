@@ -1849,43 +1849,59 @@ export default function DashboardScreen() {
             >
               <Ionicons name="close" size={28} color={Colors.background} />
             </TouchableOpacity>
-            {playingYoutubeId && (
-              <YoutubePlayer
-                height={(width - 40) * 9 / 16}
-                width={width - 40}
-                play
-                videoId={playingYoutubeId}
-                onChangeState={(state: string) => {
-                  if (state === "ended") setPlayingYoutubeId(null);
-                }}
-                initialPlayerParams={{
-                  preventFullScreen: false,
-                  controls: true,
-                  modestbranding: true,
-                  rel: false,
-                }}
-                webViewProps={{
-                  scrollEnabled: false,
-                  bounces: false,
-                  androidLayerType:
-                    Platform.OS === "android" ? "hardware" : undefined,
-                  // The library only blocks youtube.com navigation on iOS —
-                  // override here so tapping the embed's own end-screen /
-                  // "Watch on YouTube" card never leaves the app, on any
-                  // platform, for the initial load or any in-page navigation.
-                  onShouldStartLoadWithRequest: (request: { url: string }) =>
-                    !/youtube\.com|youtu\.be|google\.com\/url/.test(
-                      request.url,
-                    ),
-                  // Those same cards often open via window.open() rather
-                  // than a top-level navigation, which the check above can't
-                  // see — block Android's new-window popups outright, and no-op
-                  // any window the WebView still tries to open on iOS/other.
-                  setSupportMultipleWindows: false,
-                  onOpenWindow: () => {},
-                }}
-                webViewStyle={{ opacity: 0.99 }}
-              />
+            {playingYoutubeId && Platform.OS === "web" ? (
+              // react-native-youtube-iframe's bridge relies on
+              // react-native-webview's native postMessage channel, which
+              // doesn't exist under react-native-web (no real native
+              // WebView) — render a plain HTML iframe instead.
+              React.createElement("iframe", {
+                src: `https://www.youtube.com/embed/${playingYoutubeId}?autoplay=1&rel=0&modestbranding=1`,
+                width: width - 40,
+                height: (width - 40) * 9 / 16,
+                style: { border: 0 },
+                allow:
+                  "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                allowFullScreen: true,
+              })
+            ) : (
+              playingYoutubeId && (
+                <YoutubePlayer
+                  height={(width - 40) * 9 / 16}
+                  width={width - 40}
+                  play
+                  videoId={playingYoutubeId}
+                  onChangeState={(state: string) => {
+                    if (state === "ended") setPlayingYoutubeId(null);
+                  }}
+                  initialPlayerParams={{
+                    preventFullScreen: false,
+                    controls: true,
+                    modestbranding: true,
+                    rel: false,
+                  }}
+                  webViewProps={{
+                    scrollEnabled: false,
+                    bounces: false,
+                    androidLayerType:
+                      Platform.OS === "android" ? "hardware" : undefined,
+                    // The library only blocks youtube.com navigation on iOS —
+                    // override here so tapping the embed's own end-screen /
+                    // "Watch on YouTube" card never leaves the app, on any
+                    // platform, for the initial load or any in-page navigation.
+                    onShouldStartLoadWithRequest: (request: { url: string }) =>
+                      !/youtube\.com|youtu\.be|google\.com\/url/.test(
+                        request.url,
+                      ),
+                    // Those same cards often open via window.open() rather
+                    // than a top-level navigation, which the check above can't
+                    // see — block Android's new-window popups outright, and no-op
+                    // any window the WebView still tries to open on iOS/other.
+                    setSupportMultipleWindows: false,
+                    onOpenWindow: () => {},
+                  }}
+                  webViewStyle={{ opacity: 0.99 }}
+                />
+              )
             )}
           </View>
         </View>

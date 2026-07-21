@@ -13,6 +13,8 @@ export const Messages = {
     imageUploaded: "Profile image updated.",
     signedOut: "You have been signed out.",
     operationSuccess: "Operation completed successfully",
+    registrationComplete: "Registration Complete",
+    accountSetupSuccess: "Your account has been set up successfully.",
   },
 
   // ═══════════════════════════════════════════════════════════════

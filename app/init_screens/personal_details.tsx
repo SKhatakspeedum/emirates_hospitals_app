@@ -22,6 +22,7 @@ import { useRouter } from "expo-router";
 import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
+import { Messages } from "../config/messages";
 import dayjs from "dayjs";
 import { Calendar } from "react-native-calendars";
 import {
@@ -924,9 +925,9 @@ export default function PersonalDetailsScreen() {
             } catch (_) {}
           }
           Toast.show({
-            type: "success",
-            text1: "Welcome back!",
-            text2: "Your account has been set up successfully.",
+            type: Messages.toast.success,
+            text1: Messages.success.registrationComplete,
+            text2: Messages.success.accountSetupSuccess,
           });
           router.replace("/(drawer)/tab_bar_home/HomeScreen");
           return;
@@ -1005,9 +1006,9 @@ export default function PersonalDetailsScreen() {
         }
 
         Toast.show({
-          type: "success",
-          text1: "Welcome back!",
-          text2: "Your account has been set up successfully.",
+          type: Messages.toast.success,
+          text1: Messages.success.registrationComplete,
+          text2: Messages.success.accountSetupSuccess,
         });
       } catch (err) {
         console.error("[PersonalDetails] link account failed:", err);
@@ -1320,9 +1321,9 @@ export default function PersonalDetailsScreen() {
           console.error("[PersonalDetails] patient linking failed:", linkErr);
         }
         Toast.show({
-          type: "success",
-          text1: "Registration Complete",
-          text2: "Welcome to Emirates Hospitals Group",
+          type: Messages.toast.success,
+          text1: Messages.success.registrationComplete,
+          text2: Messages.success.accountSetupSuccess,
         });
         router.replace({
           pathname: "/init_screens/terms_and_privacy",
@@ -1482,9 +1483,9 @@ export default function PersonalDetailsScreen() {
         // ────────────────────────────────────────────────────────────────────
 
         Toast.show({
-          type: "success",
-          text1: "Registration Complete",
-          text2: "Welcome to Emirates Hospitals Group",
+          type: Messages.toast.success,
+          text1: Messages.success.registrationComplete,
+          text2: Messages.success.accountSetupSuccess,
         });
         router.replace({
           pathname: "/init_screens/terms_and_privacy",
@@ -2481,7 +2482,6 @@ export default function PersonalDetailsScreen() {
           )}
         </View>
       </Modal>
-      <Toast />
     </View>
   );
 }

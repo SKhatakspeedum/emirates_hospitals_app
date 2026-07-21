@@ -442,7 +442,9 @@ export default function PersonalDetailsScreen() {
 
   const handleCaptureTap = async () => {
     if (scanPhase !== "searching" || !cameraRef.current) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
     setScanPhase("processing");
     try {
       const photo = await cameraRef.current.takePictureAsync({
@@ -675,7 +677,7 @@ export default function PersonalDetailsScreen() {
   const buttonLabel =
     (emiratesIdCheck.status === "available" ||
       passportCheck.status === "available") &&
-    linkedPatientId
+      linkedPatientId
       ? "Continue"
       : "Register";
 
@@ -995,7 +997,7 @@ export default function PersonalDetailsScreen() {
               USER_FULL_DATA,
               JSON.stringify(stored),
             );
-          } catch (_) {}
+          } catch (_) { }
 
           await callSuggestusAPI(
             spd_processId_config.xcelpat_update_trn_patient_user_mapping_ehg_pntapp,
@@ -1102,9 +1104,9 @@ export default function PersonalDetailsScreen() {
       // Final existence check — skip if already verified as available for this value
       const alreadyVerified = isResident
         ? emiratesIdCheck.status === "available" &&
-          emiratesIdCheck.checkedValue === emiratesId
+        emiratesIdCheck.checkedValue === emiratesId
         : passportCheck.status === "available" &&
-          passportCheck.checkedValue === passportNo;
+        passportCheck.checkedValue === passportNo;
 
       if (!alreadyVerified) {
         const regUserId = (await fetchDataFromLocalStorage("sg_userId")) ?? "";
@@ -1157,7 +1159,7 @@ export default function PersonalDetailsScreen() {
       if (currentDataStr) {
         try {
           updatedData = { ...JSON.parse(currentDataStr), ...updatedData };
-        } catch (_) {}
+        } catch (_) { }
       }
 
       await setEncryptedID(USER_FULL_DATA, JSON.stringify(updatedData));
@@ -1441,7 +1443,7 @@ export default function PersonalDetailsScreen() {
                 USER_FULL_DATA,
                 JSON.stringify(stored),
               );
-            } catch (_) {}
+            } catch (_) { }
 
             if (newUserId && !existingPatientId) {
               // Step 4: Link patient → user
@@ -1586,9 +1588,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "emiratesId" && styles.inputWrapperFocused,
                     emiratesIdCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     emiratesIdCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -1675,9 +1677,9 @@ export default function PersonalDetailsScreen() {
                     styles.inputWrapper,
                     focusedField === "passportNo" && styles.inputWrapperFocused,
                     passportCheck.status === "exists" &&
-                      styles.inputWrapperError,
+                    styles.inputWrapperError,
                     passportCheck.status === "available" &&
-                      styles.inputWrapperSuccess,
+                    styles.inputWrapperSuccess,
                   ]}
                 >
                   <TextInput
@@ -1756,7 +1758,7 @@ export default function PersonalDetailsScreen() {
                     style={[
                       styles.inputWrapper,
                       focusedField === "firstName" &&
-                        styles.inputWrapperFocused,
+                      styles.inputWrapperFocused,
                     ]}
                   >
                     <Ionicons
@@ -2118,11 +2120,11 @@ export default function PersonalDetailsScreen() {
                 markedDates={
                   dob
                     ? {
-                        [dayjs(dob).format("YYYY-MM-DD")]: {
-                          selected: true,
-                          selectedColor: Colors.primary,
-                        },
-                      }
+                      [dayjs(dob).format("YYYY-MM-DD")]: {
+                        selected: true,
+                        selectedColor: Colors.primary,
+                      },
+                    }
                     : {}
                 }
                 theme={{
@@ -2162,7 +2164,7 @@ export default function PersonalDetailsScreen() {
           style={styles.locationSheetOverlay}
           onPress={() => setShowLocationPicker(false)}
         >
-          <Pressable style={styles.locationSheetCard} onPress={() => {}}>
+          <Pressable style={styles.locationSheetCard} onPress={() => { }}>
             <View style={styles.locationSheetHandle} />
             <Text style={styles.locationSheetTitle}>Switch location</Text>
             {locations.length === 0 ? (

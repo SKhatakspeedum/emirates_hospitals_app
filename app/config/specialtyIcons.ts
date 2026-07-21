@@ -1,11 +1,7 @@
-import {
-  SvgIonicons,
-  SvgFontAwesome5,
-  SvgMaterialCommunityIcons,
-} from "../components/icons/SvgIcons";
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 
 export interface SpecialtyIconMeta {
-  Icon: typeof SvgIonicons | typeof SvgFontAwesome5 | typeof SvgMaterialCommunityIcons;
+  Icon: typeof Ionicons | typeof FontAwesome5 | typeof MaterialCommunityIcons;
   iconName: string;
   iconSize: number;
   iconColor: string;
@@ -20,7 +16,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
   const key = label.toLowerCase();
   if (key.includes("neuro")) {
     return {
-      Icon: SvgMaterialCommunityIcons,
+      Icon: MaterialCommunityIcons,
       iconName: "brain",
       iconSize: 28,
       iconColor: "#6B7280",
@@ -29,7 +25,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
   }
   if (key.includes("ent") || key.includes("ear")) {
     return {
-      Icon: SvgFontAwesome5,
+      Icon: FontAwesome5,
       iconName: "diagnoses",
       iconSize: 26,
       iconColor: "#E87722",
@@ -38,7 +34,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
   }
   if (key.includes("pediatric") || key.includes("paediatric")) {
     return {
-      Icon: SvgMaterialCommunityIcons,
+      Icon: MaterialCommunityIcons,
       iconName: "baby-face-outline",
       iconSize: 28,
       iconColor: "#F1C40F",
@@ -47,7 +43,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
   }
   if (key.includes("cardio") || key.includes("heart")) {
     return {
-      Icon: SvgFontAwesome5,
+      Icon: FontAwesome5,
       iconName: "heartbeat",
       iconSize: 24,
       iconColor: "#E74C3C",
@@ -56,7 +52,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
   }
   if (key.includes("ortho") || key.includes("bone")) {
     return {
-      Icon: SvgMaterialCommunityIcons,
+      Icon: MaterialCommunityIcons,
       iconName: "bone",
       iconSize: 26,
       iconColor: "#3498DB",
@@ -65,7 +61,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
   }
   if (key.includes("dental") || key.includes("dent")) {
     return {
-      Icon: SvgMaterialCommunityIcons,
+      Icon: MaterialCommunityIcons,
       iconName: "tooth-outline",
       iconSize: 26,
       iconColor: "#3498DB",
@@ -74,7 +70,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
   }
   if (key.includes("gyn") || key.includes("obstet")) {
     return {
-      Icon: SvgMaterialCommunityIcons,
+      Icon: MaterialCommunityIcons,
       iconName: "human-pregnant",
       iconSize: 26,
       iconColor: "#9B59B6",
@@ -83,7 +79,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
   }
   if (key.includes("eye") || key.includes("ophthal")) {
     return {
-      Icon: SvgMaterialCommunityIcons,
+      Icon: MaterialCommunityIcons,
       iconName: "eye-outline",
       iconSize: 26,
       iconColor: "#3498DB",
@@ -92,7 +88,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
   }
   if (key.includes("medicine") || key.includes("general")) {
     return {
-      Icon: SvgFontAwesome5,
+      Icon: FontAwesome5,
       iconName: "briefcase-medical",
       iconSize: 22,
       iconColor: "#2ECC71",
@@ -100,7 +96,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
     };
   }
   return {
-    Icon: SvgIonicons,
+    Icon: Ionicons,
     iconName: "medkit-outline",
     iconSize: 24,
     iconColor: "#6B7280",

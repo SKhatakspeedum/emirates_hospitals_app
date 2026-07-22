@@ -24,6 +24,8 @@ const ICON_SCREEN_MAP: Record<string, string> = {
   orders: "OrderScreen",
   medicines: "MedicinesScreen",
   healthPackages: "HealthPackages",
+  speciality: "Speciality",
+  AllSpecialtiesScreen: "Speciality",
   settings: "Settings",
 };
 

@@ -16,7 +16,11 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import {
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+} from "@react-navigation/native";
 import { SvgIonicons } from "../components/icons/SvgIcons";
 import { Fontisto, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
@@ -180,6 +184,13 @@ const derivePresentation = (
 
 export default function OrdersScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  // Backend-driven left-menu items can override which API this screen calls
+  // and its static params (see useLeftMenuItems -> CustomDrawer routeParams).
+  // Falls back to the existing hardcoded lab-orders call when navigated to
+  // without params (e.g. the bottom tab bar's "Orders" button).
+  const routeProcessId: string | undefined = route.params?.process_id;
+  const routeParams: Record<string, any> | undefined = route.params;
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("All");
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -209,7 +220,11 @@ export default function OrdersScreen() {
           );
 
           const response = await callSuggestusAPI(
-            spd_processId_config.hosapp_get_trn_order_all_ehg_pntapp,
+            (routeProcessId &&
+              (spd_processId_config as Record<string, string>)[
+                routeProcessId
+              ]) ||
+              spd_processId_config.hosapp_get_trn_order_all_ehg_pntapp,
             {
               p_user_id: userId ?? "",
               p_org_id: orgId ?? "",
@@ -228,6 +243,7 @@ export default function OrdersScreen() {
               p_process_type: "",
               p_internal_flag: "",
               p_type: "LAB",
+              ...routeParams,
             },
           );
 
@@ -282,7 +298,7 @@ export default function OrdersScreen() {
         }
       };
       fetchOrders();
-    }, []),
+    }, [routeProcessId, JSON.stringify(routeParams)]),
   );
 
   const departmentOptions = useMemo(

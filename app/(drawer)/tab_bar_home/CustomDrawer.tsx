@@ -14,8 +14,11 @@ import {
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { useRouter } from "expo-router";
 import { SvgIonicons } from "../../components/icons/SvgIcons";
-import { Fontisto, MaterialCommunityIcons,
-  MaterialIcons, } from "@expo/vector-icons";
+import {
+  Fontisto,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   IS_LOGGED_IN,
@@ -150,7 +153,14 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const { items: backendMenuItems, isLoading: menuLoading } =
     useLeftMenuItems();
 
-  const drawerItems = useMemo(() => {
+  const drawerItems: Array<{
+    label: string;
+    icon: React.ReactNode;
+    screen: string;
+    routeParams?: Record<string, any>;
+    processId?: string;
+    defaultParams?: Record<string, any>;
+  }> = useMemo(() => {
     if (backendMenuItems.length > 0) {
       return backendMenuItems.map((item) => ({
         label: item.widget_name,
@@ -160,6 +170,9 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           item.widget_code,
         ),
         screen: item.screen,
+        routeParams: item.routeParams,
+        processId: item.processId,
+        defaultParams: item.defaultParams,
       }));
     }
     return DEFAULT_DRAWER_ITEMS;
@@ -230,6 +243,8 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const handleNav = async (
     screen: string,
     routeParams?: Record<string, any>,
+    processId?: string,
+    defaultParams?: Record<string, any>,
   ) => {
     if (screen === "SignOut") {
       setIsSigningOut(true);
@@ -282,14 +297,49 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     //   return;
     // }
 
-    const tabScreens = ["OrderScreen", "MedicinesScreen", "ProfileScreen"];
+    const tabScreens = [
+      "OrderScreen",
+      "MedicinesScreen",
+      "ProfileScreen",
+      "HealthPackages",
+      "Settings",
+      "Speciality",
+    ];
 
-    if (tabScreens.includes(screen)) {
-      props.navigation.navigate("tab_bar_home/HomeScreen", { screen });
+    console.log("screen :>>>>", screen);
+    if (screen === "OrderScreen") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", {
+        screen,
+        params:
+          screen === "OrderScreen" && routeParams
+            ? { screen: "OrdersMain", params: routeParams }
+            : undefined,
+      });
     } else if (screen === "NearbyProviders") {
       props.navigation.navigate("tab_bar_home/HomeScreen", {
         screen: "HomeTab",
         params: { screen: "NearbyProviders" },
+      });
+    } else if (screen === "HealthPackages") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", {
+        screen: "HomeTab",
+        params: { screen: "HealthPackages" },
+      });
+    } else if (screen === "Settings") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", {
+        screen: "HomeTab",
+        params: { screen: "Settings" },
+      });
+    } else if (screen === "Speciality") {
+      props.navigation.navigate("tab_bar_home/HomeScreen", {
+        screen: "HomeTab",
+        params: {
+          screen: "AllSpecialties",
+          params: {
+            widgetProcessId: processId,
+            widgetDefaultParams: defaultParams,
+          },
+        },
       });
     } else {
       Toast.show({
@@ -361,7 +411,14 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             <TouchableOpacity
               key={item.label}
               style={styles.linkRow}
-              onPress={() => handleNav(item.screen)}
+              onPress={() =>
+                handleNav(
+                  item.screen,
+                  item.routeParams,
+                  item.processId,
+                  item.defaultParams,
+                )
+              }
               activeOpacity={0.7}
             >
               <View style={styles.linkIconWrapper}>{item.icon}</View>
@@ -384,7 +441,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             disabled={isSigningOut}
           >
             <View style={styles.linkIconWrapper}>
-              <SvgIonicons 
+              <SvgIonicons
                 name="log-out-outline"
                 size={22}
                 color={Colors.secondary}

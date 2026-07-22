@@ -20,11 +20,11 @@ interface UseLeftMenuItemsReturn {
 }
 
 const ICON_SCREEN_MAP: Record<string, string> = {
-  "providers": "NearbyProviders",
-  "orders": "OrderScreen",
-  "medicines": "MedicinesScreen",
-  "healthPackages": "HealthPackages",
-  "settings": "Settings",
+  providers: "NearbyProviders",
+  orders: "OrderScreen",
+  medicines: "MedicinesScreen",
+  healthPackages: "HealthPackages",
+  settings: "Settings",
 };
 
 /**
@@ -37,7 +37,9 @@ const ICON_SCREEN_MAP: Record<string, string> = {
  * const { items, isLoading, error, refetch } = useLeftMenuItems();
  * items.forEach(item => console.log(item.widget_name, item.screen));
  */
-export const useLeftMenuItems = (p_ai_code?: string): UseLeftMenuItemsReturn => {
+export const useLeftMenuItems = (
+  p_ai_code?: string,
+): UseLeftMenuItemsReturn => {
   const [items, setItems] = useState<DrawerMenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -51,7 +53,10 @@ export const useLeftMenuItems = (p_ai_code?: string): UseLeftMenuItemsReturn => 
         (await fetchDataFromLocalStorage("sg_AICODE")) ||
         suggestusClientConfig.SUGGESTUS_AI_CODE;
 
-      console.log("[useLeftMenuItems] Fetching LeftMenu with p_ai_code:", resolvedAiCode);
+      console.log(
+        "[useLeftMenuItems] Fetching LeftMenu with p_ai_code:",
+        resolvedAiCode,
+      );
 
       const backendWidgets = await getMenuAppWidgets({
         p_ai_code: resolvedAiCode,
@@ -90,7 +95,8 @@ export const useLeftMenuItems = (p_ai_code?: string): UseLeftMenuItemsReturn => 
             screen: ICON_SCREEN_MAP[widget.widget_code] || widget.widget_code,
             menu_image: widget.menu_image,
             menu_image_type: widget.menu_image_type,
-            routeParams: Object.keys(routeParams).length > 0 ? routeParams : undefined,
+            routeParams:
+              Object.keys(routeParams).length > 0 ? routeParams : undefined,
           };
         })
         .sort((a, b) => {

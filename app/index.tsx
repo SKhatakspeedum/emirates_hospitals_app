@@ -1,24 +1,15 @@
 import React from "react";
-import {
-  View,
-  Image,
-  StyleSheet,
-  ActivityIndicator,
-  Dimensions,
-} from "react-native";
-import "react-native-get-random-values";
-import Toast from "react-native-toast-message";
+import { View, Image, StyleSheet, Dimensions } from "react-native";
 import { useOrgLogo } from "./hooks/useOrgLogo";
 
-// Passive splash shown on the index route ("/") during cold start.
-//
-// All startup work — suggestus session init, org config fetch, and the
-// auth-gated redirect to Home/Login — lives in app/_layout.tsx (RootLayout)
-// as the single source of truth. Doing it here as well previously caused two
-// competing router.replace() calls (one from RootLayout, one from here after
-// a 1s timeout) and a visible double reload, plus suggestus initializing
-// twice. So this screen now only renders the splash and lets RootLayout
-// navigate away.
+// This screen is the initial route mounted by the root Stack. All startup
+// logic (Suggestus init, auth check, org config fetch, and the eventual
+// router.replace() to Home/Login) lives solely in app/_layout.tsx, which
+// overlays its own splash UI on top of this screen while it runs. Do NOT
+// add navigation or async init logic here — a second router.replace() firing
+// from this screen at the same time as the one in _layout.tsx caused a race
+// that crashed navigation on native ("Attempted to navigate before mounting
+// the Root Layout component").
 export default function IndexRedirect() {
   const logoSource = useOrgLogo();
 
@@ -35,12 +26,12 @@ export default function IndexRedirect() {
         resizeMode="contain"
       />
       <View style={styles.centerContent}>
-        <Image source={logoSource} style={styles.logo} resizeMode="contain" />
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#0177C8" />
-        </View>
+        <Image
+          source={logoSource}
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </View>
-      <Toast />
     </View>
   );
 }
@@ -82,8 +73,5 @@ const styles = StyleSheet.create({
     aspectRatio: 4,
     height: 70,
     backgroundColor: "transparent",
-  },
-  loaderContainer: {
-    marginTop: 16,
   },
 });

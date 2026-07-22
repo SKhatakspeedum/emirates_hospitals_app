@@ -167,7 +167,7 @@ const BottomSheetContent: React.FC<BottomSheetContentProps> = ({
               </View>
               <View style={styles.menuItemRight}>
                 <Text style={styles.menuCount}>{item.count}</Text>
-                <SvgIonicons name="arrow-forward" size={16} color={Colors.inactive} />
+                <Ionicons name="arrow-forward" size={16} color={Colors.inactive} />
               </View>
             </TouchableOpacity>
           ))}

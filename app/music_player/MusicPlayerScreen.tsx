@@ -31,8 +31,7 @@ import {
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
 import useResponsiveHorizontalMargin from "../hooks/useResponsiveHorizontalMargin";
 const { width } = Dimensions.get("window");
@@ -1461,7 +1460,7 @@ const MusicPlayerScreen = () => {
                       />
                                   <View style={styles.playButtonWrapper} pointerEvents="none">
                                     <View style={styles.playCircle}>
-                                      <SvgIonicons 
+                                      <Ionicons
                                         name="play"
                                         size={20}
                                         color="#fff"
@@ -1500,7 +1499,7 @@ const MusicPlayerScreen = () => {
                 style={styles.closeModalButton}
                 onPress={() => setShowVideoPlayer(false)}
               >
-                <SvgIonicons name="close" size={28} color="#fff" />
+                <Ionicons name="close" size={28} color="#fff" />
               </TouchableOpacity>
               {selectedVideo?.audio_video_file ? (
                 Platform.OS === "web" ? (

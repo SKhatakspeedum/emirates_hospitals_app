@@ -14,8 +14,7 @@ import {
   ImageBackground,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
-import { MaterialCommunityIcons  } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { Video } from "expo-av";
 import RenderHtml from "react-native-render-html";
@@ -140,7 +139,7 @@ export default function SeeAllSession() {
     >
       <View style={styles.playButtonContainer}>
         <View style={styles.playButton}>
-          <SvgIonicons name="play" size={24} color="#8B4CFC" />
+          <Ionicons name="play" size={24} color="#8B4CFC" />
         </View>
       </View>
       <View style={styles.sessionInfoContainer}>
@@ -156,7 +155,7 @@ export default function SeeAllSession() {
           <MaterialCommunityIcons name="crown" size={18} color="#FFD700" />
         </View>
       )}
-      <SvgIonicons name="chevron-forward" size={20} color="#B3B7C6" />
+      <Ionicons name="chevron-forward" size={20} color="#B3B7C6" />
     </TouchableOpacity>
   );
   const mainContent = (
@@ -243,7 +242,7 @@ export default function SeeAllSession() {
                           }}
                         ></View>
                         <View style={styles.playBtnWrapper}>
-                          <SvgIonicons name="play" size={24} color="#fff" />
+                          <Ionicons name="play" size={24} color="#fff" />
                         </View>
                       </View>
                       <Text style={styles.videoTitle} numberOfLines={1}>
@@ -280,7 +279,7 @@ export default function SeeAllSession() {
                     style={styles.closeModalButton}
                     onPress={() => setShowVideoPlayer(false)}
                   >
-                    <SvgIonicons name="close" size={28} color="#fff" />
+                    <Ionicons name="close" size={28} color="#fff" />
                   </TouchableOpacity>
                   {selectedVideo?.audio_video_file ? (
                     Platform.OS === "web" ? (

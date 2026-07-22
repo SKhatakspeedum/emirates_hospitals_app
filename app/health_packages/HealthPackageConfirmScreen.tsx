@@ -14,7 +14,7 @@ import {
   Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 
 export default function HealthPackageConfirmScreen() {
@@ -98,7 +98,7 @@ export default function HealthPackageConfirmScreen() {
             onPress={() => navigation.goBack()}
             style={{ flexDirection: "row", alignItems: "center" }}
           >
-            <SvgIonicons name="chevron-back" size={22} color={Colors.text} />
+            <Ionicons name="chevron-back" size={22} color={Colors.text} />
             <Text style={styles.headerTitle}>Confirm Booking</Text>
           </TouchableOpacity>
         </View>
@@ -120,7 +120,7 @@ export default function HealthPackageConfirmScreen() {
           <View style={styles.listContainer}>
             {/* Package details title */}
             <View style={styles.listItem}>
-              <SvgIonicons 
+              <Ionicons
                 name="medkit-outline"
                 size={22}
                 color={Colors.primary}
@@ -137,7 +137,7 @@ export default function HealthPackageConfirmScreen() {
             {/* Date and Time Slot with Change Button */}
             <View style={[styles.listItem, styles.listItemSpaceBetween]}>
               <View style={styles.listItemLeft}>
-                <SvgIonicons 
+                <Ionicons
                   name="time-outline"
                   size={22}
                   color={Colors.primary}
@@ -180,7 +180,7 @@ export default function HealthPackageConfirmScreen() {
 
             {/* Location / Address */}
             {/* <View style={styles.listItem}>
-              <SvgIonicons name="location-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
+              <Ionicons name="location-outline" size={22} color={Colors.primary} style={styles.itemIcon} />
               <View style={styles.textColumn}>
                 <Text style={styles.itemTitle}>Location</Text>
                 <Text style={styles.itemValue}>
@@ -193,7 +193,7 @@ export default function HealthPackageConfirmScreen() {
 
             {/* Price / Payment */}
             <View style={styles.listItem}>
-              <SvgIonicons 
+              <Ionicons
                 name="card-outline"
                 size={22}
                 color={Colors.primary}
@@ -220,7 +220,7 @@ export default function HealthPackageConfirmScreen() {
             onPress={handleDone}
           >
             <Text style={styles.confirmButtonText}>Confirm Booking</Text>
-            <SvgIonicons 
+            <Ionicons
               name="arrow-forward"
               size={18}
               color={Colors.background}

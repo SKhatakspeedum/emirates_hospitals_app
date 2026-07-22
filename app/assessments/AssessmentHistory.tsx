@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { ProgressChart, BarChart } from "react-native-chart-kit";
 import { useLocalSearchParams, Stack } from "expo-router";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRoute } from "@react-navigation/native";
 import { FontFamilies } from "../config/fonts";
 import { spd_processId_config } from "../config/process_id";
@@ -165,7 +165,7 @@ const AssessmentHistory = () => {
               style={styles.arrow}
             />
           ) : (
-            <SvgIonicons 
+            <Ionicons
               name="chevron-forward"
               size={22}
               color="#8453E3"
@@ -196,7 +196,7 @@ const AssessmentHistory = () => {
                     {resultData[0].remark}
                   </Text>
                   <TouchableOpacity onPress={() => setShowResultPopup(false)}>
-                    <SvgIonicons name="close" size={24} color="#262626" />
+                    <Ionicons name="close" size={24} color="#262626" />
                   </TouchableOpacity>
                 </View>
                 {resultLoading ? (
@@ -382,7 +382,7 @@ const AssessmentHistory = () => {
                     style={[styles.chartViewBtn, { opacity: 0.5 }]}
                     disabled={true}
                   >
-                    <SvgIonicons name="bar-chart" size={20} color="#C8C8C8" />
+                    <Ionicons name="bar-chart" size={20} color="#C8C8C8" />
                     <Text
                       style={[styles.chartViewBtnText, { color: "#C8C8C8" }]}
                     >

@@ -12,10 +12,11 @@ import {
   Platform,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
-import { MaterialIcons,
+import {
+  Ionicons,
+  MaterialIcons,
   MaterialCommunityIcons,
- } from "@expo/vector-icons";
+} from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { SiteConfig } from "@/app/config/site_config";
 import {
@@ -297,7 +298,7 @@ export default function SeeAllPlansScreen() {
           {/* Search Bar */}
           <View style={styles.searchContainer}>
             <View style={styles.searchInputContainer}>
-              <SvgIonicons 
+              <Ionicons
                 name="search"
                 size={20}
                 color="#8B4CFC"
@@ -315,7 +316,7 @@ export default function SeeAllPlansScreen() {
                   onPress={clearSearch}
                   style={styles.clearButton}
                 >
-                  <SvgIonicons name="close-circle" size={20} color="#B3B7C6" />
+                  <Ionicons name="close-circle" size={20} color="#B3B7C6" />
                 </TouchableOpacity>
               )}
             </View>
@@ -336,7 +337,7 @@ export default function SeeAllPlansScreen() {
             />
           ) : (
             <View style={styles.noResultsContainer}>
-              <SvgIonicons name="search-outline" size={48} color="#B3B7C6" />
+              <Ionicons name="search-outline" size={48} color="#B3B7C6" />
               <Text style={styles.noResultsText}>No results found</Text>
               <Text style={styles.noResultsSubtext}>
                 Try a different search term

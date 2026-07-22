@@ -22,6 +22,11 @@ import {
   DrawerActions,
   useFocusEffect,
 } from "@react-navigation/native";
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+  FontAwesome,
+} from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import {
@@ -59,11 +64,6 @@ import { getUserEntityReferenceCode } from "../services/entityReferenceCode";
 import YoutubePlayer from "react-native-youtube-iframe";
 import { Video, ResizeMode } from "expo-av";
 import { WebView } from "react-native-webview";
-import {
-  SvgIonicons,
-  SvgFontAwesome,
-  SvgMaterialCommunityIcons,
-} from "../components/icons/SvgIcons";
 
 const getGreetingTime = () => {
   const currentHour = new Date().getHours();
@@ -731,7 +731,7 @@ export default function DashboardScreen() {
     string,
     {
       icon: string;
-      IconFamily: typeof SvgIonicons | typeof SvgMaterialCommunityIcons;
+      IconFamily: typeof Ionicons | typeof MaterialCommunityIcons;
       color: string;
       bgColor: string;
       onPress: () => void | Promise<void>;
@@ -739,7 +739,7 @@ export default function DashboardScreen() {
   > = {
     appointments: {
       icon: "calendar-outline",
-      IconFamily: SvgIonicons,
+      IconFamily: Ionicons,
       color: "#3498DB",
       bgColor: "#EBF5FB",
       onPress: async () => {
@@ -816,21 +816,21 @@ export default function DashboardScreen() {
     },
     healthPackages: {
       icon: "medkit-outline",
-      IconFamily: SvgIonicons,
+      IconFamily: Ionicons,
       color: "#F39C12",
       bgColor: "#FEF5E7",
       onPress: () => navigation.navigate("HealthPackages"),
     },
     orders: {
       icon: "receipt-outline",
-      IconFamily: SvgIonicons,
+      IconFamily: Ionicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
       onPress: () => {},
     },
     rxRefill: {
       icon: "pill",
-      IconFamily: SvgMaterialCommunityIcons,
+      IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
       onPress: () => {},
@@ -841,7 +841,7 @@ export default function DashboardScreen() {
   // recognize yet — avoids a crash or a silently-missing button.
   const DEFAULT_QUICK_ACTION_META = {
     icon: "apps-outline",
-    IconFamily: SvgIonicons,
+    IconFamily: Ionicons,
     color: "#6B7280",
     bgColor: "#F3F4F6",
     onPress: () => {},
@@ -1168,7 +1168,7 @@ export default function DashboardScreen() {
                   {getMenuIcon(
                     section.menuImageType,
                     section.menuImage,
-                    <SvgIonicons
+                    <Ionicons
                       name="calendar"
                       size={13}
                       color={Colors.secondary}
@@ -1186,7 +1186,7 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.seeAllText}>
                   See all{" "}
-                  <SvgIonicons
+                  <Ionicons
                     name="chevron-forward"
                     size={12}
                     color={Colors.secondary}
@@ -1221,7 +1221,7 @@ export default function DashboardScreen() {
                       {appt.specialty}
                     </Text>
                     <View style={styles.appointmentMetaRow}>
-                      <SvgIonicons
+                      <Ionicons
                         name="time-outline"
                         size={14}
                         color={Colors.secondary}
@@ -1262,7 +1262,7 @@ export default function DashboardScreen() {
                   {getMenuIcon(
                     section.menuImageType,
                     section.menuImage,
-                    <SvgIonicons name="play" size={13} color={Colors.secondary} />,
+                    <Ionicons name="play" size={13} color={Colors.secondary} />,
                     13,
                   )}
                 </View>
@@ -1275,7 +1275,7 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.seeAllText}>
                   See all{" "}
-                  <SvgIonicons
+                  <Ionicons
                     name="chevron-forward"
                     size={12}
                     color={Colors.secondary}
@@ -1304,7 +1304,7 @@ export default function DashboardScreen() {
                   style={styles.videoThumbnail}
                 />
                 <View style={styles.playButtonOverlay}>
-                  <SvgIonicons name="play" size={40} color={Colors.background} />
+                  <Ionicons name="play" size={40} color={Colors.background} />
                 </View>
               </Pressable>
             ) : (
@@ -1330,7 +1330,7 @@ export default function DashboardScreen() {
                       style={styles.videoThumbnail}
                     />
                     <View style={styles.playButtonOverlay}>
-                      <SvgIonicons
+                      <Ionicons
                         name="play"
                         size={32}
                         color={Colors.background}
@@ -1361,7 +1361,7 @@ export default function DashboardScreen() {
                 {getMenuIcon(
                   section.menuImageType,
                   section.menuImage,
-                  <SvgIonicons name="heart" size={13} color={Colors.secondary} />,
+                  <Ionicons name="heart" size={13} color={Colors.secondary} />,
                   13,
                 )}
               </View>
@@ -1423,7 +1423,7 @@ export default function DashboardScreen() {
                   {getMenuIcon(
                     section.menuImageType,
                     section.menuImage,
-                    <SvgIonicons
+                    <Ionicons
                       name="person"
                       size={13}
                       color={Colors.secondary}
@@ -1447,7 +1447,7 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.seeAllText}>
                   See all{" "}
-                  <SvgIonicons
+                  <Ionicons
                     name="chevron-forward"
                     size={12}
                     color={Colors.secondary}
@@ -1544,7 +1544,7 @@ export default function DashboardScreen() {
                   {getMenuIcon(
                     section.menuImageType,
                     section.menuImage,
-                    <SvgIonicons
+                    <Ionicons
                       name="medkit"
                       size={13}
                       color={Colors.secondary}
@@ -1568,7 +1568,7 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.seeAllText}>
                   See all{" "}
-                  <SvgIonicons
+                  <Ionicons
                     name="chevron-forward"
                     size={12}
                     color={Colors.secondary}
@@ -1661,7 +1661,7 @@ export default function DashboardScreen() {
               })}
               onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
             >
-              {/* <SvgIonicons 
+              {/* <Ionicons
                 name="menu-outline"
                 size={32}
                 color={Colors.background}
@@ -1681,7 +1681,7 @@ export default function DashboardScreen() {
               onPress={() => setShowLocationPicker(true)}
               disabled={switchingLocation}
             >
-              <SvgIonicons
+              <Ionicons
                 name="location-sharp"
                 size={16}
                 color={Colors.background}
@@ -1692,7 +1692,7 @@ export default function DashboardScreen() {
               {switchingLocation ? (
                 <ActivityIndicator size="small" color={Colors.background} />
               ) : (
-                <SvgIonicons
+                <Ionicons
                   name="chevron-down"
                   size={16}
                   color={Colors.background}
@@ -1707,7 +1707,7 @@ export default function DashboardScreen() {
                   { opacity: pressed ? 0.6 : 1 },
                 ]}
               >
-                <SvgIonicons
+                <Ionicons
                   name="search-outline"
                   size={24}
                   color={Colors.background}
@@ -1720,7 +1720,7 @@ export default function DashboardScreen() {
                 ]}
               >
                 <View>
-                  <SvgIonicons
+                  <Ionicons
                     name="notifications-outline"
                     size={24}
                     color={Colors.background}
@@ -1749,12 +1749,7 @@ export default function DashboardScreen() {
           {visibleSections.some((s) => s.key === "greeting") && (
             <View style={styles.headerGreetingSection}>
               <View style={styles.bgCircleLarge} />
-              <SvgFontAwesome
-                name="plus"
-                size={40}
-                color={Colors.overlayOnDark}
-                style={styles.bgPlus}
-              />
+              <FontAwesome name="plus" size={40} style={styles.bgPlus} />
 
               <View style={styles.greetingContainer}>
                 <Text style={styles.greetingText}>
@@ -1827,7 +1822,7 @@ export default function DashboardScreen() {
                           },
                         ]}
                       >
-                        <SvgIonicons
+                        <Ionicons
                           name="location"
                           size={18}
                           color={isSelected ? Colors.primary : Colors.gray}
@@ -1853,7 +1848,7 @@ export default function DashboardScreen() {
                         )}
                       </View>
                       {isSelected && (
-                        <SvgIonicons
+                        <Ionicons
                           name="checkmark-circle"
                           size={25}
                           color={Colors.secondary}
@@ -1887,7 +1882,7 @@ export default function DashboardScreen() {
               style={styles.videoModalCloseButton}
               onPress={() => setPlayingVideoUrl(null)}
             >
-              <SvgIonicons name="close" size={28} color={Colors.background} />
+              <Ionicons name="close" size={28} color={Colors.background} />
             </TouchableOpacity>
             {playingVideoUrl &&
               (() => {

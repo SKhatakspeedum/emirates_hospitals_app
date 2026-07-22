@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 interface AppHeaderProps {
@@ -105,7 +105,7 @@ export default function AppHeaderWeb({ handleMenuPress }: AppHeaderProps) {
               style={styles.searchBarContainer}
               onPress={() => navigation.navigate("search/SearchScreen")}
             >
-              <SvgIonicons 
+              <Ionicons
                 name="search"
                 size={20}
                 color="#888"
@@ -120,7 +120,7 @@ export default function AppHeaderWeb({ handleMenuPress }: AppHeaderProps) {
               />
             </TouchableOpacity>
             {/* <TouchableOpacity style={styles.headerIconBtn}>
-              <SvgIonicons name="notifications-outline" size={18} color="#fff" />
+              <Ionicons name="notifications-outline" size={18} color="#fff" />
             </TouchableOpacity> */}
           </View>
         </View>

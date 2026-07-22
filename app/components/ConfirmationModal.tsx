@@ -8,7 +8,7 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from 'react-native';
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../config/colors';
 import { Typography } from '../config/typography';
 import { Spacing, BorderRadius, PaddingSizes, MarginSizes } from '../config/spacing';
@@ -57,7 +57,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <View style={styles.modalContainer}>
               {/* Icon Container */}
               <View style={[styles.iconWrapper, { backgroundColor: iconBackgroundColor }]}>
-                <SvgIonicons name={iconName} size={28} color={iconColor} />
+                <Ionicons name={iconName} size={28} color={iconColor} />
               </View>
 
               {/* Text Content */}

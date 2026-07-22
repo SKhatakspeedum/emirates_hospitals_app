@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, Image } from "react-native";
-import { Fontisto, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
+import { Fontisto, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
 import RenderHTML from "react-native-render-html";
 import { Colors } from "@/app/config/colors";
@@ -93,7 +92,7 @@ export const renderVectorIcon = (
       return <MaterialIcons name={name} size={size} color={Colors.secondary} />;
     case "ionicons":
     default:
-      return <SvgIonicons name={name} size={size} color={Colors.secondary} />;
+      return <Ionicons name={name} size={size} color={Colors.secondary} />;
   }
 };
 

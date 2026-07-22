@@ -13,8 +13,7 @@ import {
   Pressable,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { SvgIonicons } from "@/app/components/icons/SvgIcons";
-import { FontAwesome5  } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { Colors } from "../config/colors";
 
 const getDynamicScheduleData = () => {
@@ -135,7 +134,7 @@ export default function HealthPackageScheduleScreen() {
           onPress={() => navigation.goBack()}
           style={{ flexDirection: "row", alignItems: "center" }}
         >
-          <SvgIonicons name="chevron-back" size={22} color={Colors.text} />
+          <Ionicons name="chevron-back" size={22} color={Colors.text} />
           <Text style={styles.headerTitle}>Date & Time tes</Text>
         </TouchableOpacity>
       </View>
@@ -214,7 +213,7 @@ export default function HealthPackageScheduleScreen() {
           onPress={handleConfirm}
         >
           <Text style={styles.confirmButtonText}>Continue</Text>
-          <SvgIonicons name="arrow-forward" size={18} color={Colors.background} />
+          <Ionicons name="arrow-forward" size={18} color={Colors.background} />
         </Pressable>
       </View>
     </View>

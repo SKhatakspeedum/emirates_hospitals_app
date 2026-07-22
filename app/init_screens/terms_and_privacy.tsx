@@ -100,6 +100,8 @@ export default function TermsAndPrivacyScreen() {
             source={{ html: termsHtml }}
             tagsStyles={htmlStyles}
             baseStyle={htmlBaseStyle}
+            systemFonts={SYSTEM_FONTS}
+            enableExperimentalMarginCollapsing
           />
         ) : (
           <Text style={styles.fallbackText}>
@@ -151,58 +153,71 @@ export default function TermsAndPrivacyScreen() {
   );
 }
 
+// Quicksand ships each weight as a separate font file, so a bold tag must
+// select the bold *file* AND set fontWeight/fontStyle to "normal" — otherwise
+// react-native-render-html layers its own fontWeight:"bold" on top, producing
+// synthetic double-bolding (the heavy, slightly blurred text in the CMS terms).
+const SYSTEM_FONTS = [
+  FontFamilies.bold,
+  FontFamilies.semiBold,
+  FontFamilies.medium,
+  FontFamilies.regular,
+  FontFamilies.light,
+];
+
 const htmlBaseStyle = {
   fontFamily: FontFamilies.regular,
   color: Colors.text,
-  fontSize: 15,
+  fontSize: 14,
+  lineHeight: 21,
+  fontWeight: "normal" as const,
+};
+
+const bold = {
+  fontFamily: FontFamilies.semiBold,
+  fontWeight: "normal" as const,
+  color: Colors.text,
+};
+
+const heading = (fontSize: number, marginTop: number, marginBottom: number) => ({
+  fontSize,
+  fontFamily: FontFamilies.bold,
+  fontWeight: "normal" as const,
+  color: Colors.text,
+  marginTop,
+  marginBottom,
+});
+
+const body = {
+  fontSize: 14,
+  fontFamily: FontFamilies.regular,
+  fontWeight: "normal" as const,
+  color: Colors.text,
   lineHeight: 21,
 };
 
 const htmlStyles = {
-  h1: {
-    fontSize: 20,
-    fontFamily: FontFamilies.bold,
-    color: Colors.text,
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  h2: {
-    fontSize: 18,
-    fontFamily: FontFamilies.bold,
-    color: Colors.text,
-    marginBottom: 10,
-    marginTop: 16,
-  },
-  h3: {
-    fontSize: 16,
-    fontFamily: FontFamilies.semiBold,
-    color: Colors.text,
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  h4: {
-    fontSize: 15,
-    fontFamily: FontFamilies.semiBold,
-    color: Colors.text,
-    marginBottom: 6,
-  },
-  p: {
-    fontSize: 15,
-    fontFamily: FontFamilies.regular,
-    color: Colors.text,
-    lineHeight: 21,
-    marginBottom: 10,
-  },
-  li: {
-    fontSize: 15,
-    fontFamily: FontFamilies.regular,
-    color: Colors.text,
-    lineHeight: 21,
-    marginBottom: 6,
-  },
-  ul: { marginBottom: 10 },
-  strong: { fontFamily: FontFamilies.semiBold },
-  a: { color: Colors.secondary },
+  h1: heading(20, 8, 12),
+  h2: heading(18, 16, 10),
+  h3: { ...heading(16, 12, 8), fontFamily: FontFamilies.semiBold },
+  h4: { ...heading(15, 10, 6), fontFamily: FontFamilies.semiBold },
+  h5: { ...heading(14, 8, 6), fontFamily: FontFamilies.semiBold },
+  h6: { ...heading(14, 8, 6), fontFamily: FontFamilies.semiBold },
+  p: { ...body, marginTop: 0, marginBottom: 10 },
+  div: { ...body },
+  span: { ...body },
+  li: { ...body, marginBottom: 6 },
+  // Consistent indentation for both list types + nested lists; RenderHtml uses
+  // the li text style for the marker, so markers inherit the theme font/color.
+  ul: { marginTop: 0, marginBottom: 10, paddingLeft: 18 },
+  ol: { marginTop: 0, marginBottom: 10, paddingLeft: 18 },
+  strong: bold,
+  b: bold,
+  em: { ...body, fontStyle: "italic" as const },
+  i: { ...body, fontStyle: "italic" as const },
+  u: { ...body, textDecorationLine: "underline" as const },
+  a: { ...body, color: Colors.secondary, textDecorationLine: "underline" as const },
+  br: { height: 8 },
 };
 
 const styles = StyleSheet.create({

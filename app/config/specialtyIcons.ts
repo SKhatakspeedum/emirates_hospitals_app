@@ -1,7 +1,8 @@
-import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
+import { FontAwesome5, MaterialCommunityIcons  } from "@expo/vector-icons";
 
 export interface SpecialtyIconMeta {
-  Icon: typeof Ionicons | typeof FontAwesome5 | typeof MaterialCommunityIcons;
+  Icon: typeof SvgIonicons | typeof FontAwesome5 | typeof MaterialCommunityIcons;
   iconName: string;
   iconSize: number;
   iconColor: string;
@@ -96,7 +97,7 @@ export const getSpecialtyIconMeta = (label: string): SpecialtyIconMeta => {
     };
   }
   return {
-    Icon: Ionicons,
+    Icon: SvgIonicons,
     iconName: "medkit-outline",
     iconSize: 24,
     iconColor: "#6B7280",

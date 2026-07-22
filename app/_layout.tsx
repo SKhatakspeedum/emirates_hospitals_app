@@ -128,27 +128,31 @@ export default function RootLayout() {
   }, [isReady]);
 
   const init = async () => {
+    // Best-effort session init — do NOT gate navigation on its success, or a
+    // suggestus failure would strand the app on the splash screen.
     try {
       const sessionResult = await initializeSuggestus();
       if (!sessionResult?.returnCode) {
         // Retry once with session-only call (footprint may already exist)
-
-        const retryResult = await createSuggestusSession();
-        if (!retryResult?.returnCode) {
-          return;
-        }
-      }
-
-      // Step 2: Check persistent login
-      const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
-
-      if (isLoggedIn === "true") {
-        router.replace("/tab_bar_home/HomeScreen");
-      } else {
-        router.replace("/init_screens/login");
+        await createSuggestusSession();
       }
     } catch (error) {
-      console.error(error);
+      console.error("[RootLayout] suggestus init failed:", error);
+    }
+
+    // Single source of truth for the initial auth-gated redirect. index.tsx
+    // must NOT also redirect, or the two competing router.replace() calls
+    // produce a visible double reload on cold start.
+    try {
+      const isLoggedIn = await AsyncStorage.getItem(IS_LOGGED_IN);
+      router.replace(
+        isLoggedIn === "true"
+          ? "/tab_bar_home/HomeScreen"
+          : "/init_screens/login",
+      );
+    } catch (error) {
+      console.error("[RootLayout] auth check failed:", error);
+      router.replace("/init_screens/login");
     }
   };
 

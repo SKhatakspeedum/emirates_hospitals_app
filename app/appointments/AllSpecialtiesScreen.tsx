@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
 import { Colors } from "../config/colors";
 import { FontFamilies } from "../config/fonts";
 import CustomHeader from "../components/CustomHeader";
@@ -89,7 +89,7 @@ export default function AllSpecialtiesScreen() {
           />
         ) : specialties.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="medkit-outline" size={64} color="#B3B7C6" />
+            <SvgIonicons name="medkit-outline" size={64} color="#B3B7C6" />
             <Text style={styles.emptyText}>No specialties found</Text>
           </View>
         ) : (
@@ -126,7 +126,7 @@ export default function AllSpecialtiesScreen() {
                     />
                   </View>
                   <Text style={styles.label}>{item.label}</Text>
-                  <Ionicons
+                  <SvgIonicons 
                     name="chevron-forward"
                     size={18}
                     color={Colors.label}

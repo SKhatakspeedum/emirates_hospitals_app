@@ -13,7 +13,7 @@ import {
   Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
 import HTMLView from "react-native-htmlview";
 import { ProgressChart } from "react-native-chart-kit";
 import { spd_processId_config } from "../config/process_id";
@@ -286,7 +286,7 @@ const AssessmentDetailScreen = () => {
                     style={{ opacity: ".5" }}
                     onPress={() => setShowSurvey(false)}
                   >
-                    <Ionicons name="close" size={22} color="#262626" />
+                    <SvgIonicons name="close" size={22} color="#262626" />
                   </TouchableOpacity>
                 </View>
 

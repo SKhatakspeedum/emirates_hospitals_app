@@ -13,7 +13,8 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { Video } from "expo-av";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
+import { MaterialCommunityIcons  } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { SiteConfig } from "@/app/config/site_config";
 import {
@@ -233,7 +234,7 @@ const ExploreDetailScreen = () => {
                   }}
                   onPress={() => setVideoVisible(false)}
                 >
-                  <Ionicons name="close" size={28} color="#fff" />
+                  <SvgIonicons name="close" size={28} color="#fff" />
                 </TouchableOpacity>
                 {Platform.OS === "web" && screenWidth >= 1024 ? (
                   <video
@@ -319,7 +320,7 @@ const ExploreDetailScreen = () => {
                       resizeMode="cover"
                     >
                       <View style={styles.playBtnWrapper}>
-                        <Ionicons name="play" size={24} color="#fff" />
+                        <SvgIonicons name="play" size={24} color="#fff" />
                       </View>
                     </ImageBackground>
                   );

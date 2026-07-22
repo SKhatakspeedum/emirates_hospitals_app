@@ -13,12 +13,9 @@ import {
 } from "react-native";
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { useRouter } from "expo-router";
-import {
-  Fontisto,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons,
-} from "@expo/vector-icons";
+import { SvgIonicons } from "../../components/icons/SvgIcons";
+import { Fontisto, MaterialCommunityIcons,
+  MaterialIcons, } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   IS_LOGGED_IN,
@@ -102,7 +99,7 @@ const DEFAULT_DRAWER_ITEMS = [
   {
     label: "Settings",
     icon: (
-      <Ionicons name="settings-outline" size={20} color={Colors.secondary} />
+      <SvgIonicons name="settings-outline" size={20} color={Colors.secondary} />
     ),
     screen: "Settings",
   },
@@ -124,12 +121,12 @@ const ICON_MAP: Record<string, React.ReactNode> = {
     <MaterialIcons name="medical-services" size={20} color={Colors.secondary} />
   ),
   settings: (
-    <Ionicons name="settings-outline" size={20} color={Colors.secondary} />
+    <SvgIonicons name="settings-outline" size={20} color={Colors.secondary} />
   ),
 };
 
 const DEFAULT_ICON = (
-  <Ionicons name="help-circle-outline" size={20} color={Colors.secondary} />
+  <SvgIonicons name="help-circle-outline" size={20} color={Colors.secondary} />
 );
 
 // Resolves the drawer-specific default icon for a widget, then defers to the
@@ -369,7 +366,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             >
               <View style={styles.linkIconWrapper}>{item.icon}</View>
               <Text style={styles.linkLabel}>{item.label}</Text>
-              {/* <Ionicons
+              {/* <SvgIonicons 
                 name="chevron-forward"
                 size={16}
                 color={Colors.inactive}
@@ -387,14 +384,14 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             disabled={isSigningOut}
           >
             <View style={styles.linkIconWrapper}>
-              <Ionicons
+              <SvgIonicons 
                 name="log-out-outline"
                 size={22}
                 color={Colors.secondary}
               />
             </View>
             <Text style={styles.logoutLabel}>Log out</Text>
-            {/* <Ionicons
+            {/* <SvgIonicons 
               name="chevron-forward"
               size={16}
               color={Colors.inactive}

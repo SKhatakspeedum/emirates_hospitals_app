@@ -23,7 +23,7 @@ const PROCESS_ID_SAVE =
 const PROCESS_ID_UPDATE =
   spd_processId_config.spdonmood9_update_md_user_sleep_hygiene_check_in;
 import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SPD_USER_ID } from "../config/config";
@@ -330,7 +330,7 @@ const SleepCheckIn = () => {
                   />
                 </Svg>
 
-                {/* <Ionicons name="chevron-down" size={18} color={PURPLE} style={{ marginLeft: 8 }} /> */}
+                {/* <SvgIonicons name="chevron-down" size={18} color={PURPLE} style={{ marginLeft: 8 }} /> */}
               </TouchableOpacity>
               {/* Calendar Modal Popup */}
               <Modal

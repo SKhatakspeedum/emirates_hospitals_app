@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRoute, useIsFocused } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
 import { Calendar } from "react-native-calendars";
@@ -382,14 +382,14 @@ export default function RegisterNewPatient() {
       return <ActivityIndicator size="small" color={Colors.secondary} />;
     }
     if (check.status === "available") {
-      return <Ionicons name="checkmark-circle" size={20} color="#22C55E" />;
+      return <SvgIonicons name="checkmark-circle" size={20} color="#22C55E" />;
     }
     if (
       check.status === "exists" ||
       check.status === "error" ||
       check.status === "invalid"
     ) {
-      return <Ionicons name="close-circle" size={20} color="#EF4444" />;
+      return <SvgIonicons name="close-circle" size={20} color="#EF4444" />;
     }
     return null;
   };
@@ -417,7 +417,7 @@ export default function RegisterNewPatient() {
               style={styles.closeBtn}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={22} color={Colors.text} />
+              <SvgIonicons name="close" size={22} color={Colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -571,7 +571,7 @@ export default function RegisterNewPatient() {
                     focusedField === "firstName" && styles.inputWrapperFocused,
                   ]}
                 >
-                  <Ionicons
+                  <SvgIonicons 
                     name="person-outline"
                     size={20}
                     color={Colors.secondary}
@@ -598,7 +598,7 @@ export default function RegisterNewPatient() {
                     focusedField === "lastName" && styles.inputWrapperFocused,
                   ]}
                 >
-                  <Ionicons
+                  <SvgIonicons 
                     name="person-outline"
                     size={20}
                     color={Colors.secondary}
@@ -634,7 +634,7 @@ export default function RegisterNewPatient() {
                 }}
                 activeOpacity={0.8}
               >
-                <Ionicons
+                <SvgIonicons 
                   name="calendar-outline"
                   size={20}
                   color={showDatePicker ? Colors.secondary : Colors.label}
@@ -657,7 +657,7 @@ export default function RegisterNewPatient() {
                       focusedField === "dob" && styles.inputWrapperFocused,
                     ]}
                   >
-                    <Ionicons
+                    <SvgIonicons 
                       name="calendar-outline"
                       size={20}
                       color={
@@ -707,7 +707,7 @@ export default function RegisterNewPatient() {
                     onPress={() => setShowDatePicker(true)}
                     activeOpacity={0.8}
                   >
-                    <Ionicons
+                    <SvgIonicons 
                       name="calendar-outline"
                       size={20}
                       color={showDatePicker ? Colors.secondary : Colors.label}
@@ -872,7 +872,7 @@ export default function RegisterNewPatient() {
                         onPress={() => jumpTo("year", -1)}
                         style={styles.calendarNavBtn}
                       >
-                        <Ionicons
+                        <SvgIonicons 
                           name="play-back"
                           size={16}
                           color={Colors.primary}
@@ -882,7 +882,7 @@ export default function RegisterNewPatient() {
                         onPress={() => jumpTo("month", -1)}
                         style={styles.calendarNavBtn}
                       >
-                        <Ionicons
+                        <SvgIonicons 
                           name="chevron-back"
                           size={20}
                           color={Colors.primary}
@@ -896,7 +896,7 @@ export default function RegisterNewPatient() {
                         <Text style={styles.calendarHeaderText}>
                           {dayjs(calendarMonth).format("MMMM YYYY")}
                         </Text>
-                        <Ionicons
+                        <SvgIonicons 
                           name="caret-down"
                           size={12}
                           color={Colors.primary}
@@ -907,7 +907,7 @@ export default function RegisterNewPatient() {
                         onPress={() => jumpTo("month", 1)}
                         style={styles.calendarNavBtn}
                       >
-                        <Ionicons
+                        <SvgIonicons 
                           name="chevron-forward"
                           size={20}
                           color={Colors.primary}
@@ -917,7 +917,7 @@ export default function RegisterNewPatient() {
                         onPress={() => jumpTo("year", 1)}
                         style={styles.calendarNavBtn}
                       >
-                        <Ionicons
+                        <SvgIonicons 
                           name="play-forward"
                           size={16}
                           color={Colors.primary}

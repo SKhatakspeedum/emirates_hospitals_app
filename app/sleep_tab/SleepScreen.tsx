@@ -18,11 +18,9 @@ import { callSuggestusAPI } from "../suggestus_plugin/suggestusClient";
 import { spd_processId_config } from "../config/process_id";
 import { SiteConfig } from "../config/site_config";
 import { COURSES_SUB_URL, SPD_USER_SUBSCRIPTION } from "../config/config";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  Ionicons,
-} from "@expo/vector-icons";
+import { SvgIonicons } from "../components/icons/SvgIcons";
+import { MaterialCommunityIcons,
+  FontAwesome5,  } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import Toast from 'react-native-toast-message';
 import AsyncStorage from "@react-native-async-storage/async-storage";

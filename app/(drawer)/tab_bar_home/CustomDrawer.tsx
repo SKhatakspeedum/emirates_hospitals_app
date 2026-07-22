@@ -231,6 +231,8 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     screen: string,
     routeParams?: Record<string, any>,
   ) => {
+    props.navigation.closeDrawer();
+
     if (screen === "SignOut") {
       setIsSigningOut(true);
       try {

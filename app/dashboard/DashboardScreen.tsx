@@ -23,9 +23,10 @@ import {
   useFocusEffect,
 } from "@react-navigation/native";
 import { SvgIonicons } from "../components/icons/SvgIcons";
-import { MaterialCommunityIcons,
+import {
+  MaterialCommunityIcons,
   FontAwesome,
- } from "@expo/vector-icons";
+} from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import {
@@ -266,7 +267,7 @@ export default function DashboardScreen() {
         try {
           const defaultJson = defaultJsonStr ? JSON.parse(defaultJsonStr) : {};
           orgCodes = defaultJson?.spd_app_location_list ?? SiteConfig.AI_CODE;
-        } catch (_) {}
+        } catch (_) { }
 
         const response = await callSuggestusAPI(
           spd_processId_config.sgconf_get_mst_organization_location_patient_portal_list,
@@ -470,7 +471,7 @@ export default function DashboardScreen() {
               USER_FULL_DATA,
               JSON.stringify(stored),
             );
-          } catch (_) {}
+          } catch (_) { }
 
           if (!existingPid) {
             // Step 4: Link patient → user
@@ -572,7 +573,7 @@ export default function DashboardScreen() {
           if (p.name) resolvedName = p.name;
           if (p.age || p.gender)
             setPatientMeta({ age: p.age ?? 0, gender: p.gender ?? "" });
-        } catch (_) {}
+        } catch (_) { }
       }
 
       if (!resolvedName) {
@@ -759,7 +760,7 @@ export default function DashboardScreen() {
                 const _j = JSON.parse(_d);
                 _mobile = _j.usr_phone ?? _j.usr_mobile ?? _j.p_mobile_no ?? "";
               }
-            } catch (_) {}
+            } catch (_) { }
             const response = await callSuggestusAPI(
               spd_processId_config.xcelpat_get_trn_patient_details_ehg_pntapp,
               {
@@ -796,7 +797,7 @@ export default function DashboardScreen() {
               const parsed = JSON.parse(fullDataStr);
               phone = parsed.contact || "";
             }
-          } catch (e) {}
+          } catch (e) { }
 
           // router.push({
           //   pathname: "/patient/registered_patients",
@@ -825,14 +826,14 @@ export default function DashboardScreen() {
       IconFamily: SvgIonicons,
       color: "#2ECC71",
       bgColor: "#EAF6F0",
-      onPress: () => {},
+      onPress: () => navigation.navigate("OrderScreen"),
     },
     rxRefill: {
       icon: "pill",
       IconFamily: MaterialCommunityIcons,
       color: "#9B59B6",
       bgColor: "#F5EEF8",
-      onPress: () => {},
+      onPress: () => { },
     },
   };
 
@@ -843,7 +844,7 @@ export default function DashboardScreen() {
     IconFamily: SvgIonicons,
     color: "#6B7280",
     bgColor: "#F3F4F6",
-    onPress: () => {},
+    onPress: () => { },
   };
 
   const [quickActionsData, setQuickActionsData] = useState<
@@ -1167,7 +1168,7 @@ export default function DashboardScreen() {
                   {getMenuIcon(
                     section.menuImageType,
                     section.menuImage,
-                    <SvgIonicons 
+                    <SvgIonicons
                       name="calendar"
                       size={13}
                       color={Colors.secondary}
@@ -1185,7 +1186,7 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.seeAllText}>
                   See all{" "}
-                  <SvgIonicons 
+                  <SvgIonicons
                     name="chevron-forward"
                     size={12}
                     color={Colors.secondary}
@@ -1220,7 +1221,7 @@ export default function DashboardScreen() {
                       {appt.specialty}
                     </Text>
                     <View style={styles.appointmentMetaRow}>
-                      <SvgIonicons 
+                      <SvgIonicons
                         name="time-outline"
                         size={14}
                         color={Colors.secondary}
@@ -1274,7 +1275,7 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.seeAllText}>
                   See all{" "}
-                  <SvgIonicons 
+                  <SvgIonicons
                     name="chevron-forward"
                     size={12}
                     color={Colors.secondary}
@@ -1329,7 +1330,7 @@ export default function DashboardScreen() {
                       style={styles.videoThumbnail}
                     />
                     <View style={styles.playButtonOverlay}>
-                      <SvgIonicons 
+                      <SvgIonicons
                         name="play"
                         size={32}
                         color={Colors.background}
@@ -1422,7 +1423,7 @@ export default function DashboardScreen() {
                   {getMenuIcon(
                     section.menuImageType,
                     section.menuImage,
-                    <SvgIonicons 
+                    <SvgIonicons
                       name="person"
                       size={13}
                       color={Colors.secondary}
@@ -1446,7 +1447,7 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.seeAllText}>
                   See all{" "}
-                  <SvgIonicons 
+                  <SvgIonicons
                     name="chevron-forward"
                     size={12}
                     color={Colors.secondary}
@@ -1543,7 +1544,7 @@ export default function DashboardScreen() {
                   {getMenuIcon(
                     section.menuImageType,
                     section.menuImage,
-                    <SvgIonicons 
+                    <SvgIonicons
                       name="medkit"
                       size={13}
                       color={Colors.secondary}
@@ -1567,7 +1568,7 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.seeAllText}>
                   See all{" "}
-                  <SvgIonicons 
+                  <SvgIonicons
                     name="chevron-forward"
                     size={12}
                     color={Colors.secondary}
@@ -1680,7 +1681,7 @@ export default function DashboardScreen() {
               onPress={() => setShowLocationPicker(true)}
               disabled={switchingLocation}
             >
-              <SvgIonicons 
+              <SvgIonicons
                 name="location-sharp"
                 size={16}
                 color={Colors.background}
@@ -1691,7 +1692,7 @@ export default function DashboardScreen() {
               {switchingLocation ? (
                 <ActivityIndicator size="small" color={Colors.background} />
               ) : (
-                <SvgIonicons 
+                <SvgIonicons
                   name="chevron-down"
                   size={16}
                   color={Colors.background}
@@ -1706,7 +1707,7 @@ export default function DashboardScreen() {
                   { opacity: pressed ? 0.6 : 1 },
                 ]}
               >
-                <SvgIonicons 
+                <SvgIonicons
                   name="search-outline"
                   size={24}
                   color={Colors.background}
@@ -1719,7 +1720,7 @@ export default function DashboardScreen() {
                 ]}
               >
                 <View>
-                  <SvgIonicons 
+                  <SvgIonicons
                     name="notifications-outline"
                     size={24}
                     color={Colors.background}
@@ -1792,7 +1793,7 @@ export default function DashboardScreen() {
           style={styles.locationSheetOverlay}
           onPress={() => setShowLocationPicker(false)}
         >
-          <Pressable style={styles.locationSheetCard} onPress={() => {}}>
+          <Pressable style={styles.locationSheetCard} onPress={() => { }}>
             <View style={styles.locationSheetHandle} />
             <Text style={styles.locationSheetTitle}>Switch location</Text>
             {locations.length === 0 ? (
@@ -1821,7 +1822,7 @@ export default function DashboardScreen() {
                           },
                         ]}
                       >
-                        <SvgIonicons 
+                        <SvgIonicons
                           name="location"
                           size={18}
                           color={isSelected ? Colors.primary : Colors.gray}
@@ -1847,7 +1848,7 @@ export default function DashboardScreen() {
                         )}
                       </View>
                       {isSelected && (
-                        <SvgIonicons 
+                        <SvgIonicons
                           name="checkmark-circle"
                           size={25}
                           color={Colors.secondary}
@@ -1917,7 +1918,6 @@ export default function DashboardScreen() {
                       initialPlayerParams={{
                         preventFullScreen: false,
                         controls: true,
-                        modestbranding: true,
                         rel: false,
                       }}
                       webViewProps={{
@@ -1942,7 +1942,7 @@ export default function DashboardScreen() {
                         // popups outright, and no-op any window the WebView
                         // still tries to open on iOS/other.
                         setSupportMultipleWindows: false,
-                        onOpenWindow: () => {},
+                        onOpenWindow: () => { },
                       }}
                       webViewStyle={{ opacity: 0.99 }}
                     />
@@ -2161,6 +2161,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 32,
     borderRadius: 10,
+    backgroundColor: Colors.backgroundLight,
     padding: 7,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 6 },

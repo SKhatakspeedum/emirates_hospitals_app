@@ -37,12 +37,18 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (loaded && isReady) {
+    if (error) {
+      console.error("[RootLayout] Font loading error:", error);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if ((loaded || error) && isReady) {
       SplashScreen.hideAsync().catch((err) =>
         console.error("[RootLayout] SplashScreen.hideAsync error:", err),
       );
     }
-  }, [loaded, isReady]);
+  }, [loaded, error, isReady]);
 
   useEffect(() => {
     if (Platform.OS !== "web") return;

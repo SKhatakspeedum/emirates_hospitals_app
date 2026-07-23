@@ -1,4 +1,4 @@
-package com.onmood9.app
+package com.speedum.healthvault.app
 
 import android.app.Application
 import android.content.res.Configuration

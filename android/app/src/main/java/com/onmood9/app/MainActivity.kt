@@ -1,4 +1,4 @@
-package com.onmood9.app
+package com.speedum.healthvault.app
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

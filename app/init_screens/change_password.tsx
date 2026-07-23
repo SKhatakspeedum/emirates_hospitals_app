@@ -33,7 +33,7 @@ export default function ChangePasswordScreen() {
           source={require("@/assets/images/splash_icon.png")}
           style={styles.logo}
         />
-        <Text style={styles.title}>OnMood9</Text>
+        <Text style={styles.title}>HealthVault</Text>
       </View>
       <Text style={styles.signupTitle}>Enter your new Password</Text>
       <View style={styles.inputContainer}>

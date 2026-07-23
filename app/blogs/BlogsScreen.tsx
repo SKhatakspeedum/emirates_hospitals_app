@@ -44,7 +44,7 @@ const BlogsScreen = () => {
     title = "",
     image = "",
     html_content = "",
-    author = "Onmood9 Team",
+    author = "HealthVault Team",
   } = route.params || {};
 
   // Construct image URL

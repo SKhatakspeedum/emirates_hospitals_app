@@ -1,19 +1,19 @@
 {
   "expo": {
     "name": "EmiratesHospital Group",
-    "slug": "OnMood9",
+    "slug": "healthvault",
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "OnMood9",
+    "scheme": "healthvault",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.speedum.onmood9"
+      "bundleIdentifier": "com.speedum.healthvault"
     },
     "android": {
-      "package": "com.onmood9.app",
+      "package": "com.speedum.healthvault.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"

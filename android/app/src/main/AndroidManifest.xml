@@ -41,9 +41,9 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="OnMood9"/>
-        <data android:scheme="com.onmood9.app"/>
-        <data android:scheme="exp+onmood9"/>
+        <data android:scheme="HealthVault"/>
+        <data android:scheme="com.speedum.healthvault.app"/>
+        <data android:scheme="exp+healthvault"/>
       </intent-filter>
     </activity>
   </application>

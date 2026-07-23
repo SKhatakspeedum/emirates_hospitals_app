@@ -74,7 +74,7 @@ export default function AppHeader({ handleMenuPress }: AppHeaderProps) {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.headerRow}>
           {/* Center: App Title */}
-          <Text style={styles.appTitle}>OnMood9</Text>
+          <Text style={styles.appTitle}>HealthVault</Text>
           {/* Left: Hamburger */}
           <TouchableOpacity
             onPress={handleMenuPress}

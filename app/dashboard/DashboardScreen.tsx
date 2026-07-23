@@ -2159,6 +2159,7 @@ const styles = StyleSheet.create({
   quickActionsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    backgroundColor:Colors.backgroundLight,
     marginBottom: 32,
     borderRadius: 10,
     padding: 7,
